@@ -1,6 +1,5 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const auth = require('./src/Auth');
 
-exports.signIn = functions.https.onRequest((req, res) => {
-  res.send('Hello from Firebase!');
-});
+exports.signIn = auth.signIn;
