@@ -1,12 +1,11 @@
-import { shallowMount } from '@vue/test-utils'
-import HelloWorld from '@/components/HelloWorld.vue'
+// const { Pact } = require('@pact-foundation/pact');
 
-describe('HelloWorld.vue', () => {
-  it('renders props.msg when passed', () => {
-    const msg = 'new message'
-    const wrapper = shallowMount(HelloWorld, {
-      propsData: { msg }
-    })
-    expect(wrapper.text()).toMatch(msg)
-  })
-})
+describe('The API', () => {
+  it('should be trivially true', () => {
+    expect('a').toEqual('a');
+  });
+
+  it('shoud not be trivially true', () => {
+    expect('a').not.toEqual('b');
+  });
+});
