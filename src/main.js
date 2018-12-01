@@ -3,11 +3,16 @@ import Vuetify from 'vuetify'
 import 'vuetify/dist/vuetify.min.css'
 import router from './router'
 import firebase from 'firebase'
+import vueConfig from 'vue-config'
 import App from './App.vue'
 
 Vue.config.productionTip = false
 
 Vue.use(Vuetify);
+Vue.use(vueConfig, {
+  // firebase serve
+  API: 'http://localhost:5000',
+});
 
 // Initialize Firebase
 var config = {

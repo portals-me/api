@@ -116,7 +116,7 @@
           <v-avatar color="orange" size="32px">
             <span class="white--text headline">A</span>
           </v-avatar>
-          &nbsp;&nbsp;me
+          &nbsp;&nbsp;{{ me.user_name }}
         </v-btn>
       </v-toolbar-items>
     </v-toolbar>
@@ -129,6 +129,7 @@
 
 <script>
 import HelloWorld from './components/HelloWorld'
+import * as user from '@/sdk/user';
 
 export default {
   name: 'App',
@@ -138,7 +139,11 @@ export default {
   data () {
     return {
       drawer: null,
+      me: {},
     }
+  },
+  mounted: async function () {
+    this.me = await user.api.getMe();
   }
 }
 </script>

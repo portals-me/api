@@ -1,6 +1,6 @@
 <template>
   <v-flex>
-    <v-subheader>Collections</v-subheader>
+    <v-subheader>Projects</v-subheader>
 
     <v-container grid-list-md>
       <v-layout row wrap>
@@ -31,29 +31,29 @@
           </v-dialog>
         </v-flex>
 
-        <v-flex xs3>
+        <v-flex xs3 v-for="project in projects" :key="project.id">
           <v-card>
             <v-img
               aspect-ratio="2.75"
-              class="teal darken-2"
+              :class="project.cover.color"
             >
             </v-img>
 
             <v-card-title>
               <div>
                 <h3 class="headline mb-0">
-                  Project Meow
+                  {{ project.title }}
                 </h3>
-                <div>ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。ぞうの卵はおい...</div>
+                <div>{{ project.description }}</div>
               </div>
             </v-card-title>
 
             <v-card-actions>
-              <v-btn flat color="indigo" @click="$router.push('/project/1')">Open</v-btn>
+              <v-btn flat color="indigo" @click="$router.push(`/project/${project.id}`)">Open</v-btn>
               <v-spacer></v-spacer>
-              <v-icon>edit</v-icon>
-              <v-icon>brush</v-icon>
-              <v-icon>movie</v-icon>
+              <v-icon v-if="project.media.includes('document')">edit</v-icon>
+              <v-icon v-if="project.media.includes('picture')">brush</v-icon>
+              <v-icon v-if="project.media.includes('movie')">movie</v-icon>
             </v-card-actions>
           </v-card>
         </v-flex>
@@ -63,16 +63,21 @@
 </template>
 
 <script>
-  import HelloWorld from '../components/HelloWorld'
+import HelloWorld from '../components/HelloWorld'
+import * as project from '@/sdk/project';
 
-  export default {
-    components: {
-      HelloWorld
-    },
-    data () {
-      return {
-        dialog: false
-      };
-    }
-  }
+export default {
+  components: {
+    HelloWorld
+  },
+  data () {
+    return {
+      dialog: false,
+      projects: [],
+    };
+  },
+  mounted: async function () {
+    this.projects = await project.api.list();
+  },
+}
 </script>
