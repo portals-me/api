@@ -8,6 +8,7 @@
     "test:unit": "vue-cli-service test:unit"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "firebase": "^5.5.9",
     "vue": "^2.5.17",
     "vue-router": "^3.0.1",
