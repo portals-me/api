@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   version: 1.0.0
-  title: Portals@me API
+  title: Portals me API
   license:
     name: MIT
 servers:
@@ -18,7 +18,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schema/User'
+                $ref: '#/components/schemas/User'
 
   /projects:
     get:
@@ -33,7 +33,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schema/Project'
+                  $ref: '#/components/schemas/Project'
   /projects/{projectId}:
     get:
       summary: Get a project
@@ -52,7 +52,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schema/Project'
+                $ref: '#/components/schemas/Project'
 
   /projects/{projectId}/collections:
     get:
@@ -74,7 +74,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schema/Collection'
+                  $ref: '#/components/schemas/Collection'
 
   /projects/{projectId}/comments:
     get:
@@ -96,7 +96,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schema/Comment'
+                  $ref: '#/components/schemas/Comment'
 
   /collections/{collectionId}/comments:
     get:
@@ -118,7 +118,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schema/Comment'
+                  $ref: '#/components/schemas/Comment'
 
 components:
   schemas:
