@@ -76,8 +76,13 @@ export default {
       projects: [],
     };
   },
+  methods: {
+    async loadProjects () {
+      this.projects = await project.api.list();
+    },
+  },
   mounted: async function () {
-    this.projects = await project.api.list();
+    await this.loadProjects();
   },
 }
 </script>

@@ -8,7 +8,7 @@ server.contract.get('/users/me', (req, res) => {
   });
 });
 
-server.contract.get('/project', (req, res) => {
+server.contract.get('/projects', (req, res) => {
   res.send([
     {
       id: '1',
@@ -39,9 +39,9 @@ server.contract.get('/project', (req, res) => {
   ]);
 });
 
-server.contract.get('/project/:projectId', (req, res) => {
+server.contract.get('/projects/:projectId', (req, res) => {
   res.send({
-    id: projectId,
+    id: req.params.projectId,
     title: 'Project Meow',
     description: 'ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。',
     owner: '1',
