@@ -116,7 +116,7 @@
           <v-avatar color="orange" size="32px">
             <span class="white--text headline">A</span>
           </v-avatar>
-          &nbsp;&nbsp;{{ me.user_name }}
+          &nbsp;&nbsp;{{ user.user_name }}
         </v-btn>
       </v-toolbar-items>
     </v-toolbar>
@@ -139,11 +139,11 @@ export default {
   data () {
     return {
       drawer: null,
-      me: {},
+      user: {},
     }
   },
   mounted: async function () {
-    this.me = await user.api.getMe();
+    this.user = await user.api.getMe();
   }
 }
 </script>

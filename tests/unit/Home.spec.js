@@ -5,7 +5,7 @@ import Vuetify from 'vuetify';
 const localVue = createLocalVue();
 localVue.use(Vuetify);
 
-describe('Home container with test data', () => {
+describe('Home view', () => {
   const wrapper = mount(Home, { localVue });
 
   describe('Projects', () => {

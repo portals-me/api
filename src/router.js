@@ -21,7 +21,7 @@ export default new Router({
       component: SignIn,
     },
     {
-      path: '/project/:projectId',
+      path: '/projects/:projectId',
       name: 'project',
       component: Project,
     },

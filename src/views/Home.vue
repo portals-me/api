@@ -49,7 +49,7 @@
             </v-card-title>
 
             <v-card-actions>
-              <v-btn flat color="indigo" @click="$router.push(`/project/${project.id}`)">Open</v-btn>
+              <v-btn flat color="indigo" @click="$router.push(`/projects/${project.id}`)">Open</v-btn>
               <v-spacer></v-spacer>
               <v-icon v-if="project.media.includes('document')">edit</v-icon>
               <v-icon v-if="project.media.includes('picture')">brush</v-icon>
