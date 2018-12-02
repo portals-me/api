@@ -2,10 +2,7 @@ import axios from 'axios';
 
 export const api = {
   getMe: async () => {
-    return {
-      id: '1',
-      user_name: 'me',
-    };
-//    return await axios.get(`${this.$config.API}/users/me`);
+    const result = await axios.get('http://localhost:5000/users/me');
+    return result.data;
   },
 };

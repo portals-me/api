@@ -9,7 +9,14 @@ class MockServer {
   }
 
   start () {
+    this.app.use(function(req, res, next) {
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      next();
+    });
+
     this.app.use('/', this.contract);
+
     this.server = this.app.listen(5000, () => {
       console.log('listening on port 5000...');
     });
@@ -20,14 +27,6 @@ class MockServer {
   }
 };
 
-const s = new MockServer();
-s.contract.get('/hoge', (req, res, next) => {
-  res.send({
-    result: 'OK',
-  });
-});
-s.start();
-
-setTimeout(() => {
-  s.shutdown();
-}, 10000);
+module.exports = {
+  MockServer,
+};

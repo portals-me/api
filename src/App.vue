@@ -142,8 +142,13 @@ export default {
       user: {},
     }
   },
+  methods: {
+    async loadUser () {
+      this.user = await user.api.getMe();
+    }
+  },
   mounted: async function () {
-    this.user = await user.api.getMe();
+    await this.loadUser();
   }
 }
 </script>
