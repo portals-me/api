@@ -77,7 +77,7 @@ export default {
   },
   methods: {
     async loadProject () {
-      this.project = await project.api.get(this.$route.params.projectId);
+      this.project = await project.api(this.$config.API, this.$config.axios).get(this.$route.params.projectId);
     }
   },
   mounted: async function () {

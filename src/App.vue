@@ -144,7 +144,7 @@ export default {
   },
   methods: {
     async loadUser () {
-      this.user = await user.api.getMe();
+      this.user = await user.api(this.$config.API, this.$config.axios).getMe();
     }
   },
   mounted: async function () {

@@ -5,13 +5,15 @@ import router from './router'
 import firebase from 'firebase'
 import vueConfig from 'vue-config'
 import App from './App.vue'
+import axios from 'axios'
 
-Vue.config.productionTip = false
+Vue.config.productionTip = false;
 
 Vue.use(Vuetify);
 Vue.use(vueConfig, {
   // firebase serve
   API: 'http://localhost:5000',
+  axios: axios,
 });
 
 // Initialize Firebase

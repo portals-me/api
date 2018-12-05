@@ -78,7 +78,7 @@ export default {
   },
   methods: {
     async loadProjects () {
-      this.projects = await project.api.list();
+      this.projects = await project.api(this.$config.API, this.$config.axios).list();
     },
   },
   mounted: async function () {
