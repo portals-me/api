@@ -1,7 +1,7 @@
-import { mount, createLocalVue } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import Vue from 'vue';
 import App from '@/App';
 import Vuetify from 'vuetify';
-import VueRouter from 'vue-router';
 import router from '@/router';
 import adapter from 'axios-mock-adapter';
 import * as axios from 'axios';
@@ -15,16 +15,15 @@ stub.onGet(`${API}/users/me`).reply(200, {
   user_name: 'me',
 });
 
-const localVue = createLocalVue();
-localVue.use(Vuetify);
-localVue.use(VueRouter);
-localVue.use(vueConfig, {
+Vue.use(Vuetify);
+Vue.use(router);
+Vue.use(vueConfig, {
   API: API,
   axios: axios,
 });
 
 describe('App view', () => {
-  const wrapper = mount(App, { localVue, router });
+  const wrapper = mount(App, { router });
 
   describe('User', () => {
     it('should load test user', async () => {

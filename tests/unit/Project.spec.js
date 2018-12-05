@@ -1,7 +1,7 @@
-import { shallowMount, createLocalVue } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import Project from '@/views/Project';
+import Vue from 'vue';
 import Vuetify from 'vuetify';
-import VueRouter from 'vue-router';
 import router from '@/router';
 import adapter from 'axios-mock-adapter';
 import * as axios from 'axios';
@@ -98,10 +98,9 @@ stub.onGet(`${API}/projects/1`).reply(200, {
   ]
 });
 
-const localVue = createLocalVue();
-localVue.use(Vuetify);
-localVue.use(VueRouter);
-localVue.use(vueConfig, {
+Vue.use(Vuetify);
+Vue.use(router);
+Vue.use(vueConfig, {
   API: API,
   axios: axios,
 });
@@ -109,7 +108,7 @@ localVue.use(vueConfig, {
 router.push('/projects/1');
 
 describe('Project view', () => {
-  const wrapper = shallowMount(Project, { localVue, router });
+  const wrapper = shallowMount(Project, { router });
 
   describe('Project collections', () => {
     it('should have a project', async () => {

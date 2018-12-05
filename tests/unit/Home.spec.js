@@ -1,6 +1,8 @@
-import { mount, createLocalVue } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
+import Vue from 'vue';
 import Home from '@/views/Home';
 import Vuetify from 'vuetify';
+import router from '@/router';
 import adapter from 'axios-mock-adapter';
 import * as axios from 'axios';
 import vueConfig from 'vue-config'
@@ -37,15 +39,15 @@ stub.onGet(`${API}/projects`).reply(200, [
   },
 ]);
 
-const localVue = createLocalVue();
-localVue.use(Vuetify);
-localVue.use(vueConfig, {
+Vue.use(Vuetify);
+Vue.use(router);
+Vue.use(vueConfig, {
   API: API,
   axios: axios,
 });
 
 describe('Home view', () => {
-  const wrapper = mount(Home, { localVue });
+  const wrapper = shallowMount(Home, { router });
 
   describe('Projects', () => {
     it('should load two test projects', async () => {
