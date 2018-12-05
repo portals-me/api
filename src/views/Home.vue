@@ -64,7 +64,7 @@
 
 <script>
 import HelloWorld from '../components/HelloWorld'
-import * as project from '@/sdk/project';
+import sdk from '@/sdk';
 
 export default {
   components: {
@@ -78,7 +78,7 @@ export default {
   },
   methods: {
     async loadProjects () {
-      this.projects = await project.api(this.$config.API, this.$config.axios).list();
+      this.projects = await sdk(this.$config.API, this.$config.axios).project.list();
     },
   },
   mounted: async function () {

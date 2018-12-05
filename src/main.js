@@ -9,25 +9,24 @@ import axios from 'axios'
 
 Vue.config.productionTip = false;
 
-Vue.use(Vuetify);
-Vue.use(vueConfig, {
-  // firebase serve
-  API: 'http://localhost:5000',
-  axios: axios,
-});
-
-// Initialize Firebase
-var config = {
+firebase.initializeApp({
   apiKey: "AIzaSyAL-NuKxMhShZVARoxzNMvXrGN3A65OEps",
   authDomain: "portals-me.firebaseapp.com",
   databaseURL: "https://portals-me.firebaseio.com",
   projectId: "portals-me",
   storageBucket: "portals-me.appspot.com",
   messagingSenderId: "670077302427"
-};
-firebase.initializeApp(config);
+});
+
+Vue.use(Vuetify);
+Vue.use(vueConfig, {
+  // firebase serve
+  API: 'http://localhost:5000',
+  axios,
+  firebase,
+});
 
 new Vue({
   router,
   render: function (h) { return h(App) }
-}).$mount('#app')
+}).$mount('#app');

@@ -129,7 +129,7 @@
 
 <script>
 import HelloWorld from './components/HelloWorld'
-import * as user from '@/sdk/user';
+import sdk from '@/sdk';
 
 export default {
   name: 'App',
@@ -144,7 +144,7 @@ export default {
   },
   methods: {
     async loadUser () {
-      this.user = await user.api(this.$config.API, this.$config.axios).getMe();
+      this.user = await sdk(this.$config.API, this.$config.axios).user.getMe();
     }
   },
   mounted: async function () {

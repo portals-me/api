@@ -63,7 +63,7 @@
 
 <script>
 import OgpCard from '@/components/OgpCard';
-import * as project from '@/sdk/project';
+import sdk from '@/sdk';
 
 export default {
   components: {
@@ -77,7 +77,7 @@ export default {
   },
   methods: {
     async loadProject () {
-      this.project = await project.api(this.$config.API, this.$config.axios).get(this.$route.params.projectId);
+      this.project = await sdk(this.$config.API, this.$config.axios).project.get(this.$route.params.projectId);
     }
   },
   mounted: async function () {
