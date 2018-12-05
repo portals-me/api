@@ -128,14 +128,9 @@
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
 import sdk from '@/sdk';
 
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
-  },
   data () {
     return {
       drawer: null,

@@ -63,13 +63,9 @@
 </template>
 
 <script>
-import HelloWorld from '../components/HelloWorld'
 import sdk from '@/sdk';
 
 export default {
-  components: {
-    HelloWorld
-  },
   data () {
     return {
       dialog: false,
