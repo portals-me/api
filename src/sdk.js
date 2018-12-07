@@ -1,4 +1,4 @@
-const sdk = (endpoint, axios) => {
+const sdk = (endpoint, axios, firebase) => {
   return {
     project: {
       list: async () => {
