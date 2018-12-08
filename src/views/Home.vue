@@ -15,11 +15,23 @@
               <v-card-title class="headline">Create A New Project</v-card-title>
 
               <v-card-text>
-                New Project New Project New Project New Project New Project
+                <v-form>
+                  <v-text-field
+                    label="Title"
+                    v-model="form.title"
+                    required
+                  />
+                  <v-textarea
+                    label="Project Description"
+                    v-model="form.description"
+                    rows="1"
+                    auto-grow
+                  />
+                </v-form>
               </v-card-text>
 
               <v-card-actions>
-                <v-btn color="success">
+                <v-btn color="success" @click="createProject">
                   Submit
                 </v-btn>
 
@@ -51,9 +63,9 @@
             <v-card-actions>
               <v-btn flat color="indigo" @click="$router.push(`/projects/${project.id}`)">Open</v-btn>
               <v-spacer></v-spacer>
-              <v-icon v-if="project.media.includes('document')">edit</v-icon>
-              <v-icon v-if="project.media.includes('picture')">brush</v-icon>
-              <v-icon v-if="project.media.includes('movie')">movie</v-icon>
+              <v-icon v-if="project.media && project.media.includes('document')">edit</v-icon>
+              <v-icon v-if="project.media && project.media.includes('picture')">brush</v-icon>
+              <v-icon v-if="project.media && project.media.includes('movie')">movie</v-icon>
             </v-card-actions>
           </v-card>
         </v-flex>
@@ -83,6 +95,20 @@ export default {
         .where('owner', '==', this.$store.state.user.uid)
         .get();
       this.projects = projects.docs.map(doc => doc.data());
+    },
+    async createProject () {
+      const project = {
+        title: this.form.title,
+        owner: this.$store.state.user.uid,
+        cover: {
+          color: 'teal darken-2',
+          sort: 'solid',
+        },
+      };
+      await firestore
+        .collection('projects')
+        .add(project);
+      await this.loadProjects();
     },
   },
   mounted: async function () {
