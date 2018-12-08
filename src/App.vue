@@ -111,13 +111,25 @@
 
       <v-spacer></v-spacer>
 
-      <v-toolbar-items v-if="this.user.id != null">
-        <v-btn flat>
-          <v-avatar color="orange" size="32px">
-            <v-img :src="user.iconURL" />
-          </v-avatar>
-          &nbsp;&nbsp;{{ user.user_name }}
-        </v-btn>
+      <v-toolbar-items v-if="$store.state.user != null">
+        <v-menu offset-y>
+          <v-btn
+            slot="activator"
+            flat
+          >
+            <v-avatar color="orange" size="32px">
+              <v-img :src="$store.state.user.photoURL" />
+            </v-avatar>
+            &nbsp;&nbsp;{{ $store.state.user.displayName }}
+          </v-btn>
+          <v-list>
+            <v-list-tile
+              @click="signOut"
+            >
+              <v-list-tile-title>Sign Out</v-list-tile-title>
+            </v-list-tile>
+          </v-list>
+        </v-menu>
       </v-toolbar-items>
     </v-toolbar>
 
@@ -138,25 +150,13 @@ export default {
     }
   },
   methods: {
-    async loadUser () {
-      this.user = {
-        id: '1',
-        user_name: this.$store.state.user.displayName,
-        iconURL: this.$store.state.user.photoURL,
-      };
-    }
+    async signOut () {
+      this.$store.dispatch('signOut');
+      this.$router.push('/signin');
+    },
   },
   mounted: async function () {
     this.$store.dispatch('initialize');
-
-    if (!this.$store.state.initialized) {
-      const unwatch = this.$store.watch((state) => state.initialized, () => {
-        this.loadUser();
-        unwatch();
-      })
-    } else {
-      this.loadUser();
-    }
   }
 }
 </script>

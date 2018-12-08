@@ -44,6 +44,10 @@ const store = new Vuex.Store({
           commit('setInitialized');
         });
       }
+    },
+    signOut ({ commit }) {
+      firebase.auth().signOut();
+      commit('setUser', null);
     }
   },
   mutations: {
