@@ -63,21 +63,30 @@
 </template>
 
 <script>
-import sdk from '@/sdk';
+import firestore from '@/instance/firestore';
 
 export default {
   data () {
     return {
       dialog: false,
       projects: [],
+      form: {
+        title: '',
+        description: '',
+      },
     };
   },
   methods: {
     async loadProjects () {
-      this.projects = await sdk(this.$config.API, this.$config.axios).project.list();
+      const projects = await firestore
+        .collection('projects')
+        .where('owner', '==', this.$store.state.user.uid)
+        .get();
+      this.projects = projects.docs.map(doc => doc.data());
     },
   },
   mounted: async function () {
+    await this.$store.dispatch('initialize');
     await this.loadProjects();
   },
 }

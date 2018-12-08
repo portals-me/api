@@ -28,19 +28,25 @@ const store = new Vuex.Store({
   },
   actions: {
     initialize ({ state, commit }) {
-      if (!state.initialized) {
-        firebase.auth().onAuthStateChanged((user) => {
-          if (user) {
-            commit('setUser', user);
-          }
-          commit('setInitialized');
-        });
-      }
+      return new Promise((resolve, reject) => {
+        if (!state.initialized) {
+          firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+              commit('setUser', user);
+            }
+            commit('setInitialized');
+
+            resolve();
+          });
+        } else {
+          resolve();
+        }
+      });
     },
     signOut ({ commit }) {
       firebase.auth().signOut();
       commit('setUser', null);
-    }
+    },
   },
   mutations: {
     setUser (state, user) {

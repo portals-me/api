@@ -156,7 +156,7 @@ export default {
     },
   },
   mounted: async function () {
-    this.$store.dispatch('initialize');
+    await this.$store.dispatch('initialize');
   }
 }
 </script>
