@@ -111,10 +111,10 @@
 
       <v-spacer></v-spacer>
 
-      <v-toolbar-items>
+      <v-toolbar-items v-if="this.user.id != null">
         <v-btn flat>
           <v-avatar color="orange" size="32px">
-            <span class="white--text headline">A</span>
+            <v-img :src="user.iconURL" />
           </v-avatar>
           &nbsp;&nbsp;{{ user.user_name }}
         </v-btn>
@@ -139,11 +139,24 @@ export default {
   },
   methods: {
     async loadUser () {
-      this.user = await sdk(this.$config.API, this.$config.axios).user.getMe();
+      this.user = {
+        id: '1',
+        user_name: this.$store.state.user.displayName,
+        iconURL: this.$store.state.user.photoURL,
+      };
     }
   },
   mounted: async function () {
-    await this.loadUser();
+    this.$store.dispatch('initialize');
+
+    if (!this.$store.state.initialized) {
+      const unwatch = this.$store.watch((state) => state.initialized, () => {
+        this.loadUser();
+        unwatch();
+      })
+    } else {
+      this.loadUser();
+    }
   }
 }
 </script>
