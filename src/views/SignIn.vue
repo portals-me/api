@@ -12,10 +12,11 @@
 </template>
 
 <script>
-import firebase from 'firebase/app';
+import firebase,{ auth } from 'firebase/app';
 import 'firebase/auth';
 import firebaseui from 'firebaseui';
-import 'firebaseui/dist/firebaseui.css'
+import 'firebaseui/dist/firebaseui.css';
+import firestore from '@/instance/firestore';
 
 export default {
   name: 'signin',
@@ -30,6 +31,16 @@ export default {
         console.log(token, user);
       });
     },
+    async saveUser (user) {
+      const userRef = firestore.collection('users').doc(user.uid);
+      const userDoc = await userRef.get();
+      const userData = {};
+
+      if (!userDoc.exists) {
+        userData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      }
+      userRef.set(userData, { merge: true });
+    },
   },
   mounted () {
     let ui = firebaseui.auth.AuthUI.getInstance();
@@ -38,11 +49,18 @@ export default {
     }
 
     ui.start('#firebaseui-auth-container', {
+      callbacks: {
+        signInSuccessWithAuthResult: (authResult, redirectUrl) => {
+          this.saveUser(authResult.user).then(() => {
+            this.$router.push('/');
+          });
+          return false;
+        },
+      },
       signInFlow: 'redirect',
       signInOptions: [
         firebase.auth.GoogleAuthProvider.PROVIDER_ID,
       ],
-      signInSuccessUrl: '/',
     });
   },
 }

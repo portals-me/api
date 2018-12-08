@@ -7,17 +7,9 @@ import App from './App.vue'
 import axios from 'axios'
 import firebase from 'firebase'
 import Vuex from 'vuex'
+import app from '@/instance/firebase'
 
 const isDev = process.env.NODE_ENV === 'development';
-
-firebase.initializeApp({
-  apiKey: "AIzaSyAL-NuKxMhShZVARoxzNMvXrGN3A65OEps",
-  authDomain: "portals-me.firebaseapp.com",
-  databaseURL: "https://portals-me.firebaseio.com",
-  projectId: "portals-me",
-  storageBucket: "portals-me.appspot.com",
-  messagingSenderId: "670077302427"
-});
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
