@@ -22,3 +22,4 @@ yarn-error.log*
 
 tests/unit/logs
 .firebase
+coverage/

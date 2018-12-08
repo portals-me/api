@@ -140,13 +140,10 @@
 </template>
 
 <script>
-import sdk from '@/sdk';
-
 export default {
   data () {
     return {
       drawer: null,
-      user: {},
     }
   },
   methods: {
@@ -154,9 +151,12 @@ export default {
       this.$store.dispatch('signOut');
       this.$router.push('/signin');
     },
+    async onMount () {
+      await this.$store.dispatch('initialize');
+    },
   },
   mounted: async function () {
-    await this.$store.dispatch('initialize');
+    await this.onMount();
   }
 }
 </script>

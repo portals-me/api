@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "test:unit": "vue-cli-service test:unit"
+    "test:unit": "vue-cli-service test:unit",
+    "test": "yarn test:unit --coverage"
   },
   "dependencies": {
     "axios": "^0.18.0",
@@ -23,6 +24,8 @@
     "@vue/cli-service": "^3.0.3",
     "@vue/test-utils": "^1.0.0-beta.20",
     "axios-mock-adapter": "^1.15.0",
+    "firebase-mock": "^2.2.10",
+    "jest-transform-stub": "^1.0.0",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.1",
     "vue-cli-plugin-vuetify": "^0.4.6",
@@ -43,7 +46,6 @@
     "moduleFileExtensions": [
       "js",
       "jsx",
-      "json",
       "vue"
     ],
     "transform": {
@@ -52,14 +54,14 @@
       "^.+\\.jsx?$": "babel-jest"
     },
     "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
+      "^@/(.*)$": "<rootDir>/src/$1",
+      "^.+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$": "jest-transform-stub"
     },
     "snapshotSerializers": [
       "jest-serializer-vue"
     ],
     "testMatch": [
       "**/tests/unit/**/*.spec.(js|jsx|ts|tsx)|**/__tests__/*.(js|jsx|ts|tsx)"
-    ],
-    "testURL": "http://localhost/"
+    ]
   }
 }
