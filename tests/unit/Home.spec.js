@@ -76,18 +76,29 @@ describe('Home view with Test User', () => {
   });
 
   describe('Projects', () => {
-    it('should load two test projects', async () => {
+    let Home = null;
+
+    beforeEach(async () => {
       let mockstore = firestore;
       jest.mock('@/instance/firestore', () => mockstore);
-      const Home = require('@/views/Home').default;
+      Home = require('@/views/Home').default;
+    });
 
+    it('should load two test projects', async () => {
       const wrapper = shallowMount(Home, { router, store });
-      wrapper.trigger('mount');
       await wrapper.vm.onMount();
 
       expect(wrapper.vm.projects.length).toBe(2);
       expect(wrapper.vm.projects[0].title).toBe('Project Meow');
       expect(wrapper.vm.projects[1].title).toBe('Piyo-piyo');
+    });
+
+    it('should render two projects', async () => {
+      const wrapper = shallowMount(Home, { router, store });
+      await wrapper.vm.onMount();
+
+      expect(wrapper.findAll({ name: 'v-card' }).wrappers.some(wrapper => wrapper.text().includes('Project Meow'))).toBe(true);
+      expect(wrapper.findAll({ name: 'v-card' }).wrappers.some(wrapper => wrapper.text().includes('Piyo-piyo'))).toBe(true);
     });
   });
 });
