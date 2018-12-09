@@ -85,6 +85,10 @@ export default {
       form: {
         title: '',
         description: '',
+        cover: {
+          color: 'teal darken-2',
+          sort: 'solid',
+        }
       },
     };
   },
@@ -100,10 +104,7 @@ export default {
       const project = {
         title: this.form.title,
         owner: this.$store.state.user.uid,
-        cover: {
-          color: 'teal darken-2',
-          sort: 'solid',
-        },
+        cover: this.form.cover,
       };
       await firestore
         .collection('projects')

@@ -100,5 +100,17 @@ describe('Home view with Test User', () => {
       expect(wrapper.findAll({ name: 'v-card' }).wrappers.some(wrapper => wrapper.text().includes('Project Meow'))).toBe(true);
       expect(wrapper.findAll({ name: 'v-card' }).wrappers.some(wrapper => wrapper.text().includes('Piyo-piyo'))).toBe(true);
     });
+
+    it('should create new project', async () => {
+      const wrapper = shallowMount(Home, { router, store });
+      await wrapper.vm.onMount();
+
+      const number = wrapper.vm.projects.length;
+      wrapper.vm.form.title = 'New Project';
+      await wrapper.vm.createProject();
+
+      expect(wrapper.vm.projects.length).toBe(number + 1);
+      expect(wrapper.vm.projects[0].title).toBe('New Project');
+    });
   });
 });
