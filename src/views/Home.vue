@@ -99,7 +99,7 @@ export default {
         .where('owner', '==', this.$store.state.user.uid)
         .get();
       this.projects = projects.docs.map(doc => {
-        return { ...doc.data(), id: doc.id };
+        return Object.assign({ id: doc.id }, doc.data());
       });
     },
     async createProject () {

@@ -79,11 +79,11 @@ export default {
     async loadProject () {
       const projectId = this.$route.params.projectId;
       const doc = await firestore.collection('projects').doc(projectId).get();
-      this.project = { ...doc.data(), id: doc.id };
+      this.project = Object.assign({ id: doc.id }, doc.data());
 
       const comments = await firestore.collection('projects').doc(projectId).collection('comments').get();
       this.$set(this.project, 'comments', comments.docs.map(doc => {
-        return { ...doc.data(), id: doc.id };
+        return Object.assign({ id: doc.id }, doc.data());
       }));
     }
   },
