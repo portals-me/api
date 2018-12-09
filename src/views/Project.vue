@@ -63,7 +63,7 @@
 
 <script>
 import OgpCard from '@/components/OgpCard';
-import sdk from '@/sdk';
+import firestore from '@/instance/firestore';
 
 export default {
   components: {
@@ -77,7 +77,14 @@ export default {
   },
   methods: {
     async loadProject () {
-      this.project = await sdk(this.$config.API, this.$config.axios).project.get(this.$route.params.projectId);
+      const projectId = this.$route.params.projectId;
+      const doc = await firestore.collection('projects').doc(projectId).get();
+      this.project = { ...doc.data(), id: doc.id };
+
+      const comments = await firestore.collection('projects').doc(projectId).collection('comments').get();
+      this.$set(this.project, 'comments', comments.docs.map(doc => {
+        return { ...doc.data(), id: doc.id };
+      }));
     }
   },
   mounted: async function () {
