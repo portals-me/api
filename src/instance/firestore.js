@@ -1,5 +1,4 @@
-import firebase from 'firebase/app';
-import 'firebase/firestore';
+import firebase from 'firebase';
 import app from '@/instance/firebase';
 
 const firestore = firebase.firestore(app);

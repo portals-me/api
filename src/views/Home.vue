@@ -110,10 +110,13 @@ export default {
         .add(project);
       await this.loadProjects();
     },
+    async onMount () {
+      await this.$store.dispatch('initialize');
+      await this.loadProjects();
+    },
   },
   mounted: async function () {
-    await this.$store.dispatch('initialize');
-    await this.loadProjects();
+    await this.onMount();
   },
 }
 </script>

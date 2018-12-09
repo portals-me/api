@@ -1,60 +1,93 @@
 import { shallowMount } from '@vue/test-utils';
 import Vue from 'vue';
-import Home from '@/views/Home';
 import Vuetify from 'vuetify';
-import router from '@/router';
-import adapter from 'axios-mock-adapter';
-import * as axios from 'axios';
-import vueConfig from 'vue-config'
+import VueRouter from 'vue-router';
+import store from '@/store';
 
-const stub = new adapter(axios);
-const API = 'http://localhost:5000';
-
-stub.onGet(`${API}/projects`).reply(200, [
-  {
-    id: '1',
-    title: 'Project Meow',
-    description: 'ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。',
-    media: [
-      'document',
-      'picture',
-      'movie',
-    ],
-    cover: {
-      sort: 'solid',
-      color: 'teal darken-2',
-    }
-  },
-  {
-    id: '2',
-    title: 'Piyo-piyo',
-    description: '',
-    media: [
-      'document',
-    ],
-    cover: {
-      sort: 'solid',
-      color: 'orange lighten-2',
-    }
-  },
-]);
+import * as firebase from '@firebase/testing';
+import * as fs from 'fs';
 
 Vue.use(Vuetify);
-Vue.use(router);
-Vue.use(vueConfig, {
-  API: API,
-  axios: axios,
+Vue.use(VueRouter);
+
+const router = new VueRouter();
+
+let testNumber = 0;
+const getProjectId = () => {
+  return `firestore-emulator-${testNumber}`;
+};
+
+const getFirestore = (auth) => {
+  return firebase.initializeTestApp({
+    projectId: getProjectId(),
+    auth: auth,
+  }).firestore();
+};
+
+beforeEach(async () => {
+  testNumber ++;
+  await firebase.loadFirestoreRules({
+    projectId: getProjectId(),
+    rules: fs.readFileSync('firestore.rules', 'utf8'),
+  });
 });
 
-describe('Home view', () => {
-  const wrapper = shallowMount(Home, { router });
+afterAll(async () => {
+  await Promise.all(firebase.apps().map(app => app.delete()));
+});
+
+describe('Home view with Test User', () => {
+  const testUser = {
+    uid: 'testUser',
+    displayName: 'testUserName',
+  };
+  const firestore = getFirestore({ uid: testUser.uid });
+
+  beforeEach(async () => {
+    store.commit('setUser', testUser);
+    store.commit('setInitialized');
+
+    await firestore.collection('projects').doc('test-1').set({
+      title: 'Project Meow',
+      description: 'ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。',
+      media: [
+        'document',
+        'picture',
+        'movie',
+      ],
+      owner: testUser.uid,
+      cover: {
+        sort: 'solid',
+        color: 'teal darken-2',
+      }
+    });
+    await firestore.collection('projects').doc('test-2').set({
+      title: 'Piyo-piyo',
+      description: '',
+      media: [
+        'document',
+      ],
+      owner: testUser.uid,
+      cover: {
+        sort: 'solid',
+        color: 'orange lighten-2',
+      }
+    });
+  });
 
   describe('Projects', () => {
     it('should load two test projects', async () => {
-      await wrapper.vm.loadProjects();
-      expect(wrapper.vm.projects.length).toEqual(2);
-      expect(wrapper.vm.projects[0].title).toEqual('Project Meow');
-      expect(wrapper.vm.projects[1].title).toEqual('Piyo-piyo');
+      let mockstore = firestore;
+      jest.mock('@/instance/firestore', () => mockstore);
+      const Home = require('@/views/Home').default;
+
+      const wrapper = shallowMount(Home, { router, store });
+      wrapper.trigger('mount');
+      await wrapper.vm.onMount();
+
+      expect(wrapper.vm.projects.length).toBe(2);
+      expect(wrapper.vm.projects[0].title).toBe('Project Meow');
+      expect(wrapper.vm.projects[1].title).toBe('Piyo-piyo');
     });
   });
 });
