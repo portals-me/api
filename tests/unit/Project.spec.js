@@ -1,15 +1,17 @@
 import { shallowMount } from '@vue/test-utils';
-import Project from '@/views/Project';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import router from '@/router';
-import adapter from 'axios-mock-adapter';
-import * as axios from 'axios';
-import vueConfig from 'vue-config'
+import VueRouter from 'vue-router';
+import store from '@/store';
 
-const stub = new adapter(axios);
-const API = 'http://localhost:5000';
+import * as firebase from '@firebase/testing';
+import * as fs from 'fs';
 
+Vue.use(Vuetify);
+
+const router = new VueRouter();
+
+/*
 stub.onGet(`${API}/projects/1`).reply(200, {
   id: '1',
   title: 'Project Meow',
@@ -97,36 +99,79 @@ stub.onGet(`${API}/projects/1`).reply(200, {
     },
   ]
 });
+*/
 
 Vue.use(Vuetify);
-Vue.use(router);
-Vue.use(vueConfig, {
-  API: API,
-  axios: axios,
+
+let testNumber = 0;
+const projectIdBase = `firestore-emulator-${Date.now()}`;
+const getProjectId = () => {
+  return `${projectIdBase}-${testNumber}`;
+};
+
+const getFirestore = (auth) => {
+  return firebase.initializeTestApp({
+    projectId: getProjectId(),
+    auth: auth,
+  }).firestore();
+};
+
+beforeEach(async () => {
+  testNumber ++;
+  await firebase.loadFirestoreRules({
+    projectId: getProjectId(),
+    rules: fs.readFileSync('firestore.rules', 'utf8'),
+  });
 });
 
-router.push('/projects/1');
+afterAll(async () => {
+  await Promise.all(firebase.apps().map(app => app.delete()));
+});
 
-describe('Project view', () => {
-  const wrapper = shallowMount(Project, { router });
+describe('Project', () => {
+  const projectId = '1';
+  const testUser = {
+    uid: 'testUser',
+    displayName: 'testUserName',
+  };
+  const firestore = getFirestore({ uid: testUser.uid });
 
-  describe('Project collections', () => {
-    it('should have a project', async () => {
-      await wrapper.vm.loadProject();
-      expect(wrapper.vm.project.id).toEqual('1');
+  const testProject = {
+    title: 'Project Meow',
+    description: 'ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。',
+    owner: '1',
+    media: [
+      'document',
+      'picture',
+      'movie',
+    ],
+    cover: {
+      sort: 'solid',
+      color: 'teal darken-2',
+    },
+  }
+
+  let Project;
+  beforeEach(async () => {
+    await firestore.collection('projects').doc(projectId).set(testProject);
+
+    let mockstore = firestore;
+    jest.mock('@/instance/firestore', () => mockstore);
+    Project = require('@/views/Project').default;
+  });
+
+  it('should render title', async () => {
+    const wrapper = shallowMount(Project, {
+      store,
+      mocks: {
+        $route: {
+          params: { projectId }
+        }
+      }
     });
+    await wrapper.vm.onMount();
 
-    it('should have a collection', async () => {
-      await wrapper.vm.loadProject();
-      expect(wrapper.vm.project.collections.length).toBeGreaterThan(0);
-      expect(wrapper.vm.project.collections[0].items.length).toBeGreaterThan(0);
-    });
-
-    it('should have comments', async () => {
-      await wrapper.vm.loadProject();
-      expect(wrapper.vm.project.comments.length).toBeGreaterThan(0);
-      expect(wrapper.vm.project.comments[0].id).toEqual('1');
-      expect(wrapper.vm.project.comments[0].owner.user_name).toEqual('me');
-    });
+    expect(wrapper.findAll('h2').length).toBe(1);
+    expect(wrapper.find('h2').text().includes(testProject.title)).toBe(true);
   });
 });

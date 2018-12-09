@@ -85,10 +85,13 @@ export default {
       this.$set(this.project, 'comments', comments.docs.map(doc => {
         return Object.assign({ id: doc.id }, doc.data());
       }));
-    }
+    },
+    async onMount () {
+      await this.loadProject();
+    },
   },
   mounted: async function () {
-    await this.loadProject();
+    await this.onMount();
   },
 }
 </script>
