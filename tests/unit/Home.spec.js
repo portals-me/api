@@ -37,6 +37,22 @@ afterAll(async () => {
   await Promise.all(firebase.apps().map(app => app.delete()));
 });
 
+/*
+describe('Home without User', () => {
+  const mockstore = getFirestore(null);
+
+  let Home;
+  beforeEach(async () => {
+    jest.mock('@/instance/firestore', () => mockstore);
+    Home = require('@/views/Home').default;
+  });
+
+  it('should not load', async () => {
+    shallowMount(Home, { router, store });
+  });
+});
+*/
+
 describe('Home view with Test User', () => {
   const testUser = {
     uid: 'testUser',
