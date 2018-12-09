@@ -19,10 +19,10 @@
       <v-tab ripple>Settings</v-tab>
 
       <v-tab-item>
-        <v-layout row wrap :key="collection.id" v-for="collection in project.collections">
-          <v-flex xs6 :key="item.id" v-for="item in collection.items">
+        <v-layout row wrap v-if="project.articles">
+          <v-flex xs6 :key="article.id" v-for="article in project.articles">
             <v-container fluid>
-              <ogp-card :ogp="item.entity.ogp" />
+              <ogp-card :ogp="article.entity.ogp" />
             </v-container>
           </v-flex>
         </v-layout>
@@ -42,7 +42,7 @@
             </v-btn>
           </v-layout>
 
-          <v-layout fluid :class="(comment.owner.id === project.owner ? 'orange lighten-5' : '') + ' comment'" style="padding-top: 10px; padding-bottom: 10px;" :key="comment.id" v-for="comment in project.comments">
+          <v-layout fluid :class="comment.owner.id === project.owner ? 'orange lighten-5' : ''" style="padding-top: 10px; padding-bottom: 10px;" :key="comment.id" v-for="comment in project.comments">
             <v-flex shrink style="margin: 10px;">
               <v-avatar color="orange" size="36px">
                 <span class="white--text headline">A</span>
@@ -79,12 +79,21 @@ export default {
     async loadProject () {
       const projectId = this.$route.params.projectId;
       const doc = await firestore.collection('projects').doc(projectId).get();
-      this.project = Object.assign({ id: doc.id }, doc.data());
+      const project = Object.assign({ id: doc.id }, doc.data());
 
-      const comments = await firestore.collection('projects').doc(projectId).collection('comments').get();
-      this.$set(this.project, 'comments', comments.docs.map(doc => {
+      const articleIds = project.articles;
+      const articles = await Promise.all(articleIds.map(async articleId => {
+        const doc = await firestore.collection('articles').doc(articleId).get();
         return Object.assign({ id: doc.id }, doc.data());
       }));
+      project.articles = articles;
+
+      const comments = await firestore.collection('projects').doc(projectId).collection('comments').get();
+      project.comments = comments.docs.map(doc => {
+        return Object.assign({ id: doc.id }, doc.data());
+      });
+
+      this.project = project;
     },
     async onMount () {
       await this.loadProject();

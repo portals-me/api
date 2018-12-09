@@ -1,105 +1,10 @@
 import { shallowMount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import VueRouter from 'vue-router';
 import store from '@/store';
 
 import * as firebase from '@firebase/testing';
 import * as fs from 'fs';
-
-Vue.use(Vuetify);
-
-const router = new VueRouter();
-
-/*
-stub.onGet(`${API}/projects/1`).reply(200, {
-  id: '1',
-  title: 'Project Meow',
-  description: 'ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。ぞうの卵はおいしいぞう。',
-  owner: '1',
-  media: [
-    'document',
-    'picture',
-    'movie',
-  ],
-  cover: {
-    sort: 'solid',
-    color: 'teal darken-2',
-  },
-  collections: [
-    {
-      id: '1',
-      name: 'My Collection',
-      items: [
-        {
-          id: '1',
-          type: 'share',
-          entity: {
-            source: 'ogp',
-            ogp: {
-              image: 'https://avatars2.githubusercontent.com/u/1870091?s=400&amp;v=4',
-              title: 'myuon/pyxis',
-              description: 'Pyxis. Contribute to myuon/pyxis development by creating an account on GitHub.',
-              url: 'https://github.com/myuon/pyxis',
-            }
-          }
-        },
-        {
-          id: '2',
-          type: 'share',
-          entity: {
-            source: 'twitter',
-            ogp: {
-              image: 'https://pbs.twimg.com/media/DtTpA7TU4AAQNx9.jpg:large',
-              title: 'みょん on Twitter',
-              description: '“様子',
-              url: 'https://twitter.com/myuon_myon/status/1068735246793756673'
-            }
-          }
-        },
-      ]
-    }
-  ],
-  comments: [
-    {
-      id: '1',
-      owner: {
-        id: '1',
-        user_name: 'me',
-      },
-      created_at: '2018/12/01 20:30:45',
-      message: 'へいへいほー\nYes\nにゃんぽよ',
-    },
-    {
-      id: '2',
-      owner: {
-        id: '2',
-        user_name: 'he',
-      },
-      created_at: '2018/12/01 20:40:45',
-      message: 'てすぽよ',
-    },
-    {
-      id: '3',
-      owner: {
-        id: '3',
-        user_name: 'she',
-      },
-      created_at: '2018/12/01 20:45:45',
-      message: 'ぽよい',
-    },
-    {
-      id: '4',
-      owner: {
-        id: '1',
-        user_name: 'me',
-      },
-      created_at: '2018/12/01 21:50:55',
-      message: 'へい',
-    },
-  ]
-});
-*/
 
 Vue.use(Vuetify);
 
@@ -153,6 +58,10 @@ describe('Project', () => {
       sort: 'solid',
       color: 'teal darken-2',
     },
+    articles: [
+      'article-1',
+      'article-2',
+    ]
   };
   const testComments = [
     {
@@ -166,6 +75,34 @@ describe('Project', () => {
       message: 'てすぽよ',
     },
   ];
+  const testArticles = [
+    {
+      id: 'article-1',
+      type: 'share',
+      entity: {
+        source: 'ogp',
+        ogp: {
+          image: 'https://avatars2.githubusercontent.com/u/1870091?s=400&amp;v=4',
+          title: 'myuon/pyxis',
+          description: 'Pyxis. Contribute to myuon/pyxis development by creating an account on GitHub.',
+          url: 'https://github.com/myuon/pyxis',
+        }
+      }
+    },
+    {
+      id: 'article-2',
+      type: 'share',
+      entity: {
+        source: 'ogp',
+        ogp: {
+          image: 'https://pbs.twimg.com/media/DtTpA7TU4AAQNx9.jpg:large',
+          title: 'みょん on Twitter',
+          description: '“様子',
+          url: 'https://twitter.com/myuon_myon/status/1068735246793756673'
+        }
+      }
+    },
+  ];
 
   let Project;
   beforeEach(async () => {
@@ -173,26 +110,38 @@ describe('Project', () => {
     testComments.forEach(async (comment) => {
       await firestore.collection('projects').doc(projectId).collection('comments').doc(comment.id).set(comment);
     });
+    testArticles.forEach(async (article) => {
+      await firestore.collection('articles').doc(article.id).set(article);
+    });
 
     let mockstore = firestore;
     jest.mock('@/instance/firestore', () => mockstore);
     Project = require('@/views/Project').default;
   });
 
-  it('should render title', async () => {
+  it('should load project', async () => {
     const wrapper = shallowMount(Project, { store, mocks: { $route } });
     await wrapper.vm.onMount();
 
-    expect(wrapper.findAll('h2').length).toBe(1);
-    expect(wrapper.find('h2').text().includes(testProject.title)).toBe(true);
+    expect(wrapper.vm.project.title).toEqual(testProject.title);
+    expect(wrapper.vm.project.description).toEqual(testProject.description);
   });
 
-  it('should render comment', async () => {
+  it('should load comments', async () => {
     const wrapper = shallowMount(Project, { store, mocks: { $route } });
     await wrapper.vm.onMount();
 
-    expect(wrapper.findAll('.comment').length).toBe(2);
-    expect(wrapper.findAll('.comment').wrappers[0].text().includes(testComments[0].message)).toBe(true);
-    expect(wrapper.findAll('.comment').wrappers[1].text().includes(testComments[1].message)).toBe(true);
+    expect(wrapper.vm.project.comments.length).toBe(testComments.length);
+    expect(wrapper.vm.project.comments[0].message).toBe(testComments[0].message);
+    expect(wrapper.vm.project.comments[1].message).toBe(testComments[1].message);
+  });
+
+  it('should load articles', async () => {
+    const wrapper = shallowMount(Project, { store, mocks: { $route } });
+    await wrapper.vm.onMount();
+
+    expect(wrapper.vm.project.articles.length).toBe(testArticles.length);
+    expect(wrapper.vm.project.articles[0].entity).toEqual(testArticles[0].entity);
+    expect(wrapper.vm.project.articles[1].entity).toEqual(testArticles[1].entity);
   });
 });
