@@ -42,7 +42,7 @@
             </v-btn>
           </v-layout>
 
-          <v-layout fluid :class="comment.owner.id === project.owner ? 'orange lighten-5' : ''" style="padding-top: 10px; padding-bottom: 10px;" :key="comment.id" v-for="comment in project.comments">
+          <v-layout fluid :class="(comment.owner.id === project.owner ? 'orange lighten-5' : '') + ' comment'" style="padding-top: 10px; padding-bottom: 10px;" :key="comment.id" v-for="comment in project.comments">
             <v-flex shrink style="margin: 10px;">
               <v-avatar color="orange" size="36px">
                 <span class="white--text headline">A</span>

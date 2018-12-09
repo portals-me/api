@@ -130,6 +130,10 @@ afterAll(async () => {
 
 describe('Project', () => {
   const projectId = '1';
+  const $route = {
+    params: { projectId }
+  };
+
   const testUser = {
     uid: 'testUser',
     displayName: 'testUserName',
@@ -149,11 +153,26 @@ describe('Project', () => {
       sort: 'solid',
       color: 'teal darken-2',
     },
-  }
+  };
+  const testComments = [
+    {
+      id: 'comment-1',
+      owner: testUser.uid,
+      message: 'へいへいほー にゃんぽよ',
+    },
+    {
+      id: 'comment-2',
+      owner: 'anonymous',
+      message: 'てすぽよ',
+    },
+  ];
 
   let Project;
   beforeEach(async () => {
     await firestore.collection('projects').doc(projectId).set(testProject);
+    testComments.forEach(async (comment) => {
+      await firestore.collection('projects').doc(projectId).collection('comments').doc(comment.id).set(comment);
+    });
 
     let mockstore = firestore;
     jest.mock('@/instance/firestore', () => mockstore);
@@ -161,17 +180,19 @@ describe('Project', () => {
   });
 
   it('should render title', async () => {
-    const wrapper = shallowMount(Project, {
-      store,
-      mocks: {
-        $route: {
-          params: { projectId }
-        }
-      }
-    });
+    const wrapper = shallowMount(Project, { store, mocks: { $route } });
     await wrapper.vm.onMount();
 
     expect(wrapper.findAll('h2').length).toBe(1);
     expect(wrapper.find('h2').text().includes(testProject.title)).toBe(true);
+  });
+
+  it('should render comment', async () => {
+    const wrapper = shallowMount(Project, { store, mocks: { $route } });
+    await wrapper.vm.onMount();
+
+    expect(wrapper.findAll('.comment').length).toBe(2);
+    expect(wrapper.findAll('.comment').wrappers[0].text().includes(testComments[0].message)).toBe(true);
+    expect(wrapper.findAll('.comment').wrappers[1].text().includes(testComments[1].message)).toBe(true);
   });
 });
