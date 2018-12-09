@@ -49,7 +49,7 @@
               </v-avatar>
             </v-flex>
             <v-flex>
-              <div><strong>{{ comment.owner.user_name }}</strong> - {{ comment.created_at }}</div>
+              <div><strong>{{ comment.owner.display_name }}</strong> - {{ comment.created_at }}</div>
               <div v-html="comment.message.split('\n').join('<br />')"></div>
             </v-flex>
           </v-layout>
@@ -89,9 +89,16 @@ export default {
       project.articles = articles;
 
       const comments = await firestore.collection('projects').doc(projectId).collection('comments').get();
-      project.comments = comments.docs.map(doc => {
-        return Object.assign({ id: doc.id }, doc.data());
-      });
+      project.comments = await Promise.all(comments.docs.map(async doc => {
+        const data = doc.data();
+        const user = await firestore.collection('users').doc(data.owner).get();
+
+        return {
+          id: doc.id,
+          message: data.message,
+          owner: Object.assign({ id: data.owner }, user.data()),
+        };
+      }));
 
       this.project = project;
     },

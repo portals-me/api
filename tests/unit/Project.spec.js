@@ -41,7 +41,7 @@ describe('Project', () => {
 
   const testUser = {
     uid: 'testUser',
-    displayName: 'testUserName',
+    display_name: 'testUserName',
   };
   const firestore = getFirestore({ uid: testUser.uid });
 
@@ -106,6 +106,11 @@ describe('Project', () => {
 
   let Project;
   beforeEach(async () => {
+    await firestore.collection('users').doc(testUser.uid).set(testUser);
+    await firestore.collection('users').doc('anonymous').set({
+      display_name: 'anonymous',
+    });
+
     await firestore.collection('projects').doc(projectId).set(testProject);
     testComments.forEach(async (comment) => {
       await firestore.collection('projects').doc(projectId).collection('comments').doc(comment.id).set(comment);
@@ -127,13 +132,15 @@ describe('Project', () => {
     expect(wrapper.vm.project.description).toEqual(testProject.description);
   });
 
-  it('should load comments', async () => {
+  it('should load comments and comment users', async () => {
     const wrapper = shallowMount(Project, { store, mocks: { $route } });
     await wrapper.vm.onMount();
 
     expect(wrapper.vm.project.comments.length).toBe(testComments.length);
     expect(wrapper.vm.project.comments[0].message).toBe(testComments[0].message);
     expect(wrapper.vm.project.comments[1].message).toBe(testComments[1].message);
+    expect(wrapper.vm.project.comments[0].owner.display_name).toBe(testUser.display_name);
+    expect(wrapper.vm.project.comments[1].owner.display_name).toBe('anonymous');
   });
 
   it('should load articles', async () => {
