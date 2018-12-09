@@ -15,7 +15,11 @@ export default new Vuex.Store({
         if (!state.initialized) {
           firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-              commit('setUser', user);
+              commit('setUser', {
+                uid: user.uid,
+                display_name: user.displayName,
+                photoURL: user.photoURL,
+              });
             }
             commit('setInitialized');
 

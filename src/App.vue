@@ -120,7 +120,7 @@
             <v-avatar color="orange" size="32px">
               <v-img :src="$store.state.user.photoURL" />
             </v-avatar>
-            &nbsp;&nbsp;{{ $store.state.user.displayName }}
+            &nbsp;&nbsp;{{ $store.state.user.display_name }}
           </v-btn>
           <v-list>
             <v-list-tile

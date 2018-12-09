@@ -16,7 +16,7 @@ describe('App view', () => {
   describe('With Test User', () => {
     const testUser = {
       uid: 'testUid',
-      displayName: 'testUserName',
+      display_name: 'testUserName',
       photoURL: '',
     };
 
@@ -36,7 +36,7 @@ describe('App view', () => {
       });
       
       it('should display name', async () => {
-        expect(wrapper.find({ name: 'v-toolbar' }).text().includes(testUser.displayName)).toBe(true);
+        expect(wrapper.find({ name: 'v-toolbar' }).text().includes(testUser.display_name)).toBe(true);
       });
 
       describe('SignOut', () => {
@@ -45,7 +45,7 @@ describe('App view', () => {
         });
 
         it('should erase display name', () => {
-          expect(wrapper.find({ name: 'v-toolbar' }).text().includes(testUser.displayName)).toBe(false);
+          expect(wrapper.find({ name: 'v-toolbar' }).text().includes(testUser.display_name)).toBe(false);
         });
   
         it('should erase user state', () => {
