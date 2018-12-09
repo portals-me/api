@@ -98,7 +98,9 @@ export default {
         .collection('projects')
         .where('owner', '==', this.$store.state.user.uid)
         .get();
-      this.projects = projects.docs.map(doc => doc.data());
+      this.projects = projects.docs.map(doc => {
+        return { ...doc.data(), id: doc.id };
+      });
     },
     async createProject () {
       const project = {
