@@ -13,8 +13,9 @@ Vue.use(VueRouter);
 const router = new VueRouter();
 
 let testNumber = 0;
+const projectIdBase = `firestore-emulator-${Date.now()}`;
 const getProjectId = () => {
-  return `firestore-emulator-${testNumber}`;
+  return `${projectIdBase}-${testNumber}`;
 };
 
 const getFirestore = (auth) => {
