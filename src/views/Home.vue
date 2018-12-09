@@ -112,7 +112,6 @@ export default {
       await this.loadProjects();
     },
     async onMount () {
-      await this.$store.dispatch('initialize');
       await this.loadProjects();
     },
   },

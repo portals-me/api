@@ -31,6 +31,11 @@ export default new Vuex.Store({
       commit('setUser', null);
     },
   },
+  getters: {
+    isAuthenticated (state) {
+      return state.user != null;
+    }
+  },
   mutations: {
     setUser (state, user) {
       state.user = user;
