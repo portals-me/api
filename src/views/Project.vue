@@ -31,13 +31,14 @@
         <v-container fluid>
           <v-layout row wrap>
             <v-textarea
+              v-model="comment"
               auto-grow
               rows="1"
               single-line
               solo
             />
 
-            <v-btn color="primary" middle>
+            <v-btn color="primary" middle @click="submitComment">
               Submit
             </v-btn>
           </v-layout>
@@ -49,7 +50,7 @@
               </v-avatar>
             </v-flex>
             <v-flex>
-              <div><strong>{{ comment.owner.display_name }}</strong> - {{ comment.created_at }}</div>
+              <div><strong>{{ comment.owner.display_name }}</strong> - {{ comment.created_at.toDate().toISOString() }}</div>
               <div v-html="comment.message.split('\n').join('<br />')"></div>
             </v-flex>
           </v-layout>
@@ -64,6 +65,7 @@
 <script>
 import OgpCard from '@/components/OgpCard';
 import firestore from '@/instance/firestore';
+import firebase from 'firebase';
 
 export default {
   components: {
@@ -71,6 +73,7 @@ export default {
   },
   data () {
     return {
+      comment: '',
       tab: null,
       project: {
         comments: [],
@@ -100,6 +103,17 @@ export default {
           }));
         })(),
       ]);
+    },
+    async submitComment () {
+      const projectId = this.$route.params.projectId;
+      await firestore.collection('projects').doc(projectId).collection('comments').add({
+        owner: this.$store.state.user.uid,
+        message: this.comment,
+        created_at: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+
+      this.comment = '';
+      await this.loadProject();
     },
     async onMount () {
       await this.loadProject();

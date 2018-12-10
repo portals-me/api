@@ -68,11 +68,13 @@ describe('Project', () => {
       id: 'comment-1',
       owner: testUser.uid,
       message: 'へいへいほー にゃんぽよ',
+      created_at: firebase.firestore.Timestamp.fromDate(new Date(2018, 10, 11)),
     },
     {
       id: 'comment-2',
       owner: 'anonymous',
       message: 'てすぽよ',
+      created_at: firebase.firestore.Timestamp.fromDate(new Date(2018, 10, 12)),
     },
   ];
   const testArticles = [
@@ -150,5 +152,20 @@ describe('Project', () => {
     expect(wrapper.vm.project.articles.length).toBe(testArticles.length);
     expect(wrapper.vm.project.articles[0].entity).toEqual(testArticles[0].entity);
     expect(wrapper.vm.project.articles[1].entity).toEqual(testArticles[1].entity);
+  });
+
+  it('should create a comment', async () => {
+    store.commit('setUser', testUser);
+    const wrapper = shallowMount(Project, { store, mocks: { $route } });
+    await wrapper.vm.onMount();
+
+    const testComment = 'hoge';
+    const number = wrapper.vm.project.comments.length;
+
+    wrapper.vm.comment = testComment;
+    await wrapper.vm.submitComment();
+
+    expect(wrapper.vm.project.comments.length).toBe(number + 1);
+    expect(wrapper.vm.project.comments[0].message).toBe(testComment);
   });
 });
