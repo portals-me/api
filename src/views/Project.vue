@@ -21,6 +21,9 @@
       <v-tab-item>
         <v-container fluid>
           <v-layout row wrap>
+            <v-btn fab small flat>
+              <v-icon>add</v-icon>
+            </v-btn>
             <v-textarea
               v-model="comment"
               auto-grow
