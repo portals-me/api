@@ -14,19 +14,10 @@
     </v-img>
 
     <v-tabs v-model="tab">
-      <v-tab ripple>Project</v-tab>
       <v-tab ripple>Comments</v-tab>
+      <v-tab ripple>Articles</v-tab>
       <v-tab ripple>Settings</v-tab>
 
-      <v-tab-item>
-        <v-layout row wrap>
-          <v-flex xs6 :key="article.id" v-for="article in project.articles">
-            <v-container fluid>
-              <ogp-card :ogp="article.entity.ogp" />
-            </v-container>
-          </v-flex>
-        </v-layout>
-      </v-tab-item>
       <v-tab-item>
         <v-container fluid>
           <v-layout row wrap>
@@ -57,6 +48,15 @@
         </v-container>
       </v-tab-item>
       <v-tab-item>
+        <v-layout row wrap>
+          <v-flex xs6 :key="article.id" v-for="article in project.articles">
+            <v-container fluid>
+              <ogp-card :ogp="article.entity.ogp" />
+            </v-container>
+          </v-flex>
+        </v-layout>
+      </v-tab-item>
+      <v-tab-item>
       </v-tab-item>
     </v-tabs>
   </v-flex>
@@ -79,29 +79,35 @@ export default {
         comments: [],
         articles: [],
       },
+      articleIds: [],
     };
   },
   methods: {
+    async loadComments () {
+      const projectId = this.$route.params.projectId;
+      const comments = await firestore.collection('projects').doc(projectId).collection('comments').get();
+      await Promise.all(comments.docs.map(async (doc, index) => {
+        const comment = doc.data();
+        const user = await firestore.collection('users').doc(comment.owner).get();
+
+        this.$set(this.project.comments, index, Object.assign(comment, { owner: Object.assign(user.data(), { id: comment.owner })}));
+      }));
+    },
+    loadArticles () {
+      Promise.all(this.articleIds.map(async (articleId, index) => {
+        const doc = await firestore.collection('articles').doc(articleId).get();
+        this.$set(this.project.articles, index, Object.assign({ id: doc.id }, doc.data()));
+      }));
+    },
     async loadProject () {
       const projectId = this.$route.params.projectId;
       const doc = await firestore.collection('projects').doc(projectId).get();
-      const articleIds = doc.data().articles;
+      this.articleIds = doc.data().articles;
       this.project = Object.assign(doc.data(), { id: doc.id, comments: [], articles: [] });
 
       await Promise.all([
-        Promise.all(articleIds.map(async (articleId, index) => {
-          const doc = await firestore.collection('articles').doc(articleId).get();
-          this.$set(this.project.articles, index, Object.assign({ id: doc.id }, doc.data()));
-        })),
-        (async () => {
-          const comments = await firestore.collection('projects').doc(projectId).collection('comments').get();
-          await Promise.all(comments.docs.map(async (doc, index) => {
-            const comment = doc.data();
-            const user = await firestore.collection('users').doc(comment.owner).get();
-
-            this.$set(this.project.comments, index, Object.assign(comment, { owner: Object.assign(user.data(), { id: comment.owner })}));
-          }));
-        })(),
+        this.loadArticles(),
+        this.loadComments(),
       ]);
     },
     async submitComment () {
@@ -113,7 +119,7 @@ export default {
       });
 
       this.comment = '';
-      await this.loadProject();
+      await this.loadComments();
     },
     async onMount () {
       await this.loadProject();
