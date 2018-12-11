@@ -68,7 +68,7 @@ describe('Project', () => {
       id: 'comment-1',
       owner: testUser.uid,
       message: 'へいへいほー にゃんぽよ',
-      created_at: firebase.firestore.Timestamp.fromDate(new Date(2018, 10, 11)),
+      created_at: firebase.firestore.Timestamp.fromDate(new Date(2018, 10, 13)),
     },
     {
       id: 'comment-2',

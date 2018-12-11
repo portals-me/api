@@ -76,7 +76,8 @@ describe('Home view with Test User', () => {
       cover: {
         sort: 'solid',
         color: 'teal darken-2',
-      }
+      },
+      created_at: firebase.firestore.Timestamp.fromDate(new Date(2018, 10, 15)),
     });
     await firestore.collection('projects').doc('test-2').set({
       title: 'Piyo-piyo',
@@ -88,7 +89,8 @@ describe('Home view with Test User', () => {
       cover: {
         sort: 'solid',
         color: 'orange lighten-2',
-      }
+      },
+      created_at: firebase.firestore.Timestamp.fromDate(new Date(2018, 10, 13)),
     });
   });
 

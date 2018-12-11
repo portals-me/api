@@ -85,7 +85,7 @@ export default {
   methods: {
     async loadComments () {
       const projectId = this.$route.params.projectId;
-      const comments = await firestore.collection('projects').doc(projectId).collection('comments').get();
+      const comments = await firestore.collection('projects').doc(projectId).collection('comments').orderBy('created_at', 'desc').limit(30).get();
       await Promise.all(comments.docs.map(async (doc, index) => {
         const comment = doc.data();
         const user = await firestore.collection('users').doc(comment.owner).get();

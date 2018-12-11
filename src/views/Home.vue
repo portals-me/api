@@ -76,6 +76,7 @@
 
 <script>
 import firestore from '@/instance/firestore';
+import firebase from 'firebase';
 
 export default {
   data () {
@@ -97,6 +98,7 @@ export default {
       const projects = await firestore
         .collection('projects')
         .where('owner', '==', this.$store.state.user.uid)
+        .orderBy('created_at', 'desc')
         .get();
       this.projects = projects.docs.map(doc => {
         return Object.assign({ id: doc.id }, doc.data());
@@ -107,6 +109,7 @@ export default {
         title: this.form.title,
         owner: this.$store.state.user.uid,
         cover: this.form.cover,
+        created_at: firebase.firestore.FieldValue.serverTimestamp(),
       };
       await firestore
         .collection('projects')
