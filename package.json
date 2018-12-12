@@ -6,7 +6,8 @@
     "serve": "vue-cli-service serve --port 5050",
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
-    "test": "FIREBASE_FIRESTORE_EMULATOR_ADDRESS='127.0.0.1:8080' yarn test:unit --coverage"
+    "test": "FIREBASE_FIRESTORE_EMULATOR_ADDRESS='127.0.0.1:8080' yarn test:unit --coverage",
+    "deploy": "yarn build && firebase deploy --only hosting"
   },
   "dependencies": {
     "axios": "^0.18.0",
