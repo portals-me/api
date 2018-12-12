@@ -26,7 +26,7 @@ router.beforeEach(async (to, from, next) => {
     }
 
     if (!store.getters.isAuthenticated) {
-      next({ path: '/signin' });
+      next({ path: `/signin?redirect=${to.path}` });
     } else {
       next();
     }

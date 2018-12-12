@@ -27,6 +27,9 @@ export default new Router({
       path: '/projects/:projectId',
       name: 'project',
       component: Project,
+      meta: {
+        requiresAuth: true,
+      }
     },
   ]
 });

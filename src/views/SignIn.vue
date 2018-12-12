@@ -40,7 +40,7 @@ export default {
         callbacks: {
           signInSuccessWithAuthResult: (authResult, redirectUrl) => {
             this.saveUser(authResult.user).then(() => {
-              this.$router.push('/');
+              this.$router.push(this.$route.query.redirect ? this.$route.query.redirect : '/');
             });
             return false;
           },
