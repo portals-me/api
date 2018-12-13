@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "cdk": "cdk"
+    "deploy:server": "cdk deploy",
+    "deploy:client": "cd client && yarn build && aws s3 sync dist s3://portals-me-web/ --acl public-read",
+    "deploy": "yarn deploy:server && yarn deploy:client"
   },
   "devDependencies": {
     "@types/node": "^8.9.4",
