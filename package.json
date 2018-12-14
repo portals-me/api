@@ -5,8 +5,6 @@
     "server": "bin/server.js"
   },
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
     "deploy:server": "cdk deploy",
     "deploy:client": "cd client && yarn build && aws s3 sync dist s3://portals-me-web/ --acl public-read",
     "deploy": "yarn deploy:server && yarn deploy:client"
