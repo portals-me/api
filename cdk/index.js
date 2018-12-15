@@ -3,6 +3,7 @@ const s3 = require('@aws-cdk/aws-s3');
 const lambda = require('@aws-cdk/aws-lambda');
 const apigateway = require('@aws-cdk/aws-apigateway');
 const iam = require('@aws-cdk/aws-iam');
+const dynamodb = require('@aws-cdk/aws-dynamodb');
 
 const service = 'portals-me';
 const stage = 'dev';
@@ -29,18 +30,48 @@ class MainStack extends cdk.Stack {
         ])
     );
 
-    const signInHandler = new lambda.Function(this, 'SignInHandler', {
-      runtime: lambda.Runtime.NodeJS810,
-      code: lambda.Code.directory('src/functions'),
-      handler: 'auth.signIn',
-      role: role,
+    const entityTable = new dynamodb.Table(this, 'EntityTable', {
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.String
+      },
+      sortKey: {
+        name: 'sort',
+        type: dynamodb.AttributeType.String
+      },
     });
+
+    const entityTableResource = /** @type {dynamodb.cloudformation.TableResource} */ (entityTable.findChild('Resource'));
+    entityTableResource.propertyOverrides.billingMode = 'PAY_PER_REQUEST';
+    delete entityTableResource.properties.provisionedThroughput;
 
     const api = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `${service}-${stage}`,
     });
 
+    const signUpHandler = new lambda.Function(this, 'SignUpHandler', {
+      runtime: lambda.Runtime.NodeJS810,
+      code: lambda.Code.directory('src/functions'),
+      handler: 'auth.signUp',
+      role: role,
+      environment: {
+        EntityTable: entityTable.findChild('Resource').ref,
+      },
+    });
+    api.root.addResource('signUp').addMethod('POST', new apigateway.LambdaIntegration(signUpHandler));
+
+    const signInHandler = new lambda.Function(this, 'SignInHandler', {
+      runtime: lambda.Runtime.NodeJS810,
+      code: lambda.Code.directory('src/functions'),
+      handler: 'auth.signIn',
+      role: role,
+      environment: {
+        EntityTable: entityTable.findChild('Resource').ref,
+      },
+    });
     api.root.addResource('signIn').addMethod('POST', new apigateway.LambdaIntegration(signInHandler));
+
+    entityTable.grantFullAccess(role);
   }
 }
 
