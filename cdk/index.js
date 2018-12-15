@@ -4,9 +4,44 @@ const lambda = require('@aws-cdk/aws-lambda');
 const apigateway = require('@aws-cdk/aws-apigateway');
 const iam = require('@aws-cdk/aws-iam');
 const dynamodb = require('@aws-cdk/aws-dynamodb');
+const fs = require('fs');
 
 const service = 'portals-me';
 const stage = 'dev';
+
+/**
+ * @param api {apigateway.IRestApiResource}
+ */
+function addCorsOptions(api) {
+  const options = api.addMethod('OPTIONS', new apigateway.MockIntegration({
+    integrationResponses: [{
+      statusCode: '200',
+      responseParameters: {
+        'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        'method.response.header.Access-Control-Allow-Origin': "'*'",
+        'method.response.header.Access-Control-Allow-Credentials': "'false'",
+        'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,GET,POST,PUT,DELETE'",
+      },
+    }],
+    passthroughBehavior: apigateway.PassthroughBehavior.Never,
+    requestTemplates: {
+      'application/json': '{"statusCode": 200}'
+    },
+  }));
+  const methodResource = /** @type {apigateway.cloudformation.MethodResource} */ (options.findChild('Resource'));
+  methodResource.propertyOverrides.methodResponses = [{
+    statusCode: '200',
+    responseModels: {
+      'application/json': 'Empty',
+    },
+    responseParameters: {
+      'method.response.header.Access-Control-Allow-Headers': true,
+      'method.response.header.Access-Control-Allow-Origin': true,
+      'method.response.header.Access-Control-Allow-Credentials': true,
+      'method.response.header.Access-Control-Allow-Methods': true,
+    },
+  }];
+}
 
 class MainStack extends cdk.Stack {
   constructor(parent, props) {
@@ -51,6 +86,7 @@ class MainStack extends cdk.Stack {
         stageName: 'dev'
       }
     });
+    addCorsOptions(api.root);
 
     const signUpHandler = new lambda.Function(this, 'SignUpHandler', {
       runtime: lambda.Runtime.NodeJS810,
@@ -71,6 +107,7 @@ class MainStack extends cdk.Stack {
       role: role,
       environment: {
         EntityTable: entityTable.findChild('Resource').ref,
+        JwtPrivate: fs.readFileSync('./token/jwtES256.key', 'utf8'),
       },
     });
     api.root.addResource('signIn').addMethod('POST', new apigateway.LambdaIntegration(signInHandler));

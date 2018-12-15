@@ -4,6 +4,7 @@ const idp = new AWS.CognitoIdentity();
 const dbc = new AWS.DynamoDB.DocumentClient();
 const { OAuth2Client } = require('google-auth-library');
 const gclient = new OAuth2Client(process.env.GClientId);
+const jsonwebtoken = require('jsonwebtoken');
 
 const gverify = async (token) => {
   const ticket = await gclient.verifyIdToken({
@@ -21,6 +22,7 @@ exports.signUp = async (event, context) => {
     },
   }).promise()).IdentityId;
 
+  // Is the verification necessary?
   const gaccount = await gverify(event.body);
 
   await dbc.put({
@@ -42,22 +44,36 @@ exports.signUp = async (event, context) => {
 };
 
 exports.signIn = async (event, context) => {
-  const idp_id = await idp.getId({
+  const idp_id = (await idp.getId({
     IdentityPoolId: 'ap-northeast-1:5221828e-b1d8-45e7-9361-b06057573aa9',
     Logins: {
       'accounts.google.com': event.body,
     },
-  }).promise();
-  const cred = await idp.getCredentialsForIdentity({
-    IdentityId: idp_id.IdentityId,
-    Logins: {
-      'accounts.google.com': event.body,
-    },
-  }).promise();
-  console.log(cred);
+  }).promise()).IdentityId;
+  console.log(idp_id);
+
+  const user = (await dbc.get({
+    TableName: process.env.EntityTable,
+    Key: {
+      id: `user##${idp_id}`,
+      sort: 'detail',
+    }
+  }).promise()).Item;
+  console.log(user);
+
+  const token = jsonwebtoken.sign({
+    id: idp_id,
+    name: user.name,
+    display_name: user.display_name,
+    picture: user.picture,
+    created_at: user.created_at,
+  }, process.env.JwtPrivate, { algorithm: 'ES256' });
 
   return {
     statusCode: 200,
-    body: 'OK',
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    body: token,
   };
 };
