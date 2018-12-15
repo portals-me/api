@@ -47,6 +47,9 @@ class MainStack extends cdk.Stack {
 
     const api = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `${service}-${stage}`,
+      deployOptions: {
+        stageName: 'dev'
+      }
     });
 
     const signUpHandler = new lambda.Function(this, 'SignUpHandler', {
