@@ -55,6 +55,7 @@ class MainStack extends cdk.Stack {
       handler: 'auth.signUp',
       role: role,
       environment: {
+        GClientId: '670077302427-0r21asrffhmuhkvfq10qa8kj86cslojn.apps.googleusercontent.com',
         EntityTable: entityTable.findChild('Resource').ref,
       },
     });
