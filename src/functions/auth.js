@@ -74,6 +74,9 @@ exports.signIn = async (event, context) => {
     headers: {
       'Access-Control-Allow-Origin': '*',
     },
-    body: token,
+    body: JSON.stringify({
+      id_token: token,
+      user: user,
+    }),
   };
 };
