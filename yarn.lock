@@ -31,10 +31,28 @@
     "@aws-cdk/aws-lambda" "^0.20.0"
     "@aws-cdk/cdk" "^0.20.0"
 
+"@aws-cdk/aws-applicationautoscaling@^0.20.0":
+  version "0.20.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-applicationautoscaling/-/aws-applicationautoscaling-0.20.0.tgz#79457dadd46bd6f371113c96e36686d3471a9628"
+  integrity sha512-bODIyvU/YjP7B87oSY0zp+LtmxIkuxlTYmLjETZuw8w1lTIJSoO2ZoAE9EfFocb6pQBsdMOOvZrDARtBu1ZwCw==
+  dependencies:
+    "@aws-cdk/aws-autoscaling-common" "^0.20.0"
+    "@aws-cdk/aws-cloudwatch" "^0.20.0"
+    "@aws-cdk/aws-iam" "^0.20.0"
+    "@aws-cdk/cdk" "^0.20.0"
+
 "@aws-cdk/aws-autoscaling-api@^0.20.0":
   version "0.20.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-autoscaling-api/-/aws-autoscaling-api-0.20.0.tgz#aabfb9d98aacdcc88d2a530f6d96c825568b079a"
   integrity sha512-zQEP/Y8byrJ9QJdraESsD+ei25bDr1zEv6Fiz/7ess1wG3XfZPNRzNeFBfNF3ynqH0ktp6ZJSLnzmbgVeD2yNA==
+  dependencies:
+    "@aws-cdk/aws-iam" "^0.20.0"
+    "@aws-cdk/cdk" "^0.20.0"
+
+"@aws-cdk/aws-autoscaling-common@^0.20.0":
+  version "0.20.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-autoscaling-common/-/aws-autoscaling-common-0.20.0.tgz#c262601f8c3b4781cec72e727f602116eead5bd4"
+  integrity sha512-nuo9jdngtARLDio80mEDGayuDfO7FT78GinDmH8/1jwV43AvVnCWw+Tkn9iV53zFPTev1/c3h4uxEoWoKWIvTQ==
   dependencies:
     "@aws-cdk/aws-iam" "^0.20.0"
     "@aws-cdk/cdk" "^0.20.0"
@@ -53,6 +71,15 @@
   integrity sha512-w9AkV51/Bx1FyINCBEsAu5OEkc5HTybgxvSzzPgBH/xcuOgazCtTAY+n+2huBc4wO6jM3MshAQccCcuWOxSb8Q==
   dependencies:
     "@aws-cdk/aws-events" "^0.20.0"
+    "@aws-cdk/aws-iam" "^0.20.0"
+    "@aws-cdk/cdk" "^0.20.0"
+
+"@aws-cdk/aws-dynamodb@^0.20.0":
+  version "0.20.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-dynamodb/-/aws-dynamodb-0.20.0.tgz#ad669b2f4de93340fffd69ab02dc29c9079da909"
+  integrity sha512-lBUKnoDSOf+PJ5S3fWzhdMUnz4TJgw+ptNIJH1xaPR41mvgXvDJfwqrjGkGuLGwwP52T5vxBTThZJFAoAo4+PA==
+  dependencies:
+    "@aws-cdk/aws-applicationautoscaling" "^0.20.0"
     "@aws-cdk/aws-iam" "^0.20.0"
     "@aws-cdk/cdk" "^0.20.0"
 
