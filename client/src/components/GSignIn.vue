@@ -11,9 +11,11 @@ export default {
     },
   },
   mounted () {
-    gapi.signin2.render('g-signin2', {
-      onsuccess: this.onSignIn,
-    });
+    if (typeof gapi !== 'undefined') {
+      gapi.signin2.render('g-signin2', {
+        onsuccess: this.onSignIn,
+      });
+    }
   },
 }
 </script>

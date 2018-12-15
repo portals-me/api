@@ -1,21 +1,13 @@
 # portals-me
 
-## Project setup
-```
-yarn install
-```
+## JWT
 
-### Compiles and hot-reloads for development
-```
-yarn run serve
-```
+Server will generate the own jwt for authentication and authorization.
 
-### Compiles and minifies for production
-```
-yarn run build
-```
+### Key Generation
 
-### Run your unit tests
-```
-yarn run test:unit
+```sh
+$ cd token
+$ ssh-keygen -t ecdsa -b 256 -f jwtES256.key
+$ openssl ec -in jwtES256.key -pubout -outform PEM -out jwtES256.key.pub
 ```
