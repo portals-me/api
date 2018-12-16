@@ -41,6 +41,8 @@ function addCorsOptions(api) {
       'method.response.header.Access-Control-Allow-Methods': true,
     },
   }];
+
+  return api;
 }
 
 class MainStack extends cdk.Stack {
@@ -117,7 +119,6 @@ class MainStack extends cdk.Stack {
         loggingLevel: apigateway.MethodLoggingLevel.Error,
       }
     });
-    addCorsOptions(api.root);
 
     const signUpHandler = new lambda.Function(this, 'SignUpHandler', {
       runtime: lambda.Runtime.NodeJS810,
@@ -129,7 +130,7 @@ class MainStack extends cdk.Stack {
         EntityTable: entityTable.findChild('Resource').ref,
       },
     });
-    api.root.addResource('signUp').addMethod('POST', new apigateway.LambdaIntegration(signUpHandler));
+    addCorsOptions(api.root.addResource('signUp')).addMethod('POST', new apigateway.LambdaIntegration(signUpHandler));
 
     const signInHandler = new lambda.Function(this, 'SignInHandler', {
       runtime: lambda.Runtime.NodeJS810,
@@ -141,7 +142,7 @@ class MainStack extends cdk.Stack {
         JwtPrivate: fs.readFileSync('./token/jwtES256.key', 'utf8'),
       },
     });
-    api.root.addResource('signIn').addMethod('POST', new apigateway.LambdaIntegration(signInHandler));
+    addCorsOptions(api.root.addResource('signIn')).addMethod('POST', new apigateway.LambdaIntegration(signInHandler));
 
     const authorizerHandler = new lambda.Function(this, 'Authorizer', {
       runtime: lambda.Runtime.NodeJS810,
@@ -175,7 +176,7 @@ class MainStack extends cdk.Stack {
         EntityTable: entityTable.findChild('Resource').ref,
       },
     });
-    api.root.addResource('projects')
+    addCorsOptions(api.root.addResource('projects'))
       .addMethod('GET', new apigateway.LambdaIntegration(projectHandler), {
         authorizationType: apigateway.AuthorizationType.Custom,
         authorizerId: authorizerResource.ref,
