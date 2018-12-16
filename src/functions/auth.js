@@ -80,3 +80,43 @@ exports.signIn = async (event, context) => {
     }),
   };
 };
+
+exports.authorize = async (event, context, callback) => {
+  let generatePolicy = (principalId, effect, resource, context) => ({
+    principalId: principalId,
+    policyDocument: {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Action: 'execute-api:Invoke',
+          Effect: effect,
+          Resource: resource,
+        }
+      ]
+    },
+    context: context,
+  });
+
+  try {
+    console.log(event);
+    const token = event.authorizationToken.split('Bearer ')[1];
+    const methodArn = event.methodArn;
+  
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+  
+    const decoded = jsonwebtoken.verify(token, process.env.JwtPublic, { algorithm: 'ES256' });
+
+    // skip scope check now
+    const isAllowed = true;
+    const effect = isAllowed ? 'Allow' : 'Deny';
+    const userId = decoded.id;
+    const authorizationContext = decoded;
+    console.log(generatePolicy(userId, effect, methodArn, authorizationContext));
+
+    callback(null, generatePolicy(userId, effect, methodArn, authorizationContext));
+  } catch (err) {
+    callback(err.message, generatePolicy('user', 'Deny', event.methodArn, null));
+  }
+};
