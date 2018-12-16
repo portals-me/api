@@ -50,19 +50,19 @@ exports.signIn = async (event, context) => {
       'accounts.google.com': event.body,
     },
   }).promise()).IdentityId;
-  console.log(idp_id);
+  const userId = `user##{idp_id}`;
 
   const user = (await dbc.get({
     TableName: process.env.EntityTable,
     Key: {
-      id: `user##${idp_id}`,
+      id: userId,
       sort: 'detail',
     }
   }).promise()).Item;
   console.log(user);
 
   const token = jsonwebtoken.sign({
-    id: idp_id,
+    id: userId,
     name: user.name,
     display_name: user.display_name,
     picture: user.picture,

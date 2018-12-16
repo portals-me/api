@@ -96,18 +96,14 @@ export default {
   },
   methods: {
     async loadProjects () {
-      this.projects = sdk.project.list();
+      this.projects = await sdk.project.list();
     },
     async createProject () {
-      const project = {
+      await sdk.project.create({
         title: this.form.title,
-        owner: this.$store.state.user.uid,
+        description: this.form.description,
         cover: this.form.cover,
-        created_at: firebase.firestore.FieldValue.serverTimestamp(),
-      };
-      await firestore
-        .collection('projects')
-        .add(project);
+      });
       await this.loadProjects();
     },
     async onMount () {
@@ -115,7 +111,6 @@ export default {
     },
   },
   mounted: async function () {
-    await this.$store.dispatch('initialize');
     await this.onMount();
   },
 }

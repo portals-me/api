@@ -7,6 +7,15 @@ const sdk = {
     return result.data;
   },
   project: {
+    create: async (form) => {
+      await axios.post(
+        `${url}/projects`,
+        form,
+        { headers: { Authroization: `Bearer ${token}` } }
+      );
+
+      return;
+    },
     list: async () => {
       const token = localStorage.getItem('id_token');
       const result = await axios.get(`${url}/projects`, {

@@ -176,8 +176,15 @@ class MainStack extends cdk.Stack {
         EntityTable: entityTable.findChild('Resource').ref,
       },
     });
-    addCorsOptions(api.root.addResource('projects'))
+
+    const apiProject = addCorsOptions(api.root.addResource('projects'));
+    apiProject
       .addMethod('GET', new apigateway.LambdaIntegration(projectHandler), {
+        authorizationType: apigateway.AuthorizationType.Custom,
+        authorizerId: authorizerResource.ref,
+      });
+    apiProject
+      .addMethod('POST', new apigateway.LambdaIntegration(projectHandler), {
         authorizationType: apigateway.AuthorizationType.Custom,
         authorizerId: authorizerResource.ref,
       });

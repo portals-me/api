@@ -1,9 +1,8 @@
+const uuid = require('uuid/v4');
 const AWS = require('aws-sdk');
 const dbc = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async (event, context) => {
-  console.log(event);
-
   try {
     const method = event.httpMethod;
     const projectId = (() => {
@@ -33,13 +32,41 @@ exports.handler = async (event, context) => {
         };
       }
     }
+    
+    if (method === 'POST') {
+      const project = JSON.parse(event.body);
+      const result = await dbc.put({
+        TableName: process.env.EntityTable,
+        Item: {
+          id: `project##${uuid()}`,
+          sort: 'detail',
+          owned_by: user.id,
+          title: project.title,
+          description: project.description,
+          cover: project.cover,
+          media: [],
+          comment_members: [user.id],
+          comment_count: 0,
+          created_at: (new Date()).getTime(),
+        }
+      }).promise();
+      console.log(result);
+
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: null,
+      };
+    }
 
     return {
-      statusCode: 200,
+      statusCode: 400,
       headers: {
         'Access-Control-Allow-Origin': '*',
       },
-      body: body,
+      body: event.body,
     };
   } catch(error) {
     const body = error.stack || JSON.stringify(error, null, 2);
