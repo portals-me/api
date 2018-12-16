@@ -80,6 +80,29 @@ class MainStack extends cdk.Stack {
     entityTableResource.propertyOverrides.billingMode = 'PAY_PER_REQUEST';
     delete entityTableResource.properties.provisionedThroughput;
 
+    entityTableResource.propertyOverrides.globalSecondaryIndexes = [
+      {
+        indexName: 'owner',
+        keySchema: [
+          {
+            attributeName: 'owned_by',
+            keyType: 'HASH',
+          },
+          {
+            attributeName: 'id',
+            keyType: 'RANGE'
+          }
+        ],
+        projection: {
+          projectionType: dynamodb.ProjectionType.All
+        },
+      }
+    ];
+    entityTableResource.properties.attributeDefinitions.push({
+      attributeName: 'owned_by',
+      attributeType: dynamodb.AttributeType.String,
+    });
+
     const api = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `${service}-${stage}`,
       deployOptions: {
