@@ -75,6 +75,7 @@ class MainStack extends cdk.Stack {
         type: dynamodb.AttributeType.String
       },
     });
+    entityTable.grantFullAccess(role);
 
     const entityTableResource = /** @type {dynamodb.cloudformation.TableResource} */ (entityTable.findChild('Resource'));
     entityTableResource.propertyOverrides.billingMode = 'PAY_PER_REQUEST';
@@ -102,11 +103,18 @@ class MainStack extends cdk.Stack {
       attributeName: 'owned_by',
       attributeType: dynamodb.AttributeType.String,
     });
+    role.addToPolicy(
+      new iam.PolicyStatement()
+        .addResource(entityTable.tableArn + "/index/*")
+        .addAction('dynamodb:*')
+    );
 
     const api = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `${service}-${stage}`,
       deployOptions: {
-        stageName: 'dev'
+        stageName: 'dev',
+        dataTraceEnabled: true,
+        loggingLevel: apigateway.MethodLoggingLevel.Error,
       }
     });
     addCorsOptions(api.root);
@@ -135,6 +143,29 @@ class MainStack extends cdk.Stack {
     });
     api.root.addResource('signIn').addMethod('POST', new apigateway.LambdaIntegration(signInHandler));
 
+    const authorizerHandler = new lambda.Function(this, 'Authorizer', {
+      runtime: lambda.Runtime.NodeJS810,
+      code: lambda.Code.directory('src/functions'),
+      handler: 'auth.authorize',
+      role: role,
+      environment: {
+        JwtPublic: fs.readFileSync('./token/jwtES256.key.pub', 'utf8'),
+      },
+    });
+
+    authorizerHandler.addPermission('AuthorizerPermission', {
+      action: 'lambda:InvokeFunction',
+      principal: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+    });
+
+    const authorizerResource = new apigateway.cloudformation.AuthorizerResource(this, 'LambdaTokenAuthorizer', {
+      restApiId: api.restApiId,
+      identitySource: 'method.request.header.Authorization',
+      type: 'TOKEN',
+      authorizerUri: `arn:aws:apigateway:ap-northeast-1:lambda:path/2015-03-31/functions/${authorizerHandler.functionArn}/invocations`,
+      name: 'LambdaTokenAuthorizer',
+    });
+
     const projectHandler = new lambda.Function(this, 'ProjectHandler', {
       runtime: lambda.Runtime.NodeJS810,
       code: lambda.Code.directory('src/functions'),
@@ -144,10 +175,11 @@ class MainStack extends cdk.Stack {
         EntityTable: entityTable.findChild('Resource').ref,
       },
     });
-    api.root.addResource('project')
-      .addMethod('GET', new apigateway.LambdaIntegration(projectHandler));
-
-    entityTable.grantFullAccess(role);
+    api.root.addResource('projects')
+      .addMethod('GET', new apigateway.LambdaIntegration(projectHandler), {
+        authorizationType: apigateway.AuthorizationType.Custom,
+        authorizerId: authorizerResource.ref,
+      });
   }
 }
 
