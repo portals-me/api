@@ -6,6 +6,15 @@ const sdk = {
     const result = await axios.post(`${url}/signIn`, gtoken);
     return result.data;
   },
+  project: {
+    list: async () => {
+      const token = localStorage.getItem('id_token');
+      const result = await axios.get(`${url}/projects`, {
+        headers: { Authroization: `Bearer ${token}` }
+      });
+      return result.data;
+    },
+  },
 };
 
 export default sdk;

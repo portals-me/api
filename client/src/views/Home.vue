@@ -77,6 +77,7 @@
 <script>
 import firestore from '@/instance/firestore';
 import firebase from 'firebase';
+import sdk from '@/app/sdk';
 
 export default {
   data () {
@@ -95,14 +96,7 @@ export default {
   },
   methods: {
     async loadProjects () {
-      const projects = await firestore
-        .collection('projects')
-        .where('owner', '==', this.$store.state.user.uid)
-        .orderBy('created_at', 'desc')
-        .get();
-      this.projects = projects.docs.map(doc => {
-        return Object.assign({ id: doc.id }, doc.data());
-      });
+      this.projects = sdk.project.list();
     },
     async createProject () {
       const project = {
@@ -121,6 +115,7 @@ export default {
     },
   },
   mounted: async function () {
+    await this.$store.dispatch('initialize');
     await this.onMount();
   },
 }
