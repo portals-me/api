@@ -118,7 +118,7 @@
             flat
           >
             <v-avatar color="orange" size="32px">
-              <v-img :src="$store.state.user.photoURL" />
+              <v-img :src="$store.state.user.picture" />
             </v-avatar>
             &nbsp;&nbsp;{{ $store.state.user.display_name }}
           </v-btn>
