@@ -135,6 +135,18 @@ class MainStack extends cdk.Stack {
     });
     api.root.addResource('signIn').addMethod('POST', new apigateway.LambdaIntegration(signInHandler));
 
+    const projectHandler = new lambda.Function(this, 'ProjectHandler', {
+      runtime: lambda.Runtime.NodeJS810,
+      code: lambda.Code.directory('src/functions'),
+      handler: 'project.handler',
+      role: role,
+      environment: {
+        EntityTable: entityTable.findChild('Resource').ref,
+      },
+    });
+    api.root.addResource('project')
+      .addMethod('GET', new apigateway.LambdaIntegration(projectHandler));
+
     entityTable.grantFullAccess(role);
   }
 }
