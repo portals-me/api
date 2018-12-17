@@ -17,13 +17,15 @@ function addCorsOptions(api) {
     integrationResponses: [{
       statusCode: '200',
       responseParameters: {
-        'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
         'method.response.header.Access-Control-Allow-Origin': "'*'",
-        'method.response.header.Access-Control-Allow-Credentials': "'false'",
         'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,GET,POST,PUT,DELETE'",
       },
+      responseTemplates: {
+        'application/json': ''
+      },
     }],
-    passthroughBehavior: apigateway.PassthroughBehavior.Never,
+    passthroughBehavior: apigateway.PassthroughBehavior.WhenNoMatch,
     requestTemplates: {
       'application/json': '{"statusCode": 200}'
     },
@@ -35,10 +37,9 @@ function addCorsOptions(api) {
       'application/json': 'Empty',
     },
     responseParameters: {
-      'method.response.header.Access-Control-Allow-Headers': true,
-      'method.response.header.Access-Control-Allow-Origin': true,
-      'method.response.header.Access-Control-Allow-Credentials': true,
-      'method.response.header.Access-Control-Allow-Methods': true,
+      'method.response.header.Access-Control-Allow-Headers': false,
+      'method.response.header.Access-Control-Allow-Origin': false,
+      'method.response.header.Access-Control-Allow-Methods': false,
     },
   }];
 
@@ -185,6 +186,11 @@ class MainStack extends cdk.Stack {
       });
     apiProject
       .addMethod('POST', new apigateway.LambdaIntegration(projectHandler), {
+        authorizationType: apigateway.AuthorizationType.Custom,
+        authorizerId: authorizerResource.ref,
+      });
+    addCorsOptions(apiProject.addResource('{projectId}'))
+      .addMethod('GET', new apigateway.LambdaIntegration(projectHandler), {
         authorizationType: apigateway.AuthorizationType.Custom,
         authorizerId: authorizerResource.ref,
       });

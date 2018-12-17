@@ -13,8 +13,6 @@ exports.handler = async (event, context) => {
 
     if (method === 'GET') {
       if (projectId === '') {
-        console.log(event.headers);
-
         const result = await dbc.query({
           TableName: process.env.EntityTable,
           IndexName: 'owner',
@@ -31,6 +29,22 @@ exports.handler = async (event, context) => {
             'Access-Control-Allow-Origin': '*',
           },
           body: JSON.stringify(result.Items),
+        };
+      } else {
+        const result = await dbc.get({
+          TableName: process.env.EntityTable,
+          Key: {
+            id: `project##${projectId}`,
+            sort: 'detail',
+          }
+        }).promise();
+
+        return {
+          statusCode: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          },
+          body: JSON.stringify(result.Item),
         };
       }
     }
