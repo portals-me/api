@@ -119,3 +119,16 @@ exports.authorize = async (event, context, callback) => {
     callback(err.message, generatePolicy('user', 'Deny', event.methodArn, null));
   }
 };
+
+exports.getMe = async (event, context) => {
+  const token = event.headers.Authorization.split('Bearer ')[1];
+  const decoded = jsonwebtoken.verify(token, process.env.JwtPublic, { algorithm: 'ES256' });
+
+  return {
+    statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    body: JSON.stringify(decoded),
+  };
+};

@@ -145,6 +145,17 @@ class MainStack extends cdk.Stack {
     });
     addCorsOptions(api.root.addResource('signIn')).addMethod('POST', new apigateway.LambdaIntegration(signInHandler));
 
+    const getMeHandler = new lambda.Function(this, 'getMeHandler', {
+      runtime: lambda.Runtime.NodeJS810,
+      code: lambda.Code.directory('src/functions'),
+      handler: 'auth.getMe',
+      role: role,
+      environment: {
+        JwtPublic: fs.readFileSync('./token/jwtES256.key.pub', 'utf8'),
+      },
+    });
+    addCorsOptions(api.root.addResource('users').addResource('me')).addMethod('GET', new apigateway.LambdaIntegration(getMeHandler));
+
     const authorizerHandler = new lambda.Function(this, 'Authorizer', {
       runtime: lambda.Runtime.NodeJS810,
       code: lambda.Code.directory('src/functions'),
