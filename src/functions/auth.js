@@ -1,4 +1,3 @@
-const uuid = require('uuid/v4');
 const AWS = require('aws-sdk');
 const idp = new AWS.CognitoIdentity();
 const dbc = new AWS.DynamoDB.DocumentClient();
@@ -50,7 +49,7 @@ exports.signIn = async (event, context) => {
       'accounts.google.com': event.body,
     },
   }).promise()).IdentityId;
-  const userId = `user##{idp_id}`;
+  const userId = `user##${idp_id}`;
 
   const user = (await dbc.get({
     TableName: process.env.EntityTable,

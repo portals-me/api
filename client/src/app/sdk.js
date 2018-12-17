@@ -11,16 +11,14 @@ const sdk = {
       await axios.post(
         `${url}/projects`,
         form,
-        { headers: { Authroization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       return;
     },
     list: async () => {
       const token = localStorage.getItem('id_token');
-      const result = await axios.get(`${url}/projects`, {
-        headers: { Authroization: `Bearer ${token}` }
-      });
+      const result = await axios.get(`${url}/projects`, { headers: { Authorization: `Bearer ${token}` } });
       return result.data;
     },
   },
