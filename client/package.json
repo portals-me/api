@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "test:unit": "vue-cli-service test:unit"
+    "test:unit": "vue-cli-service test:unit",
+    "deploy": "yarn build && aws s3 sync dist s3://portals-me/ --acl public-read"
   },
   "dependencies": {
     "aws-sdk": "^2.376.0",

@@ -1,5 +1,6 @@
 import axios from 'axios';
 const url = 'https://fubo4rnsod.execute-api.ap-northeast-1.amazonaws.com/dev';
+const token = localStorage.getItem('id_token');
 
 const sdk = {
   signIn: async (gtoken) => {
@@ -17,7 +18,6 @@ const sdk = {
       return;
     },
     list: async () => {
-      const token = localStorage.getItem('id_token');
       const result = await axios.get(`${url}/projects`, { headers: { Authorization: `Bearer ${token}` } });
       return result.data;
     },
