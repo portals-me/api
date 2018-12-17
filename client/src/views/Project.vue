@@ -69,6 +69,7 @@
 import OgpCard from '@/components/OgpCard';
 import firestore from '@/instance/firestore';
 import firebase from 'firebase';
+import sdk from '@/app/sdk';
 
 export default {
   components: {
@@ -104,6 +105,8 @@ export default {
     },
     async loadProject () {
       const projectId = this.$route.params.projectId;
+      console.log(await sdk.project.get(projectId));
+
       const doc = await firestore.collection('projects').doc(projectId).get();
       this.articleIds = doc.data().articles;
       this.project = Object.assign(doc.data(), { id: doc.id, comments: [], articles: [] });

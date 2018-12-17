@@ -17,6 +17,10 @@ const sdk = {
 
       return;
     },
+    get: async (projectId) => {
+      const result = await axios.get(`${url}/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } });
+      return result.data;
+    },
     list: async () => {
       const result = await axios.get(`${url}/projects`, { headers: { Authorization: `Bearer ${token}` } });
       return result.data;
