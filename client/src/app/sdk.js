@@ -7,6 +7,12 @@ const sdk = {
     const result = await axios.post(`${url}/signIn`, gtoken);
     return result.data;
   },
+  user: {
+    me: async () => {
+      const result = await axios.get(`${url}/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+      return result.data;
+    },
+  },
   project: {
     create: async (form) => {
       await axios.post(

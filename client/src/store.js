@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import firebase from 'firebase';
+import sdk from '@/app/sdk';
 
 Vue.use(Vuex);
 
@@ -13,18 +13,16 @@ export default new Vuex.Store({
     initialize ({ state, commit }) {
       return new Promise((resolve, reject) => {
         if (!state.initialized) {
-          firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-              commit('setUser', {
-                uid: user.uid,
-                display_name: user.displayName,
-                photoURL: user.photoURL,
-              });
-            }
-            commit('setInitialized');
+          sdk.user.me()
+            .then(user => {
+              commit('setUser', user);
+              commit('setInitialized');
 
-            resolve();
-          });
+              resolve();
+            })
+            .catch(_ => {
+              reject();
+            });
         } else {
           resolve();
         }
