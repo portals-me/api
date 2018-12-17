@@ -13,6 +13,8 @@ exports.handler = async (event, context) => {
 
     if (method === 'GET') {
       if (projectId === '') {
+        console.log(event.headers);
+
         const result = await dbc.query({
           TableName: process.env.EntityTable,
           IndexName: 'owner',
