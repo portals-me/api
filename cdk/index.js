@@ -205,6 +205,23 @@ class MainStack extends cdk.Stack {
         authorizationType: apigateway.AuthorizationType.Custom,
         authorizerId: authorizerResource.ref,
       });
+
+    const commentHandler = new lambda.Function(this, 'CommentHandler', {
+      runtime: lambda.Runtime.NodeJS810,
+      code: lambda.Code.directory('src/functions'),
+      handler: 'comment.handler',
+      role: role,
+      environment: {
+        EntityTable: entityTable.findChild('Resource').ref,
+      },
+    });
+
+    const apiComment = addCorsOptions(api.root.addResource('comments'));
+    apiComment
+      .addMethod('POST', new apigateway.LambdaIntegration(commentHandler), {
+        authorizationType: apigateway.AuthorizationType.Custom,
+        authorizerId: authorizerResource.ref,
+      });
   }
 }
 

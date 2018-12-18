@@ -13,6 +13,15 @@ const sdk = {
       return result.data;
     },
   },
+  comment: {
+    create: async (projectId, message) => {
+      const result = await axios.post(`${url}/comments`, {
+        projectId,
+        message,
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      return result.data;
+    },
+  },
   project: {
     create: async (form) => {
       await axios.post(

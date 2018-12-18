@@ -105,24 +105,17 @@ export default {
     },
     async loadProject () {
       const projectId = this.$route.params.projectId;
-      console.log(await sdk.project.get(projectId));
-
-      const doc = await firestore.collection('projects').doc(projectId).get();
-      this.articleIds = doc.data().articles;
-      this.project = Object.assign(doc.data(), { id: doc.id, comments: [], articles: [] });
+      const project = await sdk.project.get(projectId);
+      this.project = Object.assign(project, { comments: [], articles: [] });
 
       await Promise.all([
-        this.loadArticles(),
-        this.loadComments(),
+//        this.loadArticles(),
+//        this.loadComments(),
       ]);
     },
     async submitComment () {
       const projectId = this.$route.params.projectId;
-      await firestore.collection('projects').doc(projectId).collection('comments').add({
-        owner: this.$store.state.user.uid,
-        message: this.comment,
-        created_at: firebase.firestore.FieldValue.serverTimestamp(),
-      });
+      await sdk.comment.create(projectId, this.comment);
 
       this.comment = '';
       await this.loadComments();
