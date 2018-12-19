@@ -31,20 +31,41 @@ exports.handler = async (event, context) => {
           body: JSON.stringify(result.Items),
         };
       } else {
-        const result = await dbc.get({
+        const project = (await dbc.get({
           TableName: process.env.EntityTable,
           Key: {
             id: `project##${projectId}`,
             sort: 'detail',
           }
-        }).promise();
+        }).promise()).Item;
 
+        const comments = (await dbc.query({
+          TableName: process.env.EntityTable,
+          KeyConditionExpression: 'id = :id and begins_with(sort, :sort)',
+          ExpressionAttributeValues: {
+            ':id': project.id,
+            ':sort': 'comment',
+          },
+        }).promise()).Items;
+
+        const members = (await Promise.all(
+          project.comment_members.map(async (memberId) => {
+            return (await dbc.get({
+              TableName: process.env.EntityTable,
+              Key: { id: memberId, sort: 'detail' },
+            }).promise()).Item;
+          })
+        )).reduce((obj, item) => {
+          obj[item.id] = item;
+          return obj;
+        }, {});
+  
         return {
           statusCode: 200,
           headers: {
             'Access-Control-Allow-Origin': '*',
           },
-          body: JSON.stringify(result.Item),
+          body: JSON.stringify(Object.assign(project, { comments, members })),
         };
       }
     }

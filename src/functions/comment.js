@@ -4,10 +4,6 @@ const dbc = new AWS.DynamoDB.DocumentClient();
 exports.handler = async (event, context) => {
   try {
     const method = event.httpMethod;
-    const commentId = (() => {
-      const latter = event.path.split('/comments')[1];
-      return latter.startsWith('/') ? latter.substring(1) : latter;
-    })();
     const user = event.requestContext.authorizer;
 
     if (method === 'POST') {
