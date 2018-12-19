@@ -200,7 +200,8 @@ class MainStack extends cdk.Stack {
         authorizationType: apigateway.AuthorizationType.Custom,
         authorizerId: authorizerResource.ref,
       });
-    addCorsOptions(apiProject.addResource('{projectId}'))
+    const apiProjectWithId = addCorsOptions(apiProject.addResource('{projectId}'));
+    apiProjectWithId
       .addMethod('GET', new apigateway.LambdaIntegration(projectHandler), {
         authorizationType: apigateway.AuthorizationType.Custom,
         authorizerId: authorizerResource.ref,

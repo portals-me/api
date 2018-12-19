@@ -37,14 +37,14 @@
             </v-btn>
           </v-layout>
 
-          <v-layout fluid :class="comment.owner.id === project.owner ? 'orange lighten-5' : ''" style="padding-top: 10px; padding-bottom: 10px;" :key="comment.id" v-for="comment in project.comments">
+          <v-layout fluid :class="comment.owned_by === project.owned_by ? 'orange lighten-5' : ''" style="padding-top: 10px; padding-bottom: 10px;" :key="comment.sort" v-for="comment in project.comments">
             <v-flex shrink style="margin: 10px;">
-              <v-avatar color="orange" size="36px">
-                <span class="white--text headline">A</span>
+              <v-avatar color="orange" size="32px">
+                <v-img :src="project.members[comment.owned_by].picture" />
               </v-avatar>
             </v-flex>
             <v-flex>
-              <div><strong>{{ comment.owner.display_name }}</strong> - {{ comment.created_at.toDate().toISOString() }}</div>
+              <div><strong>{{ project.members[comment.owned_by].display_name }}</strong> - {{ new Date(comment.created_at).toISOString() }}</div>
               <div v-html="comment.message.split('\n').join('<br />')"></div>
             </v-flex>
           </v-layout>
@@ -87,16 +87,6 @@ export default {
     };
   },
   methods: {
-    async loadComments () {
-      const projectId = this.$route.params.projectId;
-      const comments = await firestore.collection('projects').doc(projectId).collection('comments').orderBy('created_at', 'desc').limit(30).get();
-      await Promise.all(comments.docs.map(async (doc, index) => {
-        const comment = doc.data();
-        const user = await firestore.collection('users').doc(comment.owner).get();
-
-        this.$set(this.project.comments, index, Object.assign(comment, { owner: Object.assign(user.data(), { id: comment.owner })}));
-      }));
-    },
     loadArticles () {
       Promise.all(this.articleIds.map(async (articleId, index) => {
         const doc = await firestore.collection('articles').doc(articleId).get();
@@ -106,12 +96,7 @@ export default {
     async loadProject () {
       const projectId = this.$route.params.projectId;
       const project = await sdk.project.get(projectId);
-      this.project = Object.assign(project, { comments: [], articles: [] });
-
-      await Promise.all([
-//        this.loadArticles(),
-//        this.loadComments(),
-      ]);
+      this.project = Object.assign(project, { articles: [] });
     },
     async submitComment () {
       const projectId = this.$route.params.projectId;
