@@ -32,7 +32,7 @@ exports.handler = async (event, context) => {
       }).promise();
 
       await dbc.update({
-        TableName: project.id,
+        TableName: process.env.EntityTable,
         Key: {
           id: project.id,
           sort: 'detail',
@@ -48,7 +48,7 @@ exports.handler = async (event, context) => {
         members.push(user.id);
 
         await dbc.update({
-          TableName: project.id,
+          TableName: process.env.EntityTable,
           Key: {
             id: project.id,
             sort: 'detail',
