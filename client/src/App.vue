@@ -148,8 +148,12 @@ export default {
   },
   methods: {
     async signOut () {
-      this.$store.dispatch('signOut');
-      this.$router.push('/signin');
+      if (typeof gapi !== 'undefined') {
+        await gapi.auth2.getAuthInstance().signOut();
+        localStorage.setItem('id_token', '');
+        this.$store.dispatch('signOut');
+        this.$router.push('/signin');
+      }
     },
     async onMount () {
       await this.$store.dispatch('initialize');

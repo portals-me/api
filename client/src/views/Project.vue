@@ -103,7 +103,7 @@ export default {
       await sdk.comment.create(projectId, this.comment);
 
       this.comment = '';
-      await this.loadComments();
+//      await this.loadComments();
     },
     async onMount () {
       await this.loadProject();

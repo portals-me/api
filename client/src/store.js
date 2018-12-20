@@ -29,7 +29,6 @@ export default new Vuex.Store({
       });
     },
     signOut ({ commit }) {
-      firebase.auth().signOut();
       commit('setUser', null);
     },
   },
