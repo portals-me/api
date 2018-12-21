@@ -223,6 +223,11 @@ class MainStack extends cdk.Stack {
         authorizationType: apigateway.AuthorizationType.Custom,
         authorizerId: authorizerResource.ref,
       });
+    addCorsOptions(apiProjectWithId.addResource('comments'))
+      .addMethod('GET', new apigateway.LambdaIntegration(commentHandler), {
+        authorizationType: apigateway.AuthorizationType.Custom,
+        authorizerId: authorizerResource.ref,
+      });
   }
 }
 

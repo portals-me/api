@@ -87,7 +87,11 @@ export default {
     };
   },
   methods: {
-    loadArticles () {
+    async loadComments () {
+      const projectId = this.$route.params.projectId;
+      this.project.comments = await sdk.comment.list(projectId);
+    },
+    async loadArticles () {
       Promise.all(this.articleIds.map(async (articleId, index) => {
         const doc = await firestore.collection('articles').doc(articleId).get();
         this.$set(this.project.articles, index, Object.assign({ id: doc.id }, doc.data()));
@@ -103,7 +107,7 @@ export default {
       await sdk.comment.create(projectId, this.comment);
 
       this.comment = '';
-//      await this.loadComments();
+      await this.loadComments();
     },
     async onMount () {
       await this.loadProject();
