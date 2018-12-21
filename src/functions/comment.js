@@ -65,6 +65,27 @@ exports.handler = async (event, context) => {
       };
     }
 
+    if (method === 'GET') {
+      const projectId = event.path.split('/projects/')[1].split('/comments')[0];
+
+      const comments = (await dbc.query({
+        TableName: process.env.EntityTable,
+        KeyConditionExpression: 'id = :id and begins_with(sort, :sort)',
+        ExpressionAttributeValues: {
+          ':id': projectId,
+          ':sort': 'comment',
+        },
+      }).promise()).Items;
+
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify(comments),
+      }
+    }
+
     return {
       statusCode: 400,
       headers: {
