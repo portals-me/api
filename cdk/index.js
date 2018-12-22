@@ -130,6 +130,7 @@ class MainStack extends cdk.Stack {
         GClientId: '670077302427-0r21asrffhmuhkvfq10qa8kj86cslojn.apps.googleusercontent.com',
         EntityTable: entityTable.findChild('Resource').ref,
       },
+      tracing: lambda.Tracing.Active,
     });
     addCorsOptions(api.root.addResource('signUp')).addMethod('POST', new apigateway.LambdaIntegration(signUpHandler));
 
@@ -142,6 +143,7 @@ class MainStack extends cdk.Stack {
         EntityTable: entityTable.findChild('Resource').ref,
         JwtPrivate: fs.readFileSync('./token/jwtES256.key', 'utf8'),
       },
+      tracing: lambda.Tracing.Active,
     });
     addCorsOptions(api.root.addResource('signIn')).addMethod('POST', new apigateway.LambdaIntegration(signInHandler));
 
@@ -153,6 +155,7 @@ class MainStack extends cdk.Stack {
       environment: {
         JwtPublic: fs.readFileSync('./token/jwtES256.key.pub', 'utf8'),
       },
+      tracing: lambda.Tracing.Active,
     });
     addCorsOptions(api.root.addResource('users').addResource('me')).addMethod('GET', new apigateway.LambdaIntegration(getMeHandler));
 
@@ -164,6 +167,7 @@ class MainStack extends cdk.Stack {
       environment: {
         JwtPublic: fs.readFileSync('./token/jwtES256.key.pub', 'utf8'),
       },
+      tracing: lambda.Tracing.Active,
     });
 
     authorizerHandler.addPermission('AuthorizerPermission', {
@@ -187,6 +191,7 @@ class MainStack extends cdk.Stack {
       environment: {
         EntityTable: entityTable.findChild('Resource').ref,
       },
+      tracing: lambda.Tracing.Active,
     });
 
     const apiProject = addCorsOptions(api.root.addResource('projects'));
@@ -215,6 +220,7 @@ class MainStack extends cdk.Stack {
       environment: {
         EntityTable: entityTable.findChild('Resource').ref,
       },
+      tracing: lambda.Tracing.Active,
     });
 
     const apiComment = addCorsOptions(api.root.addResource('comments'));
