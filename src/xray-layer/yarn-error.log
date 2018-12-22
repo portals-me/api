@@ -1,0 +1,41 @@
+Arguments: 
+  /home/ioijoi/.nvm/versions/node/v8.11.3/bin/node /home/ioijoi/.nvm/versions/node/v8.11.3/bin/yarn add xray-sdk
+
+PATH: 
+  /home/linuxbrew/.linuxbrew/bin:/home/ioijoi/.zplug/bin:/home/ioijoi/.cargo/bin:/home/ioijoi/.nvm/versions/node/v8.11.3/bin:/home/ioijoi/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Program Files (x86)/Common Files/Oracle/Java/javapath_target_1427109:/mnt/c/Program Files (x86)/Intel/iCLS Client:/mnt/c/Program Files/Intel/iCLS Client:/mnt/c/Windows/System32:/mnt/c/Windows:/mnt/c/Windows/System32/wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/DAL:/mnt/c/Program Files (x86)/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files/Intel/Intel(R) Management Engine Components/IPT:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Windows/System32/OpenSSH:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/CMake/bin:/mnt/c/Program Files/MacType:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/mnt/c/Users/ioijo/AppData/Roaming/local/bin:/mnt/c/Users/ioijo/.cargo/bin:/mnt/c/Users/ioijo/AppData/Local/Programs/Python/Python37/Scripts:/mnt/c/Users/ioijo/AppData/Local/Programs/Python/Python37:/mnt/c/Users/ioijo/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/ioijo/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/ioijo/AppData/Local/GitHubDesktop/bin:/mnt/c/texlive/2018/bin/win32:/snap/bin
+
+Yarn version: 
+  1.12.3
+
+Node version: 
+  8.11.3
+
+Platform: 
+  linux x64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/xray-sdk: Not found
+      at Request.params.callback [as _callback] (/home/ioijoi/.nvm/versions/node/v8.11.3/lib/node_modules/yarn/lib/cli.js:65894:18)
+      at Request.self.callback (/home/ioijoi/.nvm/versions/node/v8.11.3/lib/node_modules/yarn/lib/cli.js:129018:22)
+      at emitTwo (events.js:126:13)
+      at Request.emit (events.js:214:7)
+      at Request.<anonymous> (/home/ioijoi/.nvm/versions/node/v8.11.3/lib/node_modules/yarn/lib/cli.js:129990:10)
+      at emitOne (events.js:116:13)
+      at Request.emit (events.js:211:7)
+      at IncomingMessage.<anonymous> (/home/ioijoi/.nvm/versions/node/v8.11.3/lib/node_modules/yarn/lib/cli.js:129912:12)
+      at Object.onceWrapper (events.js:313:30)
+      at emitNone (events.js:111:20)
+
+npm manifest: 
+  {
+    "name": "xray-layer",
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT"
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

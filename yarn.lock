@@ -22,6 +22,16 @@
     "@aws-cdk/cdk" "^0.20.0"
     "@aws-cdk/cx-api" "^0.20.0"
 
+"@aws-cdk/assets@^0.21.0":
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/assets/-/assets-0.21.0.tgz#76bdce4c65eb849b04fb9f2b35ef4dfb358cb43b"
+  integrity sha512-R76ZXkpNGn/ozqhfkwTGlWceFyCbOLUb1C8hNDm5DSBYg8aF+IR3Tnj6bNCR2KYcTG2j9VwCsStcQ6KbPE7Rlw==
+  dependencies:
+    "@aws-cdk/aws-iam" "^0.21.0"
+    "@aws-cdk/aws-s3" "^0.21.0"
+    "@aws-cdk/cdk" "^0.21.0"
+    "@aws-cdk/cx-api" "^0.21.0"
+
 "@aws-cdk/aws-apigateway@^0.20.0":
   version "0.20.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-apigateway/-/aws-apigateway-0.20.0.tgz#3339d297a635abfec0aed50a905cd5f65f7ae581"
@@ -74,6 +84,15 @@
     "@aws-cdk/aws-iam" "^0.20.0"
     "@aws-cdk/cdk" "^0.20.0"
 
+"@aws-cdk/aws-codepipeline-api@^0.21.0":
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-codepipeline-api/-/aws-codepipeline-api-0.21.0.tgz#745bebee3d7cf365d40de0d447518c441a5bcc7e"
+  integrity sha512-rUGfCIyyy33hqeNGrFchemiwhPEaoDZkCzPyVhCiRKaeB9wwvaB1A2x4XCs8GKlY8MrNOG5U/yCven0+u8uw2A==
+  dependencies:
+    "@aws-cdk/aws-events" "^0.21.0"
+    "@aws-cdk/aws-iam" "^0.21.0"
+    "@aws-cdk/cdk" "^0.21.0"
+
 "@aws-cdk/aws-dynamodb@^0.20.0":
   version "0.20.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-dynamodb/-/aws-dynamodb-0.20.0.tgz#ad669b2f4de93340fffd69ab02dc29c9079da909"
@@ -100,12 +119,27 @@
     "@aws-cdk/aws-iam" "^0.20.0"
     "@aws-cdk/cdk" "^0.20.0"
 
+"@aws-cdk/aws-events@^0.21.0":
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-events/-/aws-events-0.21.0.tgz#d84545691c261fa95d8243168fd9cd6c668200df"
+  integrity sha512-dDwXIWm1rbduIvjl6et3lXB01X7hbprJjIwo1PuzpwSQxb0m1B4yZbiCioroSPC/rpvsdIZ9BBSNRfQOudFfJA==
+  dependencies:
+    "@aws-cdk/aws-iam" "^0.21.0"
+    "@aws-cdk/cdk" "^0.21.0"
+
 "@aws-cdk/aws-iam@^0.20.0":
   version "0.20.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-iam/-/aws-iam-0.20.0.tgz#d26ba4fb62065f8dc3abc2a985fa5d4ccbd7bc53"
   integrity sha512-fl6n5zAN5S/stry6+ij8Ziu60J/C6oUA9DWrsYRAUzNpZNIr2Cgo8tv0SrgAV/t7635ged5YtSzlHj1Gdc1bjw==
   dependencies:
     "@aws-cdk/cdk" "^0.20.0"
+
+"@aws-cdk/aws-iam@^0.21.0":
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-iam/-/aws-iam-0.21.0.tgz#7e2fd11ede5cf6e5e8d4a3e58afaaef5f33380fa"
+  integrity sha512-xtkOY3ZWyY304hzcbV5NczXcyRb6064C6UsnzBEOKeYki+0Tq5XeDdRgDBaHe3l8librQJhhxZoXl8vWtFvLJQ==
+  dependencies:
+    "@aws-cdk/cdk" "^0.21.0"
 
 "@aws-cdk/aws-kms@^0.20.0":
   version "0.20.0"
@@ -114,6 +148,14 @@
   dependencies:
     "@aws-cdk/aws-iam" "^0.20.0"
     "@aws-cdk/cdk" "^0.20.0"
+
+"@aws-cdk/aws-kms@^0.21.0":
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-kms/-/aws-kms-0.21.0.tgz#4726fdb8b7b5537118c35e9a4fb961223e7dd8f6"
+  integrity sha512-fuvbtR6qSpOVs1xQoPiNTm89zSIC3sGd/C8/+Vm1vfi19tvQ5koI5qeA6UBBpsKP5vlZR91brDRCeuWY15LJCw==
+  dependencies:
+    "@aws-cdk/aws-iam" "^0.21.0"
+    "@aws-cdk/cdk" "^0.21.0"
 
 "@aws-cdk/aws-lambda@^0.20.0":
   version "0.20.0"
@@ -150,6 +192,13 @@
   dependencies:
     "@aws-cdk/cdk" "^0.20.0"
 
+"@aws-cdk/aws-s3-notifications@^0.21.0":
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-s3-notifications/-/aws-s3-notifications-0.21.0.tgz#162d2bf4493d45ccb118f0ba0d764495114b16d1"
+  integrity sha512-MdIlaPtqX6PF18vvG+Q7nGR8it7HaHZOqLayEwz9EBgYcT39H6QUMs8gAcPcA1Ch6hJFfE/JXoTr2taVUXNvuw==
+  dependencies:
+    "@aws-cdk/cdk" "^0.21.0"
+
 "@aws-cdk/aws-s3@^0.20.0":
   version "0.20.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-s3/-/aws-s3-0.20.0.tgz#ceeb08ba0461907d4056ea1b00f4b8bc4c301988"
@@ -160,6 +209,17 @@
     "@aws-cdk/aws-kms" "^0.20.0"
     "@aws-cdk/aws-s3-notifications" "^0.20.0"
     "@aws-cdk/cdk" "^0.20.0"
+
+"@aws-cdk/aws-s3@^0.21.0":
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-s3/-/aws-s3-0.21.0.tgz#dc32ba53bb06d9e1b5ad2fecb8d316bb5942fac1"
+  integrity sha512-3mqH3CO6pCXV/pT9rIfPqhG0w7nCLE8Mq7oqM82YCP5TXWFjzAIkuNFnGh4AE1/LmEVS0S3ngTQ7dmRF1A+STw==
+  dependencies:
+    "@aws-cdk/aws-codepipeline-api" "^0.21.0"
+    "@aws-cdk/aws-iam" "^0.21.0"
+    "@aws-cdk/aws-kms" "^0.21.0"
+    "@aws-cdk/aws-s3-notifications" "^0.21.0"
+    "@aws-cdk/cdk" "^0.21.0"
 
 "@aws-cdk/aws-sqs@^0.20.0":
   version "0.20.0"

@@ -4,7 +4,9 @@ const lambda = require('@aws-cdk/aws-lambda');
 const apigateway = require('@aws-cdk/aws-apigateway');
 const iam = require('@aws-cdk/aws-iam');
 const dynamodb = require('@aws-cdk/aws-dynamodb');
+const assets = require('@aws-cdk/assets');
 const fs = require('fs');
+const path = require('path');
 
 const service = 'portals-me';
 const stage = 'dev';
@@ -121,6 +123,21 @@ class MainStack extends cdk.Stack {
       }
     });
 
+    // lambda layer for xray-sdk
+    const asset = new assets.ZipDirectoryAsset(this, 'XRayLayerAsset', {
+      path: path.join(__dirname, '../src/xray-layer')
+    });
+
+    const xraylayer = new cdk.Resource(this, 'XRayLayer', {
+      type: 'AWS::Lambda::LayerVersion',
+      properties: {
+        Content: {
+          S3Bucket: asset.s3BucketName,
+          S3Key: asset.s3ObjectKey,
+        }
+      }
+    });
+
     const signUpHandler = new lambda.Function(this, 'SignUpHandler', {
       runtime: lambda.Runtime.NodeJS810,
       code: lambda.Code.directory('src/functions'),
@@ -133,6 +150,7 @@ class MainStack extends cdk.Stack {
       tracing: lambda.Tracing.Active,
     });
     addCorsOptions(api.root.addResource('signUp')).addMethod('POST', new apigateway.LambdaIntegration(signUpHandler));
+    signUpHandler.findChild('Resource').propertyOverrides.layers = [xraylayer.ref];
 
     const signInHandler = new lambda.Function(this, 'SignInHandler', {
       runtime: lambda.Runtime.NodeJS810,
@@ -146,6 +164,7 @@ class MainStack extends cdk.Stack {
       tracing: lambda.Tracing.Active,
     });
     addCorsOptions(api.root.addResource('signIn')).addMethod('POST', new apigateway.LambdaIntegration(signInHandler));
+    signInHandler.findChild('Resource').propertyOverrides.layers = [xraylayer.ref];
 
     const getMeHandler = new lambda.Function(this, 'getMeHandler', {
       runtime: lambda.Runtime.NodeJS810,
@@ -158,6 +177,7 @@ class MainStack extends cdk.Stack {
       tracing: lambda.Tracing.Active,
     });
     addCorsOptions(api.root.addResource('users').addResource('me')).addMethod('GET', new apigateway.LambdaIntegration(getMeHandler));
+    getMeHandler.findChild('Resource').propertyOverrides.layers = [xraylayer.ref];
 
     const authorizerHandler = new lambda.Function(this, 'Authorizer', {
       runtime: lambda.Runtime.NodeJS810,
@@ -169,6 +189,7 @@ class MainStack extends cdk.Stack {
       },
       tracing: lambda.Tracing.Active,
     });
+    authorizerHandler.findChild('Resource').propertyOverrides.layers = [xraylayer.ref];
 
     authorizerHandler.addPermission('AuthorizerPermission', {
       action: 'lambda:InvokeFunction',
@@ -193,7 +214,8 @@ class MainStack extends cdk.Stack {
       },
       tracing: lambda.Tracing.Active,
     });
-
+    projectHandler.findChild('Resource').propertyOverrides.layers = [xraylayer.ref];
+    
     const apiProject = addCorsOptions(api.root.addResource('projects'));
     apiProject
       .addMethod('GET', new apigateway.LambdaIntegration(projectHandler), {
@@ -222,6 +244,7 @@ class MainStack extends cdk.Stack {
       },
       tracing: lambda.Tracing.Active,
     });
+    commentHandler.findChild('Resource').propertyOverrides.layers = [xraylayer.ref];
 
     const apiComment = addCorsOptions(api.root.addResource('comments'));
     apiComment
