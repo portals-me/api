@@ -1856,6 +1856,11 @@ verror@1.10.0:
     core-util-is "1.0.2"
     extsprintf "^1.2.0"
 
+vue-google-oauth2@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/vue-google-oauth2/-/vue-google-oauth2-1.2.0.tgz#b4791d7be35a0725ae463cb7afde582777e6650c"
+  integrity sha512-dN+KgNy6oBa+c7cqqZddS0ZvGOww8HQQ6+r7rd7iXindzV1VHI+W/lEAcbp0ePzz8wyAX/7lCmfVnxRzMJx9Ag==
+
 which-module@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/which-module/-/which-module-2.0.0.tgz#d9ef07dce77b9902b8a3a8fa4b31c3e3f7e6e87a"

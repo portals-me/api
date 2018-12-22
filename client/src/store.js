@@ -12,7 +12,7 @@ export default new Vuex.Store({
   actions: {
     initialize ({ state, commit }) {
       return new Promise((resolve, reject) => {
-        if (!state.initialized) {
+        if (!state.initialized && localStorage.getItem('id_token')) {
           sdk.user.me()
             .then(user => {
               commit('setUser', user);

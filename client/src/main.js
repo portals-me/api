@@ -7,6 +7,7 @@ import App from './App.vue'
 import axios from 'axios'
 import firebase from 'firebase'
 import store from '@/store'
+import GAuth from 'vue-google-oauth2'
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -17,6 +18,11 @@ Vue.use(vueConfig, {
   axios,
   firebase,
   isDev,
+});
+
+Vue.use(GAuth, {
+  clientId: '670077302427-0r21asrffhmuhkvfq10qa8kj86cslojn.apps.googleusercontent.com',
+  scope: 'profile email https://www.googleapis.com/auth/plus.login'
 });
 
 router.beforeEach(async (to, from, next) => {
