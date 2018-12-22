@@ -1,4 +1,4 @@
-const AWS = require('aws-sdk');
+const AWS = require('aws-xray-sdk').captureAWS(require('aws-sdk'));
 const dbc = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async (event, context) => {

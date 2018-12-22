@@ -1,4 +1,4 @@
-const AWS = require('aws-sdk');
+const AWS = require('aws-xray-sdk').captureAWS(require('aws-sdk'));
 const idp = new AWS.CognitoIdentity();
 const dbc = new AWS.DynamoDB.DocumentClient();
 const { OAuth2Client } = require('google-auth-library');
