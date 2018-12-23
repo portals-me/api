@@ -1,4 +1,6 @@
-const AWS = process.env.IS_OFFLINE === 'true' ? require('aws-sdk') : require('aws-xray-sdk').captureAWS(require('aws-sdk'));
+const AWS = process.env.IS_OFFLINE === 'true'
+  ? require('aws-sdk')
+  : require('aws-xray-sdk').captureAWS(require('aws-sdk'));
 const dbc = process.env.IS_OFFLINE === 'true'
   ? new AWS.DynamoDB.DocumentClient({ region: 'localhost', endpoint: `http://localhost:${process.env.TestPort}` })
   : new AWS.DynamoDB.DocumentClient();
@@ -70,7 +72,7 @@ exports.handler = async (event, context) => {
     }
 
     if (method === 'GET') {
-      const projectId = event.path.split('/projects/')[1].split('/comments')[0];
+      const projectId = event.pathParameters.projectId;
 
       const comments = (await dbc.query({
         TableName: process.env.EntityTable,
