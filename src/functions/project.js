@@ -7,14 +7,11 @@ const dbc = process.env.IS_OFFLINE === 'true'
 exports.handler = async (event, context) => {
   try {
     const method = event.httpMethod;
-    const projectId = (() => {
-      const latter = event.path.split('/projects')[1];
-      return latter.startsWith('/') ? latter.substring(1) : latter;
-    })();
+    const projectId = event.pathParameters ? event.pathParameters.projectId : null;
     const user = event.requestContext.authorizer;
 
     if (method === 'GET') {
-      if (projectId === '') {
+      if (!projectId) {
         const result = await dbc.query({
           TableName: process.env.EntityTable,
           IndexName: 'owner',
