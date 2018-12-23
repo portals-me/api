@@ -4,11 +4,17 @@
   "scripts": {
     "deploy:server": "sls deploy",
     "deploy:client": "cd client && yarn build && aws s3 sync dist s3://portals-me-web/ --acl public-read",
-    "deploy": "yarn deploy:server && yarn deploy:client"
+    "deploy": "yarn deploy:server && yarn deploy:client",
+    "test": "bash tests/startOffline.sh; jest; bash tests/stopOffline.sh"
   },
   "devDependencies": {
+    "@types/jest": "^23.3.10",
     "@types/node": "^8.9.4",
     "aws-sdk": "^2.377.0",
+    "aws-sdk-mock": "^4.3.0",
+    "jest": "^23.6.0",
+    "serverless-dynamodb-local": "^0.2.35",
+    "serverless-offline": "^3.31.3",
     "serverless-plugin-tracing": "^2.0.0"
   },
   "dependencies": {}

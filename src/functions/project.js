@@ -1,6 +1,10 @@
-const AWS = require('aws-xray-sdk').captureAWS(require('aws-sdk'));
+const AWS = process.env.NODE_ENV === 'test'
+  ? require('aws-sdk')
+  : require('aws-xray-sdk').captureAWS(require('aws-sdk'));
 const uuid = require('uuid/v4');
-const dbc = new AWS.DynamoDB.DocumentClient();
+const dbc = process.env.NODE_ENV === 'test'
+  ? new AWS.DynamoDB.DocumentClient()
+  : new AWS.DynamoDB.DocumentClient({ endpoint: 'http://localhost:3000' });
 
 exports.handler = async (event, context) => {
   try {
