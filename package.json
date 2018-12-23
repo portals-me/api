@@ -12,8 +12,10 @@
     "@types/node": "^8.9.4",
     "aws-sdk": "^2.377.0",
     "aws-sdk-mock": "^4.3.0",
+    "axios": "^0.18.0",
     "jest": "^23.6.0",
-    "serverless-dynamodb-local": "^0.2.35",
+    "jsonwebtoken": "^8.4.0",
+    "serverless-dynamodb-local": "99xt/serverless-dynamodb-local",
     "serverless-offline": "^3.31.3",
     "serverless-plugin-tracing": "^2.0.0"
   },
