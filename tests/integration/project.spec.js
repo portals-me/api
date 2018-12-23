@@ -14,6 +14,7 @@ describe('Project', () => {
   it('can list projects', async () => {
     const result = await sdk.project.list();
     expect(result.status).toBe(200);
+    expect(result.data.length).toBeGreaterThanOrEqual(0);
 
     projectCount = result.data.length;
   });
@@ -37,8 +38,36 @@ describe('Project', () => {
     expect(result.status).toBe(200);
   });
 
-  it('should have one more project after creation', async () => {
-    const result = await sdk.project.list();
-    expect(result.data.length).toBe(projectCount + 1);
+  describe('With a project', () => {
+    it('should have one more project after creation', async () => {
+      const result = await sdk.project.list();
+      expect(result.data.length).toBe(projectCount + 1);
+    });
+
+    let commentCount = 0;
+
+    it('can list comments', async () => {
+      const result = await sdk.comment.list(projectId);
+      expect(result.status).toBe(200);
+      expect(result.data.length).toBeGreaterThanOrEqual(0);
+
+      commentCount = result.data.length;
+    });
+
+    let commentIndex = null;
+
+    it('can create a comment', async () => {
+      const result = await sdk.comment.create(projectId, 'this is a message.');
+      expect(result.status).toBe(201);
+
+      commentIndex = parseInt(result.headers.location.split('/')[4], 10);
+      expect(commentIndex).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should be consistent with comment_count', async () => {
+      const project = (await sdk.project.get(projectId)).data;
+
+      expect(project.comment_count).toBe(commentIndex + 1);
+    });
   });
 });
