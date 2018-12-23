@@ -1,10 +1,8 @@
-const AWS = process.env.NODE_ENV === 'test'
-  ? require('aws-sdk')
-  : require('aws-xray-sdk').captureAWS(require('aws-sdk'));
+const AWS = process.env.IS_OFFLINE === 'true' ? require('aws-sdk') : require('aws-xray-sdk').captureAWS(require('aws-sdk'));
 const uuid = require('uuid/v4');
-const dbc = process.env.NODE_ENV === 'test'
-  ? new AWS.DynamoDB.DocumentClient()
-  : new AWS.DynamoDB.DocumentClient({ endpoint: `http://localhost:${process.env.TestPort}` });
+const dbc = process.env.IS_OFFLINE === 'true'
+  ? new AWS.DynamoDB.DocumentClient({ region: 'localhost', endpoint: `http://localhost:${process.env.TestPort}` })
+  : new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async (event, context) => {
   try {
@@ -76,10 +74,11 @@ exports.handler = async (event, context) => {
     
     if (method === 'POST') {
       const project = JSON.parse(event.body);
-      const result = await dbc.put({
+      const projectId = uuid();
+      await dbc.put({
         TableName: process.env.EntityTable,
         Item: {
-          id: `project##${uuid()}`,
+          id: `project##${projectId}`,
           sort: 'detail',
           owned_by: user.id,
           title: project.title,
@@ -91,12 +90,12 @@ exports.handler = async (event, context) => {
           created_at: (new Date()).getTime(),
         }
       }).promise();
-      console.log(result);
 
       return {
-        statusCode: 200,
+        statusCode: 201,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Location': `/projects/${projectId}`,
         },
         body: null,
       };

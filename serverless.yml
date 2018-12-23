@@ -31,7 +31,7 @@ provider:
   
   environment:
     GClientId: 670077302427-0r21asrffhmuhkvfq10qa8kj86cslojn.apps.googleusercontent.com
-    EntityTable: {Ref: EntityTable}
+    EntityTable: ${self:resources.Resources.EntityTable.Properties.TableName}
     JwtPrivate: ${file(./token/jwtES256.key)}
     JwtPublic: ${file(./token/jwtES256.key.pub)}
     TestPort: ${self:custom.dynamodb.start.port}
@@ -125,6 +125,7 @@ resources:
     EntityTable:
       Type: AWS::DynamoDB::Table
       Properties:
+        TableName: entities
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
@@ -152,5 +153,13 @@ resources:
 custom:
   dynamodb:
     start:
-      port: 3000
+      port: 3001
       inMemory: true
+      migrate: true
+      seed: true
+
+    seed:
+      domain:
+        sources:
+          - table: entities
+            sources: [ ./tests/migrate/entities.json ]

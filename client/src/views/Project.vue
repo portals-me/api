@@ -99,7 +99,7 @@ export default {
     },
     async loadProject () {
       const projectId = this.$route.params.projectId;
-      const project = await sdk.project.get(projectId);
+      const project = (await sdk.project.get(projectId)).data;
       this.project = Object.assign(project, { articles: [] });
     },
     async submitComment () {

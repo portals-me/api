@@ -96,7 +96,7 @@ export default {
   },
   methods: {
     async loadProjects () {
-      this.projects = await sdk.project.list();
+      this.projects = (await sdk.project.list()).data;
     },
     async createProject () {
       await sdk.project.create({

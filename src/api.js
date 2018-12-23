@@ -26,21 +26,17 @@ const genSDK = (url, token, axios) => ({
   },
   project: {
     create: async (form) => {
-      await axios.post(
+      return await axios.post(
         `${url}/projects`,
         form,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      return;
     },
     get: async (projectId) => {
-      const result = await axios.get(`${url}/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } });
-      return result.data;
+      return await axios.get(`${url}/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } });
     },
     list: async () => {
-      const result = await axios.get(`${url}/projects`, { headers: { Authorization: `Bearer ${token}` } });
-      return result.data;
+      return await axios.get(`${url}/projects`, { headers: { Authorization: `Bearer ${token}` } });
     },
   },
 });
