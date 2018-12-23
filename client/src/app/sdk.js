@@ -1,5 +1,5 @@
 import axios from 'axios';
-const url = 'https://fubo4rnsod.execute-api.ap-northeast-1.amazonaws.com/dev';
+const url = 'https://1cmunxpbgi.execute-api.ap-northeast-1.amazonaws.com/dev';
 const token = localStorage.getItem('id_token');
 
 const sdk = {

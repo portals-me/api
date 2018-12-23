@@ -8035,6 +8035,11 @@ vue-config@^1.0.0:
   resolved "https://registry.yarnpkg.com/vue-config/-/vue-config-1.0.0.tgz#f6e6704845808fbfa3b17300fc7ffd624c2ca42e"
   integrity sha1-9uZwSEWAj7+jsXMA/H/9YkwspC4=
 
+vue-google-oauth2@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/vue-google-oauth2/-/vue-google-oauth2-1.2.0.tgz#b4791d7be35a0725ae463cb7afde582777e6650c"
+  integrity sha512-dN+KgNy6oBa+c7cqqZddS0ZvGOww8HQQ6+r7rd7iXindzV1VHI+W/lEAcbp0ePzz8wyAX/7lCmfVnxRzMJx9Ag==
+
 vue-hot-reload-api@^2.3.0:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/vue-hot-reload-api/-/vue-hot-reload-api-2.3.1.tgz#b2d3d95402a811602380783ea4f566eb875569a2"
