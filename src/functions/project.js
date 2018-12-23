@@ -4,7 +4,7 @@ const AWS = process.env.NODE_ENV === 'test'
 const uuid = require('uuid/v4');
 const dbc = process.env.NODE_ENV === 'test'
   ? new AWS.DynamoDB.DocumentClient()
-  : new AWS.DynamoDB.DocumentClient({ endpoint: 'http://localhost:3000' });
+  : new AWS.DynamoDB.DocumentClient({ endpoint: `http://localhost:${process.env.TestPort}` });
 
 exports.handler = async (event, context) => {
   try {
