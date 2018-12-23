@@ -1,5 +1,7 @@
-const AWS = require('aws-xray-sdk').captureAWS(require('aws-sdk'));
-const dbc = new AWS.DynamoDB.DocumentClient();
+const AWS = process.env.IS_OFFLINE === 'true' ? require('aws-sdk') : require('aws-xray-sdk').captureAWS(require('aws-sdk'));
+const dbc = process.env.IS_OFFLINE === 'true'
+  ? new AWS.DynamoDB.DocumentClient({ region: 'localhost', endpoint: `http://localhost:${process.env.TestPort}` })
+  : new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async (event, context) => {
   try {
@@ -16,11 +18,12 @@ exports.handler = async (event, context) => {
         }
       }).promise()).Item;
 
+      const commentIndex = project.comment_count;
       await dbc.put({
         TableName: process.env.EntityTable,
         Item: {
           id: project.id,
-          sort: `comment##${project.comment_count}`,
+          sort: `comment##${commentIndex}`,
           owned_by: user.id,
           message: message,
           created_at: (new Date()).getTime(),
@@ -57,11 +60,12 @@ exports.handler = async (event, context) => {
       }
 
       return {
-        statusCode: 200,
+        statusCode: 201,
         headers: {
           'Access-Control-Allow-Origin': '*',
+          'Location': `/projects/${projectId}/comments/${commentIndex}`,
         },
-        body: "OK",
+        body: null,
       };
     }
 
