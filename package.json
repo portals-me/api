@@ -1,21 +1,15 @@
 {
   "name": "server",
   "version": "0.1.0",
-  "bin": {
-    "server": "bin/server.js"
-  },
   "scripts": {
-    "deploy:server": "cdk deploy",
+    "deploy:server": "sls deploy",
     "deploy:client": "cd client && yarn build && aws s3 sync dist s3://portals-me-web/ --acl public-read",
     "deploy": "yarn deploy:server && yarn deploy:client"
   },
   "devDependencies": {
     "@types/node": "^8.9.4",
-    "aws-cdk": "^0.21.0",
     "aws-sdk": "^2.377.0",
-    "typescript": "^3.1.2",
     "serverless-plugin-tracing": "^2.0.0"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
