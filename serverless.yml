@@ -80,6 +80,7 @@ functions:
           path: /users/me
           method: get
           cors: true
+          authorizer: authorizer
   projectHandler:
     handler: src/functions/project.handler
     layers:
@@ -89,14 +90,17 @@ functions:
           path: /projects
           method: get
           cors: true
+          authorizer: authorizer
       - http:
           path: /projects
           method: post
           cors: true
+          authorizer: authorizer
       - http:
           path: /projects/{projectId}
           method: get
           cors: true
+          authorizer: authorizer
   commentHandler:
     handler: src/functions/comment.handler
     layers:
@@ -106,10 +110,12 @@ functions:
           path: /comments
           method: post
           cors: true
+          authorizer: authorizer
       - http:
           path: /projects/{projectId}/comments
           method: get
           cors: true
+          authorizer: authorizer
 
 resources:
   Resources:
