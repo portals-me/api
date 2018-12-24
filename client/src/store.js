@@ -15,7 +15,7 @@ export default new Vuex.Store({
         if (!state.initialized && localStorage.getItem('id_token')) {
           sdk.user.me()
             .then(user => {
-              commit('setUser', user);
+              commit('setUser', user.data);
               commit('setInitialized');
 
               resolve();

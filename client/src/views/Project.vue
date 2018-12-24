@@ -89,7 +89,7 @@ export default {
   methods: {
     async loadComments () {
       const projectId = this.$route.params.projectId;
-      this.project.comments = await sdk.comment.list(projectId);
+      this.project.comments = (await sdk.comment.list(projectId)).data;
     },
     async loadArticles () {
       Promise.all(this.articleIds.map(async (articleId, index) => {

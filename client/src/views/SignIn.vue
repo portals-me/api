@@ -18,7 +18,7 @@ export default {
   methods: {
     async signIn () {
       const user = await this.$gAuth.signIn();
-      const result = await sdk.signIn(user.getAuthResponse().id_token);
+      const result = (await sdk.signIn(user.getAuthResponse().id_token)).data;
       localStorage.setItem('id_token', result.id_token);
       this.$store.commit('setUser', result.user);
       this.$router.push('/');
