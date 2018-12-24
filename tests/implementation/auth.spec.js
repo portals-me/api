@@ -16,7 +16,11 @@ describe('Auth', () => {
       });
     });
     AWS.remock('DynamoDB.DocumentClient', 'put', (params, callback) => {
-      callback(null, null);
+      if (params.Item.name === 'name' && params.Item.display_name === 'display_name') {
+        callback(null, null);
+      } else {
+        callback(`input error: ${JSON.stringify(params)}`, null);
+      }
     });
 
     const auth = require('../../src/functions/auth');
@@ -26,7 +30,12 @@ describe('Auth', () => {
     });
 
     const result = await auth.signUp({
-      body: '',
+      body: JSON.stringify({
+        google_token: '',
+        name: 'name',
+        display_name: 'display_name',
+        picture: 'picture',
+      }),
     });
 
     expect(result.statusCode).toBe(201);
@@ -74,6 +83,6 @@ describe('Auth', () => {
       body: ''
     });
 
-    expect(result.statusCode).toBe(400);
+    expect(result.statusCode).toBe(404);
   });
 });
