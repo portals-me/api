@@ -65,7 +65,7 @@ describe('Auth', () => {
       });
     });
     AWS.remock('DynamoDB.DocumentClient', 'get', (params, callback) => {
-      callback(null, null);
+      callback(null, {});
     });
 
     const auth = require('../../src/functions/auth');

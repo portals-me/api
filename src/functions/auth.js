@@ -57,15 +57,15 @@ mod.signIn = async (event, context) => {
   }).promise()).IdentityId;
   const userId = `user##${idp_id}`;
 
-  const userResult = await dbc.get({
+  const user = (await dbc.get({
     TableName: process.env.EntityTable,
     Key: {
       id: userId,
       sort: 'detail',
     }
-  }).promise();
+  }).promise()).Item;
 
-  if (!userResult) {
+  if (!user) {
     return {
       statusCode: 400,
       headers: {
@@ -74,8 +74,6 @@ mod.signIn = async (event, context) => {
       body: 'Specified user does not exist...',
     }
   }
-
-  const user = userResult.Item;
 
   const token = jsonwebtoken.sign({
     id: userId,
