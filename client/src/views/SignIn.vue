@@ -32,6 +32,11 @@ export default {
         this.$store.commit('setUser', result.user);
         this.$router.push('/');
       } catch (err) {
+        if (err.response.status == 404) {
+          const profile = user.getBasicProfile();
+          this.$router.push(`/signup?name=${profile.getName().split(' ').join('_')}&display_name=${profile.getName()}&photo=${profile.getImageUrl()}`);
+        }
+
         this.errorMessage = err.response.data;
         return;
       }

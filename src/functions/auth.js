@@ -16,10 +16,12 @@ mod.gverify = async (token) => {
 };
 
 mod.signUp = async (event, context) => {
+  const { google_token, name, display_name, picture } = JSON.parse(event.body);
+
   const idp_id = (await idp.getId({
     IdentityPoolId: 'ap-northeast-1:5221828e-b1d8-45e7-9361-b06057573aa9',
     Logins: {
-      'accounts.google.com': event.body,
+      'accounts.google.com': google_token,
     },
   }).promise()).IdentityId;
 
@@ -32,9 +34,9 @@ mod.signUp = async (event, context) => {
       id: `user##${idp_id}`,
       sort: 'detail',
       created_at: (new Date()).getTime(),
-      name: gaccount.name,
-      display_name: gaccount.name,
-      picture: gaccount.picture,
+      name: name || gaccount.name,
+      display_name: display_name || gaccount.name,
+      picture: picture || gaccount.picture,
     },
   }).promise();
 
@@ -67,7 +69,7 @@ mod.signIn = async (event, context) => {
 
   if (!user) {
     return {
-      statusCode: 400,
+      statusCode: 404,
       headers: {
         'Access-Control-Allow-Origin': '*',
       },
