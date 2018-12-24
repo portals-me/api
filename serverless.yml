@@ -44,6 +44,7 @@ package:
     - ./.git/**
     - ./token/**
     - ./src/**
+    - ./.dynamodb/**
   include:
     - ./src/functions/**
 
@@ -125,7 +126,7 @@ resources:
     EntityTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: entities
+        TableName: ${self:service}-entities
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
