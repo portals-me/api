@@ -5,7 +5,9 @@ const { OAuth2Client } = require('google-auth-library');
 const gclient = new OAuth2Client(process.env.GClientId);
 const jsonwebtoken = require('jsonwebtoken');
 
-const gverify = async (token) => {
+const mod = (module.exports = {});
+
+mod.gverify = async (token) => {
   const ticket = await gclient.verifyIdToken({
     idToken: token,
     audience: process.env.GClientId,
@@ -13,7 +15,7 @@ const gverify = async (token) => {
   return ticket.getPayload();
 };
 
-exports.signUp = async (event, context) => {
+mod.signUp = async (event, context) => {
   const idp_id = (await idp.getId({
     IdentityPoolId: 'ap-northeast-1:5221828e-b1d8-45e7-9361-b06057573aa9',
     Logins: {
@@ -22,7 +24,7 @@ exports.signUp = async (event, context) => {
   }).promise()).IdentityId;
 
   // Is the verification necessary?
-  const gaccount = await gverify(event.body);
+  const gaccount = await mod.gverify(event.body);
 
   await dbc.put({
     TableName: process.env.EntityTable,
@@ -37,12 +39,16 @@ exports.signUp = async (event, context) => {
   }).promise();
 
   return {
-    statusCode: 200,
-    body: 'OK',
+    statusCode: 201,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Location': `/users/${idp_id}`,
+    },
+    body: null,
   };
 };
 
-exports.signIn = async (event, context) => {
+mod.signIn = async (event, context) => {
   const idp_id = (await idp.getId({
     IdentityPoolId: 'ap-northeast-1:5221828e-b1d8-45e7-9361-b06057573aa9',
     Logins: {
@@ -51,14 +57,25 @@ exports.signIn = async (event, context) => {
   }).promise()).IdentityId;
   const userId = `user##${idp_id}`;
 
-  const user = (await dbc.get({
+  const userResult = await dbc.get({
     TableName: process.env.EntityTable,
     Key: {
       id: userId,
       sort: 'detail',
     }
-  }).promise()).Item;
-  console.log(user);
+  }).promise();
+
+  if (!userResult) {
+    return {
+      statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+      body: 'Specified user does not exist...',
+    }
+  }
+
+  const user = userResult.Item;
 
   const token = jsonwebtoken.sign({
     id: userId,
@@ -80,7 +97,7 @@ exports.signIn = async (event, context) => {
   };
 };
 
-exports.authorize = async (event, context, callback) => {
+mod.authorize = async (event, context, callback) => {
   let generatePolicy = (principalId, effect, resource, context) => ({
     principalId: principalId,
     policyDocument: {
@@ -120,7 +137,7 @@ exports.authorize = async (event, context, callback) => {
   }
 };
 
-exports.getMe = async (event, context) => {
+mod.getMe = async (event, context) => {
   const token = event.headers.Authorization.split('Bearer ')[1];
   const decoded = jsonwebtoken.verify(token, process.env.JwtPublic, { algorithm: 'ES256' });
 
