@@ -26,7 +26,7 @@ mod.signUp = async (event, context) => {
   }).promise()).IdentityId;
 
   // Is the verification necessary?
-  const gaccount = await mod.gverify(event.body);
+  const gaccount = await mod.gverify(google_token);
 
   await dbc.put({
     TableName: process.env.EntityTable,
