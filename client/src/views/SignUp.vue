@@ -58,7 +58,7 @@ export default {
         })).data;
 
         localStorage.setItem('id_token', result.id_token);
-        this.$store.commit('setUser', result.user);
+        localStorage.setItem('user', JSON.stringify(result.user));
         this.$router.push('/');
       } catch (err) {
         this.errorMessage = err.response.data;

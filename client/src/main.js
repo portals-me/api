@@ -25,24 +25,6 @@ Vue.use(GAuth, {
   scope: 'profile email https://www.googleapis.com/auth/plus.login'
 });
 
-/*
-router.beforeEach(async (to, from, next) => {
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!store.state.initialized) {
-      await store.dispatch('initialize');
-    }
-
-    if (!store.getters.isAuthenticated) {
-      next({ path: `/signin?redirect=${to.path}` });
-    } else {
-      next();
-    }
-  } else {
-    next();
-  }
-});
-*/
-
 new Vue({
   router,
   store,

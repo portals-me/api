@@ -111,16 +111,16 @@
 
       <v-spacer></v-spacer>
 
-      <v-toolbar-items v-if="$store.state.user != null">
+      <v-toolbar-items v-if="user != null">
         <v-menu offset-y>
           <v-btn
             slot="activator"
             flat
           >
             <v-avatar color="orange" size="32px">
-              <v-img :src="$store.state.user.picture" />
+              <v-img :src="user.picture" />
             </v-avatar>
-            &nbsp;&nbsp;{{ $store.state.user.display_name }}
+            &nbsp;&nbsp;{{ user.display_name }}
           </v-btn>
           <v-list>
             <v-list-tile
@@ -144,16 +144,22 @@ export default {
   data () {
     return {
       drawer: null,
+      user: null,
     }
   },
   methods: {
     async signOut () {
       localStorage.setItem('id_token', '');
-      this.$store.dispatch('signOut');
+      localStorage.setItem('user', '{}');
+      this.user = null;
       this.$router.push('/signin');
     },
     async onMount () {
-      await this.$store.dispatch('initialize');
+      this.user = JSON.parse(localStorage.getItem('user'));
+
+      if (!this.user) {
+        this.$router.push('/signin');
+      }
     },
   },
   mounted: async function () {

@@ -29,7 +29,7 @@ export default {
         const result = (await sdk.signIn(user.getAuthResponse().id_token)).data;
 
         localStorage.setItem('id_token', result.id_token);
-        this.$store.commit('setUser', result.user);
+        localStorage.setItem('user', JSON.stringify(result.user));
         this.$router.push('/');
       } catch (err) {
         if (err.response.status == 404) {
