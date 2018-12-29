@@ -75,8 +75,6 @@
 </template>
 
 <script>
-import firestore from '@/instance/firestore';
-import firebase from 'firebase';
 import sdk from '@/app/sdk';
 
 export default {

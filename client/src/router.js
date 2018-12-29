@@ -7,8 +7,6 @@ import TopBar from '@/components/TopBar';
 
 import Landing from '@/views/Landing';
 import Home from './views/Home'
-import SignIn from '@/views/SignIn';
-import SignUp from '@/views/SignUp';
 import Project from '@/views/Project';
 
 Vue.use(Router)
@@ -33,16 +31,6 @@ export default new Router({
         sidebar: SideBar,
         topbar: TopBar,
       },
-    },
-    {
-      path: '/signin',
-      name: 'signin',
-      component: SignIn,
-    },
-    {
-      path: '/signup',
-      name: 'signup',
-      component: SignUp,
     },
     {
       path: '/projects/:projectId',
