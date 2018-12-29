@@ -36,16 +36,134 @@
     <v-layout row wrap text-xs-center>
       <v-container>
         <v-flex xs12>
-          <v-btn color="indigo" dark>Sign Up with Google</v-btn>
-          <p>あるいは <router-link to="/signin">すでにアカウントを持っています</router-link></p>
+          <v-btn color="indigo" @click="openDialog('0')" dark>アカウントを作成</v-btn>
+          <p>あるいは <a @click="openDialog('1')">すでにアカウントを持っていますか？</a></p>
         </v-flex>
+
+        <v-dialog
+          v-model="dialog"
+          max-width="600px"
+        >
+          <v-card>
+            <v-tabs
+              v-model="dialogTab"
+            >
+              <v-tab
+                ripple
+              >
+                サインアップ
+              </v-tab>
+              <v-tab
+                ripple
+              >
+                サインイン
+              </v-tab>
+
+              <v-tab-item>
+                <v-stepper v-model="signupStep">
+                  <v-stepper-content step="1">
+                    <v-btn color="red" @click="authWithGoogle" dark>Googleでサインアップ</v-btn>
+                    <br />
+                    <v-btn color="blue" dark>Facebookでサインアップ</v-btn>
+                    <br />
+                    <v-btn color="grey" dark>GitHubでサインアップ</v-btn>
+                  </v-stepper-content>
+
+                  <v-stepper-content step="2">
+                    <v-container>
+                      <form>
+                        <v-flex xs6>
+                          <v-text-field
+                            v-model="form.name"
+                            label="ユーザーID"
+                            xs6
+                          />
+                          <v-text-field
+                            v-model="form.display_name"
+                            label="表示される名前"
+                          />
+                        </v-flex>
+                        <v-avatar color="orange" size="32px">
+                          <v-img :src="form.photo" />
+                        </v-avatar>
+                        <v-btn depressed>アイコンをアップロード</v-btn>
+
+                        <br />
+                        <p>{{ this.errorMessage }}</p>
+
+                        <v-btn color="success" @click="createAccount">送信</v-btn>
+                        <v-btn depressed @click="signupStep --;">キャンセル</v-btn>
+                      </form>
+                    </v-container>
+                  </v-stepper-content>
+                </v-stepper>
+              </v-tab-item>
+              <v-tab-item>
+                <v-container>
+                  <v-btn color="red" dark>Googleでサインイン</v-btn>
+                </v-container>
+              </v-tab-item>
+            </v-tabs>
+          </v-card>
+        </v-dialog>
       </v-container>
     </v-layout>
   </v-container>
 </template>
 
 <script>
+import sdk from '@/app/sdk';
+
 export default {
+  data () {
+    return {
+      dialog: false,
+      dialogTab: null,
+      signupStep: 1,
+      form: {
+        name: '',
+        display_name: '',
+        photo: '',
+      },
+      google_token: '',
+      errorMessage: '',
+    };
+  },
+  methods: {
+    openDialog (tabIndex) {
+      this.dialog = true;
+      this.dialogTab = tabIndex;
+    },
+    async authWithGoogle () {
+      const user = await this.$gAuth.signIn();
+      const profile = user.getBasicProfile();
+
+      this.google_token = user.getAuthResponse().id_token;
+      this.form = {
+        name: profile.getId(),
+        display_name: profile.getName(),
+        photo: profile.getImageUrl(),
+      };
+
+      this.signupStep ++;
+    },
+    async createAccount () {
+      try {
+        const result = (await sdk.signUp({
+          google_token: this.google_token,
+          name: this.form.name,
+          display_name: this.form.display_name,
+          photo: this.form.photo,
+        })).data;
+
+        localStorage.setItem('id_token', result.id_token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        this.$router.push('/dashboard');
+      } catch (err) {
+        this.errorMessage = err.response.data;
+        return;
+      }
+    },
+  }
 }
 </script>
-
