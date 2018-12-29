@@ -97,6 +97,11 @@
 
 <script>
 export default {
+  data () {
+    return {
+      drawer: true,
+    };
+  }
 }
 </script>
 

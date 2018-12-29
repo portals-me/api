@@ -36,8 +36,8 @@
     <v-layout row wrap text-xs-center>
       <v-container>
         <v-flex xs12>
-          <v-btn color="indigo" @click="openDialog('0')" dark>アカウントを作成</v-btn>
-          <p>あるいは <a @click="openDialog('1')">すでにアカウントを持っていますか？</a></p>
+          <v-btn color="indigo" @click="openDialog(0)" dark>アカウントを作成</v-btn>
+          <p>あるいは <a @click="openDialog(1)">すでにアカウントを持っていますか？</a></p>
         </v-flex>
 
         <v-dialog
@@ -100,7 +100,7 @@
               </v-tab-item>
               <v-tab-item>
                 <v-container>
-                  <v-btn color="red" dark>Googleでサインイン</v-btn>
+                  <v-btn color="red" @click="signInWithGoogle" dark>Googleでサインイン</v-btn>
                 </v-container>
               </v-tab-item>
             </v-tabs>
@@ -161,6 +161,20 @@ export default {
         this.$router.push('/dashboard');
       } catch (err) {
         this.errorMessage = err.response.data;
+        return;
+      }
+    },
+    async signInWithGoogle () {
+      const user = await this.$gAuth.signIn();
+
+      try {
+        const result = (await sdk.signIn(user.getAuthResponse().id_token)).data;
+
+        localStorage.setItem('id_token', result.id_token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        this.$router.push('/dashboard');
+      } catch (err) {
+        console.error(err.response.data);
         return;
       }
     },

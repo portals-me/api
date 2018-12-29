@@ -40,6 +40,26 @@
 
 <script>
 export default {
+  data () {
+    return {
+      user: null,
+    };
+  },
+  methods: {
+    async signOut () {
+      localStorage.setItem('id_token', '');
+      localStorage.setItem('user', '{}');
+      this.user = null;
+      this.$router.push('/signin');
+    },
+  },
+  async mounted () {
+    this.user = JSON.parse(localStorage.getItem('user'));
+
+    if (!this.user) {
+      this.$router.push('/');
+    }
+  },
 }
 </script>
 
