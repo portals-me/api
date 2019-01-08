@@ -8,6 +8,7 @@ import TopBar from '@/components/TopBar';
 import Landing from '@/views/Landing';
 import Home from './views/Home'
 import Project from '@/views/Project';
+import Collection from '@/views/Collection';
 
 Vue.use(Router)
 
@@ -41,5 +42,14 @@ export default new Router({
         topbar: TopBar,
       },
     },
+    {
+      path: '/collections/:collectionId',
+      name: 'collection',
+      components: {
+        default: Collection,
+        sidebar: SideBar,
+        topbar: TopBar,
+      }
+    }
   ]
 });
