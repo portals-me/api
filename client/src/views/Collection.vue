@@ -82,6 +82,35 @@
             <div class="content">
               <div class="header">
                 <strong>myuon</strong>
+              </div>
+
+              <div class="input-area">
+                <div>
+                  <textarea placeholder="myuon/myuonへのメッセージ…" rows="1">
+                  </textarea>
+                </div>
+
+                <v-btn depressed color="primary">
+                  送信
+                </v-btn>
+              </div>
+            </div>
+          </v-flex>
+        </v-layout>
+
+        <v-divider />
+
+        <v-layout>
+          <v-flex xs12 class="message">
+            <v-avatar>
+              <v-img
+                src="https://lh6.googleusercontent.com/-HrqEjsNu_No/AAAAAAAAAAI/AAAAAAAAAMI/Rg4RwE9Y7So/s96-c/photo.jpg"
+              />
+            </v-avatar>
+
+            <div class="content">
+              <div class="header">
+                <strong>myuon</strong>
 
                 10分前
               </div>
@@ -207,18 +236,38 @@ export default {
   display: flex;
 }
 
+.message textarea {
+  border-radius: 3px;
+  background-color: rgba(230, 230, 230);
+  width: 100%;
+  padding: 0.5rem;
+}
+
 .message .v-avatar {
   display: block;
   flex: 0 0 auto;
   height: auto;
   margin-right: 20px;
-
 }
 
 .message .content {
   display: block;
   flex: 1 1 auto;
   margin-top: 1em;
+}
+
+.message .input-area {
+  display: flex;
+}
+
+.message .input-area > div {
+  display: block;
+  flex: 1 1 auto;
+}
+
+.message .input-area > .v-btn {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .message .content .header {
