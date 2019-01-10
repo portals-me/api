@@ -86,8 +86,7 @@
 
               <div class="input-area">
                 <div>
-                  <textarea placeholder="myuon/myuonへのメッセージ…" rows="1">
-                  </textarea>
+                  <autogrow-textarea placeholder="myuon/myuonへのメッセージ…" />
                 </div>
 
                 <v-btn depressed color="primary">
@@ -199,6 +198,8 @@
 </template>
 
 <script>
+import AutogrowTextarea from '@/components/AutogrowTextarea';
+
 export default {
   components: {
     SheetFooter: {
@@ -214,7 +215,8 @@ export default {
           }
         }, children)
       }
-    }
+    },
+    AutogrowTextarea,
   }
 }
 </script>
@@ -234,13 +236,6 @@ export default {
 
 .message {
   display: flex;
-}
-
-.message textarea {
-  border-radius: 3px;
-  background-color: rgba(230, 230, 230);
-  width: 100%;
-  padding: 0.5rem;
 }
 
 .message .v-avatar {
