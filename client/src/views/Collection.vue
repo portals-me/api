@@ -1,7 +1,21 @@
 <template>
   <v-container grid-list-md fluid>
     <v-flex xs12 class="collection-title">
-      <h2><v-icon>collections</v-icon> myuon / myuon</h2>
+      <v-layout row wrap>
+        <v-flex xs5>
+          <h2><v-icon>collections</v-icon> myuon / myuon</h2>
+        </v-flex>
+        <v-spacer />
+        <v-btn
+          dark
+          depressed
+          outline
+          color="indigo"
+        >
+          <v-icon left>add</v-icon>
+          作品を登録
+        </v-btn>
+      </v-layout>
     </v-flex>
 
     <v-tabs
