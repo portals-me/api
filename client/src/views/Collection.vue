@@ -24,50 +24,111 @@
 
       <v-tab-item class="collection-layout">
         <v-layout flex-child wrap>
-          <v-flex md3 d-flex>
-            <v-sheet
-              class="d-flex"
-              color="grey lighten-3"
-              height="200">
-              <sheet-footer>
-                Project Meow
-              </sheet-footer>
-            </v-sheet>
-          </v-flex>
+          <v-hover>
+            <v-flex
+              md3
+              d-flex
+              slot-scope="{ hover }"
+              @click="clickArticleCard"
+            >
+              <v-card
+                class="mx-auto"
+                :class="`elevation-${hover ? 6 : 2}`"
+              >
+                <v-img
+                  :aspect-ratio="16/9"
+                  style="background-color: #eeeeee;"
+                >
+                </v-img>
+                <v-card-title>
+                  Project Meow
+                </v-card-title>
+              </v-card>
+            </v-flex>
+          </v-hover>
 
-          <v-flex md3 d-flex>
-            <v-sheet
-              class="d-flex"
-              color="teal lighten-3"
-              height="200">
-              <sheet-footer>
-                Project Meow
-              </sheet-footer>
-            </v-sheet>
-          </v-flex>
+          <v-hover>
+            <v-flex
+              md3
+              d-flex
+              slot-scope="{ hover }"
+              @click="clickArticleCard"
+            >
+              <v-card
+                class="mx-auto"
+                :class="`elevation-${hover ? 6 : 2}`"
+              >
+                <v-img
+                  :aspect-ratio="16/9"
+                  style="background-color: #80CBC4;"
+                >
+                </v-img>
+                <v-card-title>
+                  Project Meow
+                </v-card-title>
+              </v-card>
+            </v-flex>
+          </v-hover>
 
-          <v-flex md3 d-flex>
-            <v-sheet
-              class="d-flex"
-              color="red lighten-3"
-              height="200">
-              <sheet-footer>
-                Project Meow
-              </sheet-footer>
-            </v-sheet>
-          </v-flex>
+          <v-hover>
+            <v-flex
+              md3
+              d-flex
+              slot-scope="{ hover }"
+              @click="clickArticleCard"
+            >
+              <v-card
+                class="mx-auto"
+                :class="`elevation-${hover ? 6 : 2}`"
+              >
+                <v-img
+                  :aspect-ratio="16/9"
+                  style="background-color: #EF9A9A;"
+                >
+                </v-img>
+                <v-card-title>
+                  Project Meow
+                </v-card-title>
+              </v-card>
+            </v-flex>
+          </v-hover>
 
-          <v-flex md3 d-flex>
-            <v-sheet
-              class="d-flex"
-              color="indigo lighten-3"
-              height="200">
-              <sheet-footer>
-                Project Meow
-              </sheet-footer>
-            </v-sheet>
-          </v-flex>
+          <v-hover>
+            <v-flex
+              md3
+              d-flex
+              slot-scope="{ hover }"
+              @click="clickArticleCard"
+            >
+              <v-card
+                class="mx-auto"
+                :class="`elevation-${hover ? 6 : 2}`"
+              >
+                <v-img
+                  :aspect-ratio="16/9"
+                  style="background-color: #9FA8DA;"
+                >
+                </v-img>
+                <v-card-title>
+                  Project Meow
+                </v-card-title>
+              </v-card>
+            </v-flex>
+          </v-hover>
         </v-layout>
+
+        <v-dialog
+          v-model="articleDialog"
+          max-width="600"
+        >
+          <v-card>
+            <v-card-title class="headline">Article #0</v-card-title>
+
+            <v-card-text>
+              ほげほげ
+            </v-card-text>
+          </v-card>
+        </v-dialog>
       </v-tab-item>
 
       <v-tab-item>
@@ -201,6 +262,11 @@
 import AutogrowTextarea from '@/components/AutogrowTextarea';
 
 export default {
+  data () {
+    return {
+      articleDialog: false,
+    };
+  },
   components: {
     SheetFooter: {
       functional: true,
@@ -217,6 +283,11 @@ export default {
       }
     },
     AutogrowTextarea,
+  },
+  methods: {
+    clickArticleCard () {
+      this.articleDialog = true;
+    }
   }
 }
 </script>
