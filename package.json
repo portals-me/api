@@ -19,5 +19,7 @@
     "serverless-offline": "^3.31.3",
     "serverless-plugin-tracing": "^2.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "fetch-jsonp": "^1.1.3"
+  }
 }
