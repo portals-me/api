@@ -30,6 +30,12 @@
             </v-card-title>
 
             <v-card-text>
+              <v-container fluid>
+                <div ref="oEmbedPreview">
+                  ここにプレビューが表示されます…
+                </div>
+              </v-container>
+
               <v-form
                 v-model="createArticleForm.valid"
                 ref="createArticleForm"
@@ -39,6 +45,7 @@
                   v-model="createArticleForm.url"
                   label="URLを入力"
                   required
+                  @input="previewOEmbed"
                 />
 
                 <v-text-field
@@ -335,6 +342,7 @@
 
 <script>
 import AutogrowTextarea from '@/components/AutogrowTextarea';
+import fetchJsonp from 'fetch-jsonp';
 
 export default {
   data () {
@@ -376,6 +384,36 @@ export default {
       if (this.$refs.createArticleForm.validate()) {
         console.log(this.createArticleForm);
       }
+    },
+    async previewOEmbed () {
+      const getProvider = (url) => {
+        if (/https:\/\/twitter\.com\/.*\/status\/.*/.test(url)) {
+          console.log('twitter!');
+          return `https://publish.twitter.com/oembed?format=json&url=${encodeURIComponent(url)}`
+        }
+      };
+
+      const url = getProvider(this.createArticleForm.url);
+      console.log(url);
+
+      if (!url) return;
+
+      const response = await fetchJsonp(url);
+      const card_json = await response.json();
+      console.log(card_json);
+
+      const replaceHTML = (element, html) => {
+        element.innerHTML = html;
+        element.querySelectorAll('script').forEach(scriptElement => {
+          const se = document.createElement('script');
+          se.src = scriptElement.src;
+          console.log(scriptElement.src);
+          scriptElement.replaceWith(se);
+        });
+      }
+
+      const area = this.$refs.oEmbedPreview;
+      replaceHTML(area, card_json.html);
     },
   }
 }
