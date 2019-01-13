@@ -11,7 +11,7 @@
     <v-toolbar-side-icon
       @click.stop="drawer = !drawer"
     ></v-toolbar-side-icon>
-    <v-toolbar-title><router-link to="/" style="color: #fff; text-decoration: none;">Portals@me</router-link></v-toolbar-title>
+    <v-toolbar-title><router-link to="/dashboard" style="color: #fff; text-decoration: none;">Portals@me</router-link></v-toolbar-title>
 
     <v-spacer></v-spacer>
 

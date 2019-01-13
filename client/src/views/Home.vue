@@ -1,28 +1,28 @@
 <template>
   <v-flex>
-    <v-subheader>Projects</v-subheader>
+    <v-subheader>コレクション</v-subheader>
 
     <v-container grid-list-md>
       <v-layout row wrap>
         <v-flex xs3>
-          <v-btn @click="dialog = true" block outline color="indigo" style="margin: 0; height: 100%;">
+          <v-btn @click="dialog = true" block outline color="indigo" style="margin: 0; height: 100%; min-height: 200px">
             <v-icon left>add</v-icon>
-            New Project
+            コレクションを作成
           </v-btn>
 
           <v-dialog max-width="800" v-model="dialog">
             <v-card>
-              <v-card-title class="headline">Create A New Project</v-card-title>
+              <v-card-title class="headline">コレクションを作成</v-card-title>
 
               <v-card-text>
                 <v-form>
                   <v-text-field
-                    label="Title"
+                    label="タイトル"
                     v-model="form.title"
                     required
                   />
                   <v-textarea
-                    label="Project Description"
+                    label="説明"
                     v-model="form.description"
                     rows="1"
                     auto-grow
