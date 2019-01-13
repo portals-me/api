@@ -44,6 +44,7 @@
                 <v-text-field
                   v-model="createArticleForm.url"
                   label="URLを入力"
+                  :rules="[v => !!v || '必須項目です']"
                   required
                   @input="previewOEmbed"
                 />
@@ -392,11 +393,15 @@ export default {
           return `https://publish.twitter.com/oembed?format=json&url=${encodeURIComponent(url)}`
         }
       };
+      const area = this.$refs.oEmbedPreview;
 
       const url = getProvider(this.createArticleForm.url);
       console.log(url);
 
-      if (!url) return;
+      if (!url) {
+        area.innerText = 'ここにプレビューが表示されます…';
+        return;
+      };
 
       const response = await fetchJsonp(url);
       const card_json = await response.json();
@@ -412,7 +417,6 @@ export default {
         });
       }
 
-      const area = this.$refs.oEmbedPreview;
       replaceHTML(area, card_json.html);
     },
   }
