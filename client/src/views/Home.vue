@@ -43,29 +43,29 @@
           </v-dialog>
         </v-flex>
 
-        <v-flex xs3 v-for="project in projects" :key="project.id">
+        <v-flex xs3 v-for="collection in collections" :key="collection.id">
           <v-card>
             <v-img
               aspect-ratio="2.75"
-              :class="project.cover.color"
+              :class="collection.cover.color"
             >
             </v-img>
 
             <v-card-title>
               <div>
                 <h3 class="headline mb-0">
-                  {{ project.title }}
+                  {{ collection.title }}
                 </h3>
-                <div>{{ project.description }}</div>
+                <div>{{ collection.description }}</div>
               </div>
             </v-card-title>
 
             <v-card-actions>
-              <v-btn flat color="indigo" @click="$router.push(`/projects/${project.id.split('project##')[1]}`)">Open</v-btn>
+              <v-btn flat color="indigo" @click="$router.push(`/collections/${collection.id.split('collection##')[1]}`)">Open</v-btn>
               <v-spacer></v-spacer>
-              <v-icon v-if="project.media && project.media.includes('document')">edit</v-icon>
-              <v-icon v-if="project.media && project.media.includes('picture')">brush</v-icon>
-              <v-icon v-if="project.media && project.media.includes('movie')">movie</v-icon>
+              <v-icon v-if="collection.media && collection.media.includes('document')">edit</v-icon>
+              <v-icon v-if="collection.media && collection.media.includes('picture')">brush</v-icon>
+              <v-icon v-if="collection.media && collection.media.includes('movie')">movie</v-icon>
             </v-card-actions>
           </v-card>
         </v-flex>
@@ -81,7 +81,7 @@ export default {
   data () {
     return {
       dialog: false,
-      projects: [],
+      collections: [],
       form: {
         title: '',
         description: '',
@@ -94,10 +94,10 @@ export default {
   },
   methods: {
     async loadProjects () {
-      this.projects = (await sdk.project.list()).data;
+      this.collections = (await sdk.collection.list()).data;
     },
     async createProject () {
-      await sdk.project.create({
+      await sdk.collection.create({
         title: this.form.title,
         description: this.form.description,
         cover: this.form.cover,
