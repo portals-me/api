@@ -116,7 +116,7 @@ functions:
           cors: true
           authorizer: authorizer
       - http:
-          path: /projects/{collectionId}/comments
+          path: /collections/{collectionId}/comments
           method: get
           cors: true
           authorizer: authorizer
