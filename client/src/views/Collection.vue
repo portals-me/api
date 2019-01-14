@@ -93,17 +93,17 @@
     >
       <v-tab>
         <v-icon>layers</v-icon>
-        Cards
+        作品
       </v-tab>
 
       <v-tab>
         <v-icon>chat</v-icon>
-        Channel
+        チャンネル
       </v-tab>
 
       <v-tab>
         <v-icon>settings</v-icon>
-        Settings
+        設定
       </v-tab>
 
       <v-tab-item class="collection-layout">
