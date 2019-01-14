@@ -11,29 +11,29 @@ const genSDK = (url, token, axios) => ({
     },
   },
   comment: {
-    create: async (projectId, message) => {
+    create: async (collectionId, message) => {
       return await axios.post(`${url}/comments`, {
-        projectId,
+        collectionId,
         message,
       }, { headers: { Authorization: `Bearer ${token}` } });
     },
-    list: async (projectId) => {
-      return await axios.get(`${url}/projects/${projectId}/comments`, { headers: { Authorization: `Bearer ${token}` } });
+    list: async (collectionId) => {
+      return await axios.get(`${url}/collections/${collectionId}/comments`, { headers: { Authorization: `Bearer ${token}` } });
     },
   },
-  project: {
+  collection: {
     create: async (form) => {
       return await axios.post(
-        `${url}/projects`,
+        `${url}/collections`,
         form,
         { headers: { Authorization: `Bearer ${token}` } }
       );
     },
-    get: async (projectId) => {
-      return await axios.get(`${url}/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } });
+    get: async (collectionId) => {
+      return await axios.get(`${url}/collections/${collectionId}`, { headers: { Authorization: `Bearer ${token}` } });
     },
     list: async () => {
-      return await axios.get(`${url}/projects`, { headers: { Authorization: `Bearer ${token}` } });
+      return await axios.get(`${url}/collections`, { headers: { Authorization: `Bearer ${token}` } });
     },
   },
 });

@@ -101,7 +101,7 @@ functions:
           cors: true
           authorizer: authorizer
       - http:
-          path: /collections/{projectId}
+          path: /collections/{collectionId}
           method: get
           cors: true
           authorizer: authorizer
@@ -116,7 +116,7 @@ functions:
           cors: true
           authorizer: authorizer
       - http:
-          path: /projects/{projectId}/comments
+          path: /projects/{collectionId}/comments
           method: get
           cors: true
           authorizer: authorizer
