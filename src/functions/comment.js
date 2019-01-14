@@ -11,20 +11,20 @@ exports.handler = async (event, context) => {
     const user = event.requestContext.authorizer;
 
     if (method === 'POST') {
-      const { projectId, message } = JSON.parse(event.body);
-      const project = (await dbc.get({
+      const { collectionId, message } = JSON.parse(event.body);
+      const collection = (await dbc.get({
         TableName: process.env.EntityTable,
         Key: {
-          id: `project##${projectId}`,
+          id: `collection##${collectionId}`,
           sort: 'detail'
         }
       }).promise()).Item;
 
-      const commentIndex = project.comment_count;
+      const commentIndex = collection.comment_count;
       await dbc.put({
         TableName: process.env.EntityTable,
         Item: {
-          id: project.id,
+          id: collection.id,
           sort: `comment##${commentIndex}`,
           owned_by: user.id,
           message: message,
@@ -35,23 +35,23 @@ exports.handler = async (event, context) => {
       await dbc.update({
         TableName: process.env.EntityTable,
         Key: {
-          id: project.id,
+          id: collection.id,
           sort: 'detail',
         },
         UpdateExpression: 'set comment_count = :count',
         ExpressionAttributeValues: {
-          ':count': project.comment_count + 1,
+          ':count': collection.comment_count + 1,
         }
       }).promise();
 
-      if (!project.comment_members.includes(user.id)) {
-        const members = project.comment_members;
+      if (!collection.comment_members.includes(user.id)) {
+        const members = collection.comment_members;
         members.push(user.id);
 
         await dbc.update({
           TableName: process.env.EntityTable,
           Key: {
-            id: project.id,
+            id: collection.id,
             sort: 'detail',
           },
           UpdateExpression: 'set comment_members = :members',
@@ -65,20 +65,20 @@ exports.handler = async (event, context) => {
         statusCode: 201,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Location': `/projects/${projectId}/comments/${commentIndex}`,
+          'Location': `/collections/${collectionId}/comments/${commentIndex}`,
         },
         body: null,
       };
     }
 
     if (method === 'GET') {
-      const projectId = event.pathParameters.projectId;
+      const collectionId = event.pathParameters.collectionId;
 
       const comments = (await dbc.query({
         TableName: process.env.EntityTable,
         KeyConditionExpression: 'id = :id and begins_with(sort, :sort)',
         ExpressionAttributeValues: {
-          ':id': projectId,
+          ':id': collectionId,
           ':sort': 'comment',
         },
       }).promise()).Items;
