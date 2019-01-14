@@ -7,18 +7,18 @@ const dbc = process.env.IS_OFFLINE === 'true'
 exports.handler = async (event, context) => {
   try {
     const method = event.httpMethod;
-    const projectId = event.pathParameters ? event.pathParameters.projectId : null;
+    const collectionId = event.pathParameters ? event.pathParameters.collectionId : null;
     const user = event.requestContext.authorizer;
 
     if (method === 'GET') {
-      if (!projectId) {
+      if (!collectionId) {
         const result = await dbc.query({
           TableName: process.env.EntityTable,
           IndexName: 'owner',
           KeyConditionExpression: 'owned_by = :owned_by and begins_with(id, :id)',
           ExpressionAttributeValues: {
             ':owned_by': user.id,
-            ':id': 'project',
+            ':id': 'collection',
           }
         }).promise();
         
@@ -30,10 +30,10 @@ exports.handler = async (event, context) => {
           body: JSON.stringify(result.Items),
         };
       } else {
-        const project = (await dbc.get({
+        const collection = (await dbc.get({
           TableName: process.env.EntityTable,
           Key: {
-            id: `project##${projectId}`,
+            id: `collection##${collectionId}`,
             sort: 'detail',
           }
         }).promise()).Item;
@@ -42,13 +42,13 @@ exports.handler = async (event, context) => {
           TableName: process.env.EntityTable,
           KeyConditionExpression: 'id = :id and begins_with(sort, :sort)',
           ExpressionAttributeValues: {
-            ':id': project.id,
+            ':id': collection.id,
             ':sort': 'comment',
           },
         }).promise()).Items;
 
         const members = (await Promise.all(
-          project.comment_members.map(async (memberId) => {
+          collection.comment_members.map(async (memberId) => {
             return (await dbc.get({
               TableName: process.env.EntityTable,
               Key: { id: memberId, sort: 'detail' },
@@ -64,23 +64,23 @@ exports.handler = async (event, context) => {
           headers: {
             'Access-Control-Allow-Origin': '*',
           },
-          body: JSON.stringify(Object.assign(project, { comments, members })),
+          body: JSON.stringify(Object.assign(collection, { comments, members })),
         };
       }
     }
     
     if (method === 'POST') {
-      const project = JSON.parse(event.body);
-      const projectId = uuid();
+      const collection = JSON.parse(event.body);
+      const collectionId = uuid();
       await dbc.put({
         TableName: process.env.EntityTable,
         Item: {
-          id: `project##${projectId}`,
+          id: `collection##${collectionId}`,
           sort: 'detail',
           owned_by: user.id,
-          title: project.title,
-          description: project.description,
-          cover: project.cover,
+          title: collection.title,
+          description: collection.description,
+          cover: collection.cover,
           media: [],
           comment_members: [user.id],
           comment_count: 0,
@@ -92,7 +92,7 @@ exports.handler = async (event, context) => {
         statusCode: 201,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Location': `/projects/${projectId}`,
+          'Location': `/collections/${collectionId}`,
         },
         body: null,
       };
