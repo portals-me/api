@@ -3,7 +3,8 @@
     <v-flex xs12 class="collection-title">
       <v-layout row wrap>
         <v-flex xs5>
-          <h2><v-icon>collections</v-icon> myuon / myuon</h2>
+          <h2><v-icon>collections</v-icon> myuon / {{ collection.title }}</h2>
+          <pre>{{ collection.description }}</pre>
         </v-flex>
         <v-spacer />
         <v-btn
@@ -344,6 +345,7 @@
 <script>
 import AutogrowTextarea from '@/components/AutogrowTextarea';
 import fetchJsonp from 'fetch-jsonp';
+import sdk from '@/app/sdk';
 
 export default {
   data () {
@@ -358,6 +360,7 @@ export default {
         title: '',
         description: '',
       },
+      collection: {},
     };
   },
   components: {
@@ -419,7 +422,15 @@ export default {
 
       replaceHTML(area, card_json.html);
     },
-  }
+    async loadCollection () {
+      const collectionId = this.$route.params.collectionId;
+      const collection = (await sdk.collection.get(collectionId)).data;
+      this.collection = Object.assign(collection);
+    },
+  },
+  async mounted () {
+    await this.loadCollection();
+  },
 }
 </script>
 
