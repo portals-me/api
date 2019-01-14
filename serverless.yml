@@ -85,23 +85,23 @@ functions:
           method: get
           cors: true
           authorizer: authorizer
-  projectHandler:
-    handler: src/functions/project.handler
+  collectionHandler:
+    handler: src/functions/collection.handler
     layers:
       - {Ref: XraySdkLambdaLayer}
     events:
       - http:
-          path: /projects
+          path: /collections
           method: get
           cors: true
           authorizer: authorizer
       - http:
-          path: /projects
+          path: /collections
           method: post
           cors: true
           authorizer: authorizer
       - http:
-          path: /projects/{projectId}
+          path: /collections/{projectId}
           method: get
           cors: true
           authorizer: authorizer
