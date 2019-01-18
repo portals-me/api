@@ -4,6 +4,7 @@ plugins:
   - serverless-plugin-tracing
   - serverless-dynamodb-local
   - serverless-offline
+  - serverless-go-build
 
 provider:
   name: aws
@@ -38,6 +39,7 @@ provider:
 
 package:
   excludeDevDependencies: false
+  individually: true
   exclude:
     - ./node_modules/**
     - ./client/**

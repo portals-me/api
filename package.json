@@ -20,6 +20,7 @@
     "serverless-plugin-tracing": "^2.0.0"
   },
   "dependencies": {
-    "fetch-jsonp": "^1.1.3"
+    "fetch-jsonp": "^1.1.3",
+    "serverless-go-build": "^0.0.6"
   }
 }
