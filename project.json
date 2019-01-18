@@ -3,10 +3,11 @@
   "description": "portals-me",
   "memory": 128,
   "timeout": 5,
-  "role": "arn:aws:iam::941528793676:role/portals-me_lambda_function",
+  "role": "arn:aws:iam::941528793676:role/portals-me-default",
   "environment": {},
   "hooks": {
     "build": "go get -v -t -d ./... && GOOS=linux GOARCH=amd64 go build -o main main.go",
     "clean": "rm -f main"
-  }
+  },
+  "defaultEnvironment": "dev"
 }
