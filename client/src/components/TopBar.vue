@@ -9,7 +9,7 @@
     class="indigo darken-1"
   >
     <v-toolbar-side-icon
-      @click.stop="drawer = !drawer"
+      @click.stop="toggleDrawer"
     ></v-toolbar-side-icon>
     <v-toolbar-title><router-link to="/dashboard" style="color: #fff; text-decoration: none;">Portals@me</router-link></v-toolbar-title>
 
@@ -52,6 +52,9 @@ export default {
       this.user = null;
       this.$router.push('/signin');
     },
+    toggleDrawer () {
+      this.$store.commit('toggleDrawer')
+    }
   },
   async mounted () {
     this.user = JSON.parse(localStorage.getItem('user'));
