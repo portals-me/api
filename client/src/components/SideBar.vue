@@ -99,8 +99,12 @@
 export default {
   data () {
     return {
-      drawer: true,
     };
+  },
+  computed: {
+    drawer () {
+      return this.$store.state.isDrawerOpened
+    }
   }
 }
 </script>
