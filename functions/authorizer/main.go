@@ -68,7 +68,7 @@ func handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest
 	if err := parsed.Method.Verify("ES256", os.Getenv("JwtPublic"), func(token *jwt.Token) (interface{}, error) {
 		return token, nil
 	}); err != nil {
-		return events.APIGatewayCustomAuthorizerResponse{}, fmt.Errorf("Unauthorized")
+		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
 
 	isAllowed := true
