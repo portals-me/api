@@ -10,8 +10,14 @@ import (
 )
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	out, _ := json.Marshal(event.RequestContext.Authorizer)
-	return events.APIGatewayProxyResponse{Body: string(out), StatusCode: 200}, nil
+	if event.HTTPMethod == "GET" {
+		if event.PathParameters["userId"] == "me" {
+			out, _ := json.Marshal(event.RequestContext.Authorizer)
+			return events.APIGatewayProxyResponse{Body: string(out), StatusCode: 200}, nil
+		}
+	}
+
+	return events.APIGatewayProxyResponse{Body: "/user", StatusCode: 200}, nil
 }
 
 func main() {
