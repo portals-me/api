@@ -6,6 +6,17 @@ variable "parent_id" {}
 variable "path_part" {}
 variable "methods_count" {}
 
+variable "authorization" {
+  type = "string"
+  default = "NONE"
+}
+
+variable "authorizer_id" {
+  type = "string"
+  default = ""
+}
+
+
 variable "methods" {
   type = "list"
 }
@@ -22,7 +33,8 @@ resource "aws_api_gateway_method" "main" {
   rest_api_id = "${var.rest_api_id}"
   resource_id = "${aws_api_gateway_resource.main.id}"
   http_method = "${lookup(var.methods[count.index], "http_method")}"
-  authorization = "NONE"
+  authorization = "${var.authorization}"
+  authorizer_id = "${var.authorizer_id}"
 }
 
 resource "aws_api_gateway_integration" "main" {
