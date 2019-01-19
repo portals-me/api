@@ -2,29 +2,18 @@ package main
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
+	"encoding/pem"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/gbrlsnchs/jwt"
 )
-
-type User struct {
-	ID string
-}
-
-func (*User) Valid() error {
-	return nil
-}
-
-func (user *User) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"id": user.ID,
-	}
-}
 
 func generatePolicy(principalID, effect, resource string, context map[string]interface{}) events.APIGatewayCustomAuthorizerResponse {
 	authReponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalID}
@@ -47,29 +36,42 @@ func generatePolicy(principalID, effect, resource string, context map[string]int
 	return authReponse
 }
 
+func verify(token string, keyEncoded string) (string, error) {
+	block, _ := pem.Decode([]byte(keyEncoded))
+	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
+	es256 := jwt.NewES256(privateKey, &privateKey.PublicKey)
+
+	decoded, sig, err := jwt.Parse(token)
+
+	if err != nil {
+		return "", err
+	}
+	if err = es256.Verify(decoded, sig); err != nil {
+		return "", err
+	}
+
+	payloadEncoded := strings.Split(string(decoded), ".")[1]
+	decoded64, err := base64.StdEncoding.DecodeString(payloadEncoded)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decoded64), nil
+}
+
 func handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
 	if !strings.HasPrefix(event.AuthorizationToken, "Bearer ") {
 		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
 
 	token := strings.Replace(event.AuthorizationToken, "Bearer ", "", 1)
-
-	parsed, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		if token.Method.Alg() != "ES256" {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Method.Alg())
-		}
-
-		return token, nil
-	})
+	payload, err := verify(token, os.Getenv("JwtPrivate"))
 	if err != nil {
-		return events.APIGatewayCustomAuthorizerResponse{}, err
-	}
-
-	if err := parsed.Method.Verify("ES256", os.Getenv("JwtPublic"), func(token *jwt.Token) (interface{}, error) {
-		return token, nil
-	}); err != nil {
 		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
 	}
+
+	var data interface{}
+	json.Unmarshal([]byte(payload), &data)
 
 	isAllowed := true
 
@@ -79,10 +81,9 @@ func handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest
 	} else {
 		effect = "Deny"
 	}
+	userID := data.(map[string]interface{})["id"].(string)
 
-	userID := parsed.Claims.(*User).ID
-
-	return generatePolicy(userID, effect, event.MethodArn, parsed.Claims.(*User).ToMap()), nil
+	return generatePolicy(userID, effect, event.MethodArn, data.(map[string]interface{})), nil
 }
 
 func main() {
