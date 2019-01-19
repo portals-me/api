@@ -10,8 +10,7 @@ import (
 )
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user := event.RequestContext.Authorizer
-	out, _ := json.Marshal(user)
+	out, _ := json.Marshal(event.RequestContext.Authorizer)
 	return events.APIGatewayProxyResponse{Body: string(out), StatusCode: 200}, nil
 }
 
