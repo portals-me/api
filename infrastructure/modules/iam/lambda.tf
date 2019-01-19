@@ -21,6 +21,7 @@ data "aws_iam_policy_document" "portals-me-default-policy-doc" {
   statement {
     actions = [
       "cognito-identity:*",
+      "dynamodb:*",
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
       "logs:PutLogEvents",
