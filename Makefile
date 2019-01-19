@@ -1,4 +1,4 @@
-ARG =
+ARG = ''
 
 deploy:
 	node env.js > env.json
