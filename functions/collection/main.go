@@ -2,17 +2,32 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
 
 	"github.com/aws/aws-lambda-go/events"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
+
+type Collection struct {
+	ID             string            `json:"id"`
+	CommentMembers []string          `json:"comment_members"`
+	CommentCount   int               `json:"comment_count"`
+	Media          []string          `json:"media"`
+	Cover          map[string]string `json:"cover"`
+	OwnedBy        string            `json:"owned_by"`
+	Title          string            `json:"title"`
+	CreatedAt      int64             `json:"created_at"`
+	Sort           string            `json:"sort"`
+	Description    string            `json:"description"`
+}
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	user := event.RequestContext.Authorizer
@@ -44,7 +59,11 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			return events.APIGatewayProxyResponse{Body: fmt.Sprintf("%+v", result.Items), StatusCode: 200}, nil
+			var collections []Collection
+			dynamodbattribute.UnmarshalListOfMaps(result.Items, &collections)
+			out, _ := json.Marshal(collections)
+
+			return events.APIGatewayProxyResponse{Body: string(out), StatusCode: 200}, nil
 		}
 	}
 
