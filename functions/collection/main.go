@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
+
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
@@ -91,6 +94,50 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				StatusCode: 200,
 			}, nil
 		}
+	} else if event.HTTPMethod == "POST" {
+		var createInput map[string]interface{}
+		json.Unmarshal([]byte(event.Body), &createInput)
+
+		collectionID := uuid.Must(uuid.NewV4())
+
+		// care for Cover struct
+		// You cannot cast map[string]interface{} as map[string]string...
+		coverMap := map[string]string{}
+		cover := createInput["cover"].(map[string]interface{})
+		for key, value := range cover {
+			coverMap[key] = value.(string)
+		}
+
+		collection, err := dynamodbattribute.MarshalMap(Collection{
+			ID:             collectionID.String(),
+			Sort:           "detail",
+			OwnedBy:        user["id"].(string),
+			Title:          createInput["title"].(string),
+			Description:    createInput["description"].(string),
+			Cover:          coverMap,
+			Media:          make([]string, 0),
+			CommentMembers: []string{user["id"].(string)},
+			CommentCount:   0,
+			CreatedAt:      time.Now().Unix(),
+		})
+
+		if err != nil {
+			return events.APIGatewayProxyResponse{}, err
+		}
+
+		_, err = Dynamo.PutItemRequest(&dynamodb.PutItemInput{
+			TableName: aws.String(os.Getenv("EntityTable")),
+			Item:      collection,
+		}).Send()
+
+		if err != nil {
+			return events.APIGatewayProxyResponse{}, err
+		}
+
+		return events.APIGatewayProxyResponse{
+			Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+			StatusCode: 201,
+		}, nil
 	}
 
 	return events.APIGatewayProxyResponse{
