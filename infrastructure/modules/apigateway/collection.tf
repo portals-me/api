@@ -17,3 +17,10 @@ module "collections" {
     }
   ]
 }
+
+module "collections-cors" {
+  source = "cors_api"
+
+  rest_api_id = "${aws_api_gateway_rest_api.restapi.id}"
+  resource_id = "${module.collections.id}"
+}
