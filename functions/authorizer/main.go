@@ -15,19 +15,34 @@ import (
 	"github.com/gbrlsnchs/jwt"
 )
 
-func generatePolicy(principalID, effect, resource string, context map[string]interface{}) events.APIGatewayCustomAuthorizerResponse {
+func generatePolicy(principalID string, effect string, isGuest bool, context map[string]interface{}) events.APIGatewayCustomAuthorizerResponse {
 	authReponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalID}
 
-	if effect != "" && resource != "" {
-		authReponse.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
-			Version: "2012-10-17",
-			Statement: []events.IAMPolicyStatement{
-				{
-					Action:   []string{"execute-api:Invoke"},
-					Effect:   effect,
-					Resource: []string{"arn:aws:execute-api:*:*:*/*/*"},
+	if effect != "" {
+		if isGuest {
+			authReponse.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
+				Version: "2012-10-17",
+				Statement: []events.IAMPolicyStatement{
+					{
+						Action: []string{"execute-api:Invoke"},
+						Effect: effect,
+						Resource: []string{
+							"arn:aws:execute-api:*:*:*/*/GET/collections/{collectionId}",
+						},
+					},
 				},
-			},
+			}
+		} else {
+			authReponse.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
+				Version: "2012-10-17",
+				Statement: []events.IAMPolicyStatement{
+					{
+						Action:   []string{"execute-api:Invoke"},
+						Effect:   effect,
+						Resource: []string{"arn:aws:execute-api:*:*:*/*/*"},
+					},
+				},
+			}
 		}
 	}
 
@@ -60,8 +75,9 @@ func verify(token string, keyEncoded string) (string, error) {
 }
 
 func handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
+	// Guest authorization
 	if !strings.HasPrefix(event.AuthorizationToken, "Bearer ") {
-		return events.APIGatewayCustomAuthorizerResponse{}, errors.New("Unauthorized")
+		return generatePolicy("guest", "Allow", true, map[string]interface{}{"id": "guest"}), nil
 	}
 
 	token := strings.Replace(event.AuthorizationToken, "Bearer ", "", 1)
@@ -83,7 +99,7 @@ func handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest
 	}
 	userID := data.(map[string]interface{})["id"].(string)
 
-	return generatePolicy(userID, effect, event.MethodArn, data.(map[string]interface{})), nil
+	return generatePolicy(userID, effect, false, data.(map[string]interface{})), nil
 }
 
 func main() {
