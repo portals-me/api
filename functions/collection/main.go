@@ -126,8 +126,12 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 
 		_, err = Dynamo.PutItemRequest(&dynamodb.PutItemInput{
-			TableName: aws.String(os.Getenv("EntityTable")),
-			Item:      collection,
+			TableName:           aws.String(os.Getenv("EntityTable")),
+			Item:                collection,
+			ConditionExpression: aws.String("owned_by = :user_id"),
+			ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
+				":user_id": {S: aws.String(user["id"].(string))},
+			},
 		}).Send()
 
 		if err != nil {
@@ -144,11 +148,10 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	} else if event.HTTPMethod == "DELETE" {
 		result, err := Dynamo.QueryRequest(&dynamodb.QueryInput{
 			TableName:              aws.String(os.Getenv("EntityTable")),
-			KeyConditionExpression: aws.String("id = :id"),
+			KeyConditionExpression: aws.String("id = :id and owned_by = :user_id"),
 			ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-				":id": {
-					S: aws.String("collection##" + event.PathParameters["collectionId"]),
-				},
+				":id":      {S: aws.String("collection##" + event.PathParameters["collectionId"])},
+				":user_id": {S: aws.String(user["id"].(string))},
 			},
 			ProjectionExpression: aws.String("sort"),
 		}).Send()
