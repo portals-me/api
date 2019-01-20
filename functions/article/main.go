@@ -121,6 +121,14 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
+			if len(result.Items) == 0 {
+				return events.APIGatewayProxyResponse{
+					Body:       "[]",
+					Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+					StatusCode: 200,
+				}, nil
+			}
+
 			var articles []Article
 			var articleDTOs []ArticleDTO
 			dynamodbattribute.UnmarshalListOfMaps(result.Items, &articleDTOs)

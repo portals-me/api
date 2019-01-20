@@ -108,6 +108,45 @@
 
       <v-tab-item class="collection-layout">
         <v-layout flex-child wrap>
+          <template v-for="(article, index) in articles">
+            <v-hover :key="'v-hover-' + index">
+              <v-flex
+                md3
+                d-flex
+                slot-scope="{ hover }"
+                @click="$set(articleDialogs, index, true)"
+              >
+                <v-card
+                  class="mx-auto"
+                  :class="`elevation-${hover ? 6 : 2}`"
+                >
+                  <v-img
+                    :aspect-ratio="16/9"
+                    style="background-color: #eeeeee;"
+                  >
+                  </v-img>
+                  <v-card-title>
+                    {{ article.title }}
+                  </v-card-title>
+                </v-card>
+              </v-flex>
+            </v-hover>
+
+            <v-dialog
+              :key="'v-dialog-' + index"
+              v-model="articleDialogs[index]"
+              max-width="600"
+            >
+              <v-card>
+                <v-card-title class="headline">{{ article.title }}</v-card-title>
+
+                <v-card-text>
+                  {{ article.description }}
+                </v-card-text>
+              </v-card>
+            </v-dialog>
+          </template>
+
           <v-hover>
             <v-flex
               md3
@@ -234,7 +273,7 @@
                   <autogrow-textarea placeholder="myuon/myuonへのメッセージ…" />
                 </div>
 
-                <v-btn depressed color="primary">
+                <v-btn depressed color="primary" @click="postArticle">
                   送信
                 </v-btn>
               </div>
@@ -352,6 +391,7 @@ export default {
   data () {
     return {
       articleDialog: false,
+      articleDialogs: [],
       createArticleDialog: false,
       createArticleDialogTab: null,
       createArticleForm: {
@@ -362,6 +402,7 @@ export default {
         description: '',
       },
       collection: {},
+      articles: [],
     };
   },
   components: {
@@ -385,9 +426,9 @@ export default {
     clickArticleCard () {
       this.articleDialog = true;
     },
-    submit () {
+    async submit () {
       if (this.$refs.createArticleForm.validate()) {
-        console.log(this.createArticleForm);
+        await this.postArticle();
       }
     },
     async previewOEmbed () {
@@ -423,6 +464,24 @@ export default {
 
       replaceHTML(area, card_json.html);
     },
+    async loadArticles () {
+      const collectionId = this.$route.params.collectionId;
+      const result = (await sdk.article.list(collectionId)).data;
+      this.articles = result;
+    },
+    async postArticle () {
+      const collectionId = this.$route.params.collectionId;
+      await sdk.article.create(collectionId, {
+        title: this.createArticleForm.title,
+        description: this.createArticleForm.description,
+        entity: {
+          type: "share",
+          format: "oembed",
+          url: this.createArticleForm.url,
+        }
+      }).promise();
+      await this.loadArticles();
+    },
     async loadCollection () {
       const collectionId = this.$route.params.collectionId;
       const collection = (await sdk.collection.get(collectionId)).data;
@@ -435,7 +494,10 @@ export default {
     },
   },
   async mounted () {
-    await this.loadCollection();
+    await Promise.all([
+      this.loadCollection(),
+      this.loadArticles(),
+    ]);
   },
 }
 </script>
