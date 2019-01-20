@@ -332,6 +332,7 @@
         <v-container>
           <v-btn
             color="error"
+            @click="deleteCollection"
           >
             プロジェクトを削除
             <v-icon right dark>delete</v-icon>
@@ -426,6 +427,11 @@ export default {
       const collectionId = this.$route.params.collectionId;
       const collection = (await sdk.collection.get(collectionId)).data;
       this.collection = Object.assign(collection);
+    },
+    async deleteCollection () {
+      const collectionId = this.$route.params.collectionId;
+      await sdk.collection.delete(collectionId);
+      this.$router.push('/dashboard');
     },
   },
   async mounted () {
