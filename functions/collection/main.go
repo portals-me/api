@@ -68,6 +68,28 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 				StatusCode: 200,
 			}, nil
+		} else {
+			result, err := Dynamo.GetItemRequest(&dynamodb.GetItemInput{
+				TableName: aws.String(os.Getenv("EntityTable")),
+				Key: map[string]dynamodb.AttributeValue{
+					"id":   {S: aws.String("collection##" + event.PathParameters["collectionId"])},
+					"sort": {S: aws.String("detail")},
+				},
+			}).Send()
+
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			var collection Collection
+			dynamodbattribute.UnmarshalMap(result.Item, &collection)
+			out, _ := json.Marshal(collection)
+
+			return events.APIGatewayProxyResponse{
+				Body:       string(out),
+				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+				StatusCode: 200,
+			}, nil
 		}
 	}
 
