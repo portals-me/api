@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -27,7 +28,7 @@ func generatePolicy(principalID string, effect string, isGuest bool, context map
 						Action: []string{"execute-api:Invoke"},
 						Effect: effect,
 						Resource: []string{
-							"arn:aws:execute-api:*:*:*/*/GET/collections/{collectionId}",
+							"arn:aws:execute-api:*:*:*/*/GET/collections/*",
 						},
 					},
 				},
@@ -75,8 +76,9 @@ func verify(token string, keyEncoded string) (string, error) {
 }
 
 func handler(ctx context.Context, event events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
+	fmt.Println(event)
 	// Guest authorization
-	if !strings.HasPrefix(event.AuthorizationToken, "Bearer ") {
+	if !strings.HasPrefix(event.AuthorizationToken, "Bearer ") || event.AuthorizationToken == "Bearer null" {
 		return generatePolicy("guest", "Allow", true, map[string]interface{}{"id": "guest"}), nil
 	}
 

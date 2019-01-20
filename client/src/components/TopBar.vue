@@ -59,10 +59,13 @@ export default {
   async mounted () {
     this.user = JSON.parse(localStorage.getItem('user'));
 
-    if (!this.user) {
+    const needAuth = (str) => str.match(
+      /^\/collections\/(.*)/
+    );
+
+    if (!this.user && !needAuth(this.$route.path)) {
       this.$router.push('/');
     }
   },
 }
 </script>
-
