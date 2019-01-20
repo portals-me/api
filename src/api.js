@@ -35,6 +35,9 @@ const genSDK = (url, token, axios) => ({
     list: async () => {
       return await axios.get(`${url}/collections`, { headers: { Authorization: `Bearer ${token}` } });
     },
+    delete: async (collectionId) => {
+      return await axios.delete(`${url}/collections/${collectionId}`, { headers: { Authorization: `Bearer ${token}` } });
+    },
   },
 });
 

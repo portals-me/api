@@ -109,13 +109,13 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 
 		collection, err := dynamodbattribute.MarshalMap(Collection{
-			ID:             collectionID,
+			ID:             "collection##" + collectionID,
 			Sort:           "detail",
 			OwnedBy:        user["id"].(string),
 			Title:          createInput["title"].(string),
 			Description:    createInput["description"].(string),
 			Cover:          coverMap,
-			Media:          make([]string, 0),
+			Media:          []string{},
 			CommentMembers: []string{user["id"].(string)},
 			CommentCount:   0,
 			CreatedAt:      time.Now().Unix(),
@@ -140,6 +140,48 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				"Location":                    "/collections/" + collectionID,
 			},
 			StatusCode: 201,
+		}, nil
+	} else if event.HTTPMethod == "DELETE" {
+		result, err := Dynamo.QueryRequest(&dynamodb.QueryInput{
+			TableName:              aws.String(os.Getenv("EntityTable")),
+			KeyConditionExpression: aws.String("id = :id"),
+			ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
+				":id": {
+					S: aws.String("collection##" + event.PathParameters["collectionId"]),
+				},
+			},
+			ProjectionExpression: aws.String("sort"),
+		}).Send()
+
+		if err != nil {
+			return events.APIGatewayProxyResponse{}, err
+		}
+
+		writeRequest := []dynamodb.WriteRequest{}
+		for _, item := range result.Items {
+			writeRequest = append(writeRequest, dynamodb.WriteRequest{
+				DeleteRequest: &dynamodb.DeleteRequest{
+					Key: map[string]dynamodb.AttributeValue{
+						"id":   {S: aws.String("collection##" + event.PathParameters["collectionId"])},
+						"sort": item["sort"],
+					},
+				},
+			})
+		}
+
+		requestItems := map[string][]dynamodb.WriteRequest{}
+		requestItems[os.Getenv("EntityTable")] = writeRequest
+		_, err = Dynamo.BatchWriteItemRequest(&dynamodb.BatchWriteItemInput{
+			RequestItems: requestItems,
+		}).Send()
+
+		if err != nil {
+			return events.APIGatewayProxyResponse{}, err
+		}
+
+		return events.APIGatewayProxyResponse{
+			Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+			StatusCode: 204,
 		}, nil
 	}
 
