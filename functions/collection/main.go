@@ -98,7 +98,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		var createInput map[string]interface{}
 		json.Unmarshal([]byte(event.Body), &createInput)
 
-		collectionID := uuid.Must(uuid.NewV4())
+		collectionID := uuid.Must(uuid.NewV4()).String()
 
 		// care for Cover struct
 		// You cannot cast map[string]interface{} as map[string]string...
@@ -109,7 +109,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 
 		collection, err := dynamodbattribute.MarshalMap(Collection{
-			ID:             collectionID.String(),
+			ID:             collectionID,
 			Sort:           "detail",
 			OwnedBy:        user["id"].(string),
 			Title:          createInput["title"].(string),
@@ -135,7 +135,10 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 
 		return events.APIGatewayProxyResponse{
-			Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+			Headers: map[string]string{
+				"Access-Control-Allow-Origin": "*",
+				"Location":                    "/collections/" + collectionID,
+			},
 			StatusCode: 201,
 		}, nil
 	}
