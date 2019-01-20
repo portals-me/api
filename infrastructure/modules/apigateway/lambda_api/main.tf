@@ -53,7 +53,6 @@ resource "aws_api_gateway_integration" "main" {
 
 resource "aws_lambda_permission" "main" {
   count = "${var.methods_count}"
-  statement_id = "AllowExecutionFromAPIGateway"
   action = "lambda:InvokeFunction"
   function_name = "${lookup(var.methods[count.index], "function_arn")}"
   principal = "apigateway.amazonaws.com"
