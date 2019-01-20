@@ -106,7 +106,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		} else {
 			result, err := Dynamo.QueryRequest(&dynamodb.QueryInput{
 				TableName:              aws.String(os.Getenv("EntityTable")),
-				KeyConditionExpression: aws.String("owned_by = :owned_by and begins_with(id, :id)"),
+				KeyConditionExpression: aws.String("id = :id and begins_with(sort, :sort)"),
 				ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
 					":id": {
 						S: aws.String("collection##" + collectionID),
