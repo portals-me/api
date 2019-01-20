@@ -25,7 +25,7 @@ func generatePolicy(principalID, effect, resource string, context map[string]int
 				{
 					Action:   []string{"execute-api:Invoke"},
 					Effect:   effect,
-					Resource: []string{resource},
+					Resource: []string{"arn:aws:execute-api:*:*:*/*/*"},
 				},
 			},
 		}
