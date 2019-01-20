@@ -63,11 +63,19 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			dynamodbattribute.UnmarshalListOfMaps(result.Items, &collections)
 			out, _ := json.Marshal(collections)
 
-			return events.APIGatewayProxyResponse{Body: string(out), StatusCode: 200}, nil
+			return events.APIGatewayProxyResponse{
+				Body:       string(out),
+				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+				StatusCode: 200,
+			}, nil
 		}
 	}
 
-	return events.APIGatewayProxyResponse{Body: fmt.Sprintf("%+v", event.PathParameters), StatusCode: 200}, nil
+	return events.APIGatewayProxyResponse{
+		Body:       fmt.Sprintf("%+v", event.PathParameters),
+		Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+		StatusCode: 400,
+	}, nil
 }
 
 func main() {
