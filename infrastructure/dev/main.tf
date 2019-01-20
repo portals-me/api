@@ -16,6 +16,7 @@ module "apigateway" {
   hello_arn = "${var.apex_function_hello}"
   user_arn = "${var.apex_function_user}"
   collection_arn = "${var.apex_function_collection}"
+  article_arn = "${var.apex_function_article}"
 }
 
 module "dynamodb" {
