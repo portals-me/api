@@ -19,8 +19,9 @@ module "collections" {
 }
 
 module "collections-cors" {
-  source = "cors_api"
+  source = "github.com/squidfunk/terraform-aws-api-gateway-enable-cors"
+  version = "0.2.0"
 
-  rest_api_id = "${aws_api_gateway_rest_api.restapi.id}"
-  resource_id = "${module.collections.id}"
+  api_id          = "${aws_api_gateway_rest_api.restapi.id}"
+  api_resource_id = "${module.collections.id}"
 }
