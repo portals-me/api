@@ -47,7 +47,7 @@
                   label="URLを入力"
                   :rules="[v => !!v || '必須項目です']"
                   required
-                  @input="previewOEmbed"
+                  @input="previewOEmbed($refs.oEmbedPreview, createArticleForm.url)"
                 />
 
                 <v-text-field
@@ -108,51 +108,12 @@
 
       <v-tab-item class="collection-layout">
         <v-layout flex-child wrap>
-          <template v-for="(article, index) in articles">
-            <v-hover :key="'v-hover-' + index">
-              <v-flex
-                md3
-                d-flex
-                slot-scope="{ hover }"
-                @click="$set(articleDialogs, index, true)"
-              >
-                <v-card
-                  class="mx-auto"
-                  :class="`elevation-${hover ? 6 : 2}`"
-                >
-                  <v-img
-                    :aspect-ratio="16/9"
-                    style="background-color: #eeeeee;"
-                  >
-                  </v-img>
-                  <v-card-title>
-                    {{ article.title }}
-                  </v-card-title>
-                </v-card>
-              </v-flex>
-            </v-hover>
-
-            <v-dialog
-              :key="'v-dialog-' + index"
-              v-model="articleDialogs[index]"
-              max-width="600"
-            >
-              <v-card>
-                <v-card-title class="headline">{{ article.title }}</v-card-title>
-
-                <v-card-text>
-                  {{ article.description }}
-                </v-card-text>
-              </v-card>
-            </v-dialog>
-          </template>
-
-          <v-hover>
+          <v-hover :key="'v-hover-' + index" v-for="(article, index) in articles">
             <v-flex
               md3
               d-flex
               slot-scope="{ hover }"
-              @click="clickArticleCard"
+              @click="clickArticleCard(index)"
             >
               <v-card
                 class="mx-auto"
@@ -164,76 +125,7 @@
                 >
                 </v-img>
                 <v-card-title>
-                  Project Meow
-                </v-card-title>
-              </v-card>
-            </v-flex>
-          </v-hover>
-
-          <v-hover>
-            <v-flex
-              md3
-              d-flex
-              slot-scope="{ hover }"
-              @click="clickArticleCard"
-            >
-              <v-card
-                class="mx-auto"
-                :class="`elevation-${hover ? 6 : 2}`"
-              >
-                <v-img
-                  :aspect-ratio="16/9"
-                  style="background-color: #80CBC4;"
-                >
-                </v-img>
-                <v-card-title>
-                  Project Meow
-                </v-card-title>
-              </v-card>
-            </v-flex>
-          </v-hover>
-
-          <v-hover>
-            <v-flex
-              md3
-              d-flex
-              slot-scope="{ hover }"
-              @click="clickArticleCard"
-            >
-              <v-card
-                class="mx-auto"
-                :class="`elevation-${hover ? 6 : 2}`"
-              >
-                <v-img
-                  :aspect-ratio="16/9"
-                  style="background-color: #EF9A9A;"
-                >
-                </v-img>
-                <v-card-title>
-                  Project Meow
-                </v-card-title>
-              </v-card>
-            </v-flex>
-          </v-hover>
-
-          <v-hover>
-            <v-flex
-              md3
-              d-flex
-              slot-scope="{ hover }"
-              @click="clickArticleCard"
-            >
-              <v-card
-                class="mx-auto"
-                :class="`elevation-${hover ? 6 : 2}`"
-              >
-                <v-img
-                  :aspect-ratio="16/9"
-                  style="background-color: #9FA8DA;"
-                >
-                </v-img>
-                <v-card-title>
-                  Project Meow
+                  {{ article.title }}
                 </v-card-title>
               </v-card>
             </v-flex>
@@ -245,10 +137,14 @@
           max-width="600"
         >
           <v-card>
-            <v-card-title class="headline">Article #0</v-card-title>
+            <v-card-title class="headline" v-if="activeArticle.id">{{ activeArticle.title }}</v-card-title>
 
             <v-card-text>
-              ほげほげ
+              <pre v-if="activeArticle.id">{{ activeArticle.description }}</pre>
+
+              <p v-if="activeArticle.id && activeArticle.entity.type == 'share'"><a :href="activeArticle.entity.url">{{ activeArticle.entity.url }}</a></p>
+
+              <div ref="articleDialog"></div>
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -273,7 +169,7 @@
                   <autogrow-textarea placeholder="myuon/myuonへのメッセージ…" />
                 </div>
 
-                <v-btn depressed color="primary" @click="postArticle">
+                <v-btn depressed color="primary">
                   送信
                 </v-btn>
               </div>
@@ -391,7 +287,6 @@ export default {
   data () {
     return {
       articleDialog: false,
-      articleDialogs: [],
       createArticleDialog: false,
       createArticleDialogTab: null,
       createArticleForm: {
@@ -403,6 +298,7 @@ export default {
       },
       collection: {},
       articles: [],
+      activeArticle: {},
     };
   },
   components: {
@@ -423,51 +319,51 @@ export default {
     AutogrowTextarea,
   },
   methods: {
-    clickArticleCard () {
+    clickArticleCard (index) {
       this.articleDialog = true;
-    },
-    async submit () {
-      if (this.$refs.createArticleForm.validate()) {
-        await this.postArticle();
+      this.activeArticle = this.articles[index];
+
+      if (this.activeArticle.entity.type === 'share') {
+        this.previewOEmbed(this.$refs.articleDialog, this.activeArticle.entity.url);
       }
     },
-    async previewOEmbed () {
+    async previewOEmbed (elem, url_raw) {
       const getProvider = (url) => {
         if (/https:\/\/twitter\.com\/.*\/status\/.*/.test(url)) {
-          console.log('twitter!');
           return `https://publish.twitter.com/oembed?format=json&url=${encodeURIComponent(url)}`
         }
       };
-      const area = this.$refs.oEmbedPreview;
 
-      const url = getProvider(this.createArticleForm.url);
-      console.log(url);
+      const url = getProvider(url_raw);
 
       if (!url) {
-        area.innerText = 'ここにプレビューが表示されます…';
+        elem.innerText = 'ここにプレビューが表示されます…';
         return;
       };
 
       const response = await fetchJsonp(url);
       const card_json = await response.json();
-      console.log(card_json);
 
       const replaceHTML = (element, html) => {
         element.innerHTML = html;
         element.querySelectorAll('script').forEach(scriptElement => {
           const se = document.createElement('script');
           se.src = scriptElement.src;
-          console.log(scriptElement.src);
           scriptElement.replaceWith(se);
         });
       }
 
-      replaceHTML(area, card_json.html);
+      replaceHTML(elem, card_json.html);
     },
     async loadArticles () {
       const collectionId = this.$route.params.collectionId;
       const result = (await sdk.article.list(collectionId)).data;
       this.articles = result;
+    },
+    async submit () {
+      if (this.$refs.createArticleForm.validate()) {
+        await this.postArticle();
+      }
     },
     async postArticle () {
       const collectionId = this.$route.params.collectionId;
@@ -479,7 +375,7 @@ export default {
           format: "oembed",
           url: this.createArticleForm.url,
         }
-      }).promise();
+      });
       await this.loadArticles();
     },
     async loadCollection () {
