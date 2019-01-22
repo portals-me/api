@@ -47,6 +47,13 @@ const genSDK = (url, token, axios) => ({
         { headers: { Authorization: `Bearer ${token}` } }
       );
     },
+    generate_presigned_url: async (collectionId, key) => {
+      return await axios.post(
+        `${url}/collections/${collectionId}/articles-presigned`,
+        key,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    },
     list: async (collectionId) => {
       return await axios.get(`${url}/collections/${collectionId}/articles`, { headers: { Authorization: `Bearer ${token}` } });
     },

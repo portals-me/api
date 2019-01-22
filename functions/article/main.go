@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	uuid "github.com/satori/go.uuid"
 
@@ -145,51 +148,87 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			}, nil
 		}
 	} else if event.HTTPMethod == "POST" {
-		var createInput map[string]interface{}
-		json.Unmarshal([]byte(event.Body), &createInput)
+		// OMG
+		if strings.HasSuffix(event.Path, "/articles-presigned") {
+			if event.Body == "" {
+				return events.APIGatewayProxyResponse{}, errors.New("Empty filepath")
+			}
 
-		articleID := uuid.Must(uuid.NewV4()).String()
+			S3 := s3.New(cfg)
 
-		// care for Entity struct
-		entityMap := map[string]string{}
-		entity := createInput["entity"].(map[string]interface{})
-		for key, value := range entity {
-			entityMap[key] = value.(string)
+			signedURL, _ := S3.PutObjectRequest(&s3.PutObjectInput{
+				Bucket: aws.String("portals-me-storage-users"),
+				Key:    aws.String(user["id"].(string) + "/" + collectionID + "/" + event.Body),
+			}).Presign(15 * time.Minute)
+
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			return events.APIGatewayProxyResponse{
+				Body:       signedURL,
+				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+				StatusCode: 200,
+			}, nil
+		} else {
+			var createInput map[string]interface{}
+			json.Unmarshal([]byte(event.Body), &createInput)
+
+			articleID := uuid.Must(uuid.NewV4()).String()
+
+			// care for Entity struct
+			entityMap := map[string]string{}
+			entity := createInput["entity"].(map[string]interface{})
+			for key, value := range entity {
+				entityMap[key] = value.(string)
+			}
+
+			collection, err := dynamodbattribute.MarshalMap(Article{
+				ID:          articleID,
+				Entity:      entityMap,
+				Title:       createInput["title"].(string),
+				Description: createInput["description"].(string),
+				CreatedAt:   time.Now().Unix(),
+				OwnedBy:     user["id"].(string),
+			}.ToDTO(collectionID))
+
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			result, err := Dynamo.GetItemRequest(&dynamodb.GetItemInput{
+				TableName: aws.String(os.Getenv("EntityTable")),
+				Key: map[string]dynamodb.AttributeValue{
+					"id":   {S: aws.String("collection##" + collectionID)},
+					"sort": {S: aws.String("detail")},
+				},
+			}).Send()
+
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			if user["id"].(string) != *result.Item["owned_by"].S {
+				return events.APIGatewayProxyResponse{}, errors.New("AccessDenied")
+			}
+
+			_, err = Dynamo.PutItemRequest(&dynamodb.PutItemInput{
+				TableName: aws.String(os.Getenv("EntityTable")),
+				Item:      collection,
+			}).Send()
+
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			return events.APIGatewayProxyResponse{
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin": "*",
+					"Location":                    "/collections/" + collectionID + "/articles/" + articleID,
+				},
+				StatusCode: 201,
+			}, nil
 		}
-
-		collection, err := dynamodbattribute.MarshalMap(Article{
-			ID:          articleID,
-			Entity:      entityMap,
-			Title:       createInput["title"].(string),
-			Description: createInput["description"].(string),
-			CreatedAt:   time.Now().Unix(),
-			OwnedBy:     user["id"].(string),
-		}.ToDTO(collectionID))
-
-		if err != nil {
-			return events.APIGatewayProxyResponse{}, err
-		}
-
-		_, err = Dynamo.PutItemRequest(&dynamodb.PutItemInput{
-			TableName:           aws.String(os.Getenv("EntityTable")),
-			Item:                collection,
-			ConditionExpression: aws.String("owned_by = :user_id"),
-			ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-				":user_id": {S: aws.String(user["id"].(string))},
-			},
-		}).Send()
-
-		if err != nil {
-			return events.APIGatewayProxyResponse{}, err
-		}
-
-		return events.APIGatewayProxyResponse{
-			Headers: map[string]string{
-				"Access-Control-Allow-Origin": "*",
-				"Location":                    "/collections/" + collectionID + "/articles/" + articleID,
-			},
-			StatusCode: 201,
-		}, nil
 	}
 
 	return events.APIGatewayProxyResponse{
