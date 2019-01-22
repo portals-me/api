@@ -450,13 +450,15 @@ export default {
         await axios.put(presignedURL, this.imageData[0].file, {
           headers: { 'Content-Type': this.imageData[0].file.type },
         });
+
+        const user = JSON.parse(localStorage.getItem('user'));
         await sdk.article.create(collectionId, {
           title: this.createArticleForm.title,
           description: this.createArticleForm.description,
           entity: {
             type: "image",
             format: "png",
-            url: this.imageData[0].file.name,
+            url: `https://s3-ap-northeast-1.amazonaws.com/portals-me-storage-users/${encodeURIComponent(user.id)}/${collectionId}/${this.imageData[0].file.name}`,
           }
         });
       } else {
