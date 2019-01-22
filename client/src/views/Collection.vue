@@ -31,57 +31,122 @@
             </v-card-title>
 
             <v-card-text>
-              <v-container fluid>
-                <div ref="oEmbedPreview">
-                  ここにプレビューが表示されます…
-                </div>
-              </v-container>
-
-              <v-form
-                v-model="createArticleForm.valid"
-                ref="createArticleForm"
-                lazy-validation
+              <v-tabs
+                v-model="activeTabInCreateArticleDialog"
+                color="indigo lighten-5"
               >
-                <v-text-field
-                  v-model="createArticleForm.url"
-                  label="URLを入力"
-                  :rules="[v => !!v || '必須項目です']"
-                  required
-                  @input="previewOEmbed($refs.oEmbedPreview, createArticleForm.url)"
-                />
+                <v-tab ripple>URL共有</v-tab>
+                <v-tab ripple>ファイル</v-tab>
 
-                <v-text-field
-                  v-model="createArticleForm.title"
-                  label="タイトル"
-                  :rules="[v => !!v || '必須項目です']"
-                  required
-                />
+                <v-tab-item>
+                  <v-container fluid>
+                    <div ref="oEmbedPreview">
+                      ここにプレビューが表示されます…
+                    </div>
+                  </v-container>
 
-                <v-textarea
-                  v-model="createArticleForm.description"
-                  label="説明(任意)"
-                  auto-grow
-                  rows="1"
-                />
+                  <v-form
+                    v-model="createArticleForm.valid"
+                    ref="createArticleForm"
+                    lazy-validation
+                  >
+                    <v-text-field
+                      v-model="createArticleForm.url"
+                      label="URLを入力"
+                      :rules="[v => !!v || '必須項目です']"
+                      required
+                      @input="previewOEmbed($refs.oEmbedPreview, createArticleForm.url)"
+                    />
 
-                <v-checkbox
-                  v-model="createArticleForm.checkbox"
-                  :rules="[v => !!v || '作品を登録できるのは正当な権利者のみです']"
-                  label="私はこの作品の正当な権利者であり、他のいかなる権利の侵害もしていません"
-                  required
-                >
-                </v-checkbox>
+                    <v-text-field
+                      v-model="createArticleForm.title"
+                      label="タイトル"
+                      :rules="[v => !!v || '必須項目です']"
+                      required
+                    />
 
-                <v-btn
-                  :disabled="!createArticleForm.valid"
-                  color="indigo"
-                  dark
-                  @click="submit"
-                >
-                  <v-icon left>send</v-icon>
-                  送信
-                </v-btn>
-              </v-form>
+                    <v-textarea
+                      v-model="createArticleForm.description"
+                      label="説明(任意)"
+                      auto-grow
+                      rows="1"
+                    />
+
+                    <v-checkbox
+                      v-model="createArticleForm.checkbox"
+                      :rules="[v => !!v || '作品を登録できるのは正当な権利者のみです']"
+                      label="私はこの作品の正当な権利者であり、他のいかなる権利の侵害もしていません"
+                      required
+                    >
+                    </v-checkbox>
+
+                    <v-btn
+                      :disabled="!createArticleForm.valid"
+                      color="indigo"
+                      dark
+                      @click="submit"
+                    >
+                      <v-icon left>send</v-icon>
+                      送信
+                    </v-btn>
+                  </v-form>
+                </v-tab-item>
+
+                <v-tab-item>
+                  <v-form
+                    v-model="createArticleForm.valid"
+                    ref="createArticleForm"
+                    lazy-validation
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      @change="selectFiles"
+                    />
+                    <div class="preview" v-if="imageData">
+                      <img
+                        v-for="(file, index) in imageData"
+                        :key="index"
+                        :src="file.src"
+                      >
+                    </div>
+
+                    <v-text-field
+                      v-model="createArticleForm.title"
+                      label="タイトル"
+                      :rules="[v => !!v || '必須項目です']"
+                      required
+                    />
+
+                    <v-textarea
+                      v-model="createArticleForm.description"
+                      label="説明(任意)"
+                      auto-grow
+                      rows="1"
+                    />
+
+                    <v-checkbox
+                      v-model="createArticleForm.checkbox"
+                      :rules="[v => !!v || '作品を登録できるのは正当な権利者のみです']"
+                      label="私はこの作品の正当な権利者であり、他のいかなる権利の侵害もしていません"
+                      required
+                    >
+                    </v-checkbox>
+
+                    <v-btn
+                      :disabled="!createArticleForm.valid"
+                      color="indigo"
+                      dark
+                      @click="submit"
+                    >
+                      <v-icon left>send</v-icon>
+                      送信
+                    </v-btn>
+                  </v-form>
+                </v-tab-item>
+              </v-tabs>
+
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -282,10 +347,12 @@
 import AutogrowTextarea from '@/components/AutogrowTextarea';
 import fetchJsonp from 'fetch-jsonp';
 import sdk from '@/app/sdk';
+import axios from 'axios';
 
 export default {
   data () {
     return {
+      activeTabInCreateArticleDialog: null,
       articleDialog: false,
       createArticleDialog: false,
       createArticleDialogTab: null,
@@ -299,6 +366,7 @@ export default {
       collection: {},
       articles: [],
       activeArticle: {},
+      imageData: [],
     };
   },
   components: {
@@ -319,12 +387,22 @@ export default {
     AutogrowTextarea,
   },
   methods: {
+    selectFiles (input) {
+      Array.from(input.target.files).forEach((file, index) => {
+        const url = URL.createObjectURL(file);
+        this.imageData.push({ src: url, file: file });
+      });
+    },
     clickArticleCard (index) {
       this.articleDialog = true;
       this.activeArticle = this.articles[index];
 
       if (this.activeArticle.entity.type === 'share') {
         this.previewOEmbed(this.$refs.articleDialog, this.activeArticle.entity.url);
+      } else if (this.activeArticle.entity.type === 'image') {
+        const collectionId = this.$route.params.collectionId;
+        const user = JSON.parse(localStorage.getItem('user'));
+        this.$refs.articleDialog.innerHTML = `<img src="https://s3-ap-northeast-1.amazonaws.com/portals-me-storage-users/${encodeURIComponent(user.id)}/${collectionId}/${this.activeArticle.entity.url}" />`;
       }
     },
     async previewOEmbed (elem, url_raw) {
@@ -367,15 +445,33 @@ export default {
     },
     async postArticle () {
       const collectionId = this.$route.params.collectionId;
-      await sdk.article.create(collectionId, {
-        title: this.createArticleForm.title,
-        description: this.createArticleForm.description,
-        entity: {
-          type: "share",
-          format: "oembed",
-          url: this.createArticleForm.url,
-        }
-      });
+
+      if (this.imageData.length != 0) {
+        const presignedURL = (await sdk.article.generate_presigned_url(collectionId, this.imageData[0].file.name)).data;
+        await axios.put(presignedURL, this.imageData[0].file, {
+          headers: { 'Content-Type': this.imageData[0].file.type },
+        });
+        await sdk.article.create(collectionId, {
+          title: this.createArticleForm.title,
+          description: this.createArticleForm.description,
+          entity: {
+            type: "image",
+            format: "png",
+            url: this.imageData[0].file.name,
+          }
+        });
+      } else {
+        await sdk.article.create(collectionId, {
+          title: this.createArticleForm.title,
+          description: this.createArticleForm.description,
+          entity: {
+            type: "share",
+            format: "oembed",
+            url: this.createArticleForm.url,
+          }
+        });
+      }
+
       await this.loadArticles();
     },
     async loadCollection () {
