@@ -186,9 +186,8 @@
               >
                 <v-img
                   :aspect-ratio="16/9"
-                  style="background-color: #eeeeee;"
-                >
-                </v-img>
+                  :src="article.entity.type == 'image' ? article.entity.url : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQYV2N4+PDhfwAI7QOjRSIQaQAAAABJRU5ErkJggg=='"
+                />
                 <v-card-title>
                   {{ article.title }}
                 </v-card-title>
@@ -402,7 +401,7 @@ export default {
       } else if (this.activeArticle.entity.type === 'image') {
         const collectionId = this.$route.params.collectionId;
         const user = JSON.parse(localStorage.getItem('user'));
-        this.$refs.articleDialog.innerHTML = `<img src="https://s3-ap-northeast-1.amazonaws.com/portals-me-storage-users/${encodeURIComponent(user.id)}/${collectionId}/${this.activeArticle.entity.url}" />`;
+        this.$refs.articleDialog.innerHTML = `<img src="${this.activeArticle.entity.url}" />`;
       }
     },
     async previewOEmbed (elem, url_raw) {
