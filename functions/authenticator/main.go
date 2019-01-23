@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"os"
 	"time"
+
+	"github.com/gbrlsnchs/jwt"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
 
@@ -35,6 +39,36 @@ type User struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Picture     string `json:"picture"`
+}
+
+type JwtPayload struct {
+	ID          string `json:"id"`
+	CreatedAt   int64  `json:"created_at"`
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	Picture     string `json:"picture"`
+}
+
+func (user User) ToJwtPayload() JwtPayload {
+	return JwtPayload{
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		Name:        user.Name,
+		DisplayName: user.DisplayName,
+		Picture:     user.Picture,
+	}
+}
+
+func sign(plain []byte, keyEncoded string) ([]byte, error) {
+	block, _ := pem.Decode([]byte(keyEncoded))
+	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
+	es256 := jwt.NewES256(privateKey, &privateKey.PublicKey)
+
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return es256.Sign(plain)
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -102,11 +136,62 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				},
 			}, nil
 		}
-	}
-	if event.HTTPMethod == "POST" {
-		if event.PathParameters["userId"] == "me" {
-			out, _ := json.Marshal(event.RequestContext.Authorizer)
-			return events.APIGatewayProxyResponse{Body: string(out), StatusCode: 200}, nil
+	} else if event.Path == "/auth/signIn" {
+		if event.HTTPMethod == "POST" {
+			getIdReq, err := idp.GetIdRequest(&cognitoidentity.GetIdInput{
+				IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
+				Logins: map[string]string{
+					"accounts.google.com": event.Body,
+				},
+			}).Send()
+
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			identityID := *getIdReq.IdentityId
+			userID := "user##" + identityID
+
+			getItemReq, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
+				TableName: aws.String(os.Getenv("EntityTable")),
+				Key: map[string]dynamodb.AttributeValue{
+					"id":   {S: aws.String(userID)},
+					"sort": {S: aws.String("detail")},
+				},
+			}).Send()
+
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			var user User
+			err = dynamodbattribute.UnmarshalMap(getItemReq.Item, user)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			jsn, err := json.Marshal(user.ToJwtPayload())
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			token, err := sign(jsn, os.Getenv("JwtPrivate"))
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			body, err := json.Marshal(map[string]interface{}{
+				"id_token": token,
+				"user":     jsn,
+			})
+
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin": "*",
+				},
+				Body: string(body),
+			}, nil
 		}
 	}
 
