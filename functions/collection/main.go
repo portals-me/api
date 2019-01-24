@@ -48,13 +48,11 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				TableName:              aws.String(os.Getenv("EntityTable")),
 				IndexName:              aws.String("owner"),
 				KeyConditionExpression: aws.String("owned_by = :owned_by and begins_with(id, :id)"),
+				FilterExpression:       aws.String("sort = :sort"),
 				ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-					":owned_by": {
-						S: aws.String(user["id"].(string)),
-					},
-					":id": {
-						S: aws.String("collection"),
-					},
+					":owned_by": {S: aws.String(user["id"].(string))},
+					":id":       {S: aws.String("collection")},
+					":sort":     {S: aws.String("detail")},
 				},
 			}).Send()
 
