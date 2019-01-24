@@ -171,7 +171,7 @@ export default {
         const result = (await sdk.signIn(user.getAuthResponse().id_token)).data;
 
         localStorage.setItem('id_token', result.id_token);
-        localStorage.setItem('user', JSON.stringify(result.user));
+        localStorage.setItem('user', result.user);
         this.$router.push('/dashboard');
       } catch (err) {
         console.error(err.response.data);
