@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -59,7 +60,7 @@ func (user User) ToJwtPayload() JwtPayload {
 	}
 }
 
-func sign(plain []byte, keyEncoded string) ([]byte, error) {
+func sign(payload []byte, keyEncoded string) ([]byte, error) {
 	block, _ := pem.Decode([]byte(keyEncoded))
 	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
 	es256 := jwt.NewES256(privateKey, &privateKey.PublicKey)
@@ -68,7 +69,20 @@ func sign(plain []byte, keyEncoded string) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	return es256.Sign(plain)
+	header, _ := json.Marshal(map[string]string{
+		"alg": "ES256",
+		"typ": "JWT",
+	})
+
+	headerEnc := base64.StdEncoding.EncodeToString(header)
+	payloadEnc := base64.StdEncoding.EncodeToString(payload)
+	signed, err := es256.Sign([]byte(headerEnc + "." + payloadEnc))
+
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return signed, err
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -181,8 +195,8 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			}
 
 			body, err := json.Marshal(map[string]interface{}{
-				"id_token": token,
-				"user":     jsn,
+				"id_token": string(token),
+				"user":     string(jsn),
 			})
 
 			return events.APIGatewayProxyResponse{
