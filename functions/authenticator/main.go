@@ -165,7 +165,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			}
 
 			var user User
-			err = dynamodbattribute.UnmarshalMap(getItemReq.Item, user)
+			err = dynamodbattribute.UnmarshalMap(getItemReq.Item, &user)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}

@@ -50,7 +50,7 @@ export default {
       localStorage.setItem('id_token', '');
       localStorage.setItem('user', '{}');
       this.user = null;
-      this.$router.push('/signin');
+      this.$router.push('/');
     },
     toggleDrawer () {
       this.$store.commit('toggleDrawer')
