@@ -30,8 +30,8 @@ Vue.use(GAuth, {
 Vue.use(VueAxios, axios);
 Vue.use(VueAuthenticate, {
   baseUrl: 'http://localhost:8080',
-  providers: require('@/app/token.json'),
-})
+  providers: require('../../token/auth.json'),
+});
 
 new Vue({
   router,

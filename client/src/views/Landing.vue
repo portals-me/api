@@ -102,7 +102,7 @@
                 <v-container>
                   <v-btn color="red" @click="signInWithGoogle" dark>Googleでサインイン</v-btn>
                   <br />
-                  <v-btn color="light-blue" @click="signInWithTwitter" dark>Twitterでサインアップ</v-btn>
+                  <v-btn color="light-blue" @click="signInWithTwitter" dark>Twitterでサインイン</v-btn>
                 </v-container>
               </v-tab-item>
             </v-tabs>
@@ -149,8 +149,6 @@ export default {
 
       this.signupStep ++;
     },
-    async authWithTwitter () {
-    },
     async createAccount () {
       try {
         const result = (await sdk.signUp({
@@ -181,6 +179,10 @@ export default {
         console.error(err.response.data);
         return;
       }
+    },
+    async signInWithTwitter () {
+      const authResponse = await this.$auth.authenticate('twitter');
+      console.log(authResponse);
     },
   }
 }

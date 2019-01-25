@@ -1,5 +1,3 @@
 dist/
 coverage/
 node_modules/
-
-src/app/token.json
