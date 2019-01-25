@@ -101,6 +101,8 @@
               <v-tab-item>
                 <v-container>
                   <v-btn color="red" @click="signInWithGoogle" dark>Googleでサインイン</v-btn>
+                  <br />
+                  <v-btn color="light-blue" @click="signInWithTwitter" dark>Twitterでサインアップ</v-btn>
                 </v-container>
               </v-tab-item>
             </v-tabs>
@@ -146,6 +148,8 @@ export default {
       };
 
       this.signupStep ++;
+    },
+    async authWithTwitter () {
     },
     async createAccount () {
       try {

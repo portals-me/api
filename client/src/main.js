@@ -8,6 +8,8 @@ import axios from 'axios'
 import firebase from 'firebase'
 import store from '@/store'
 import GAuth from 'vue-google-oauth2'
+import VueAxios from 'vue-axios'
+import VueAuthenticate from 'vue-authenticate'
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -24,6 +26,12 @@ Vue.use(GAuth, {
   clientId: '670077302427-0r21asrffhmuhkvfq10qa8kj86cslojn.apps.googleusercontent.com',
   scope: 'profile email https://www.googleapis.com/auth/plus.login'
 });
+
+Vue.use(VueAxios, axios);
+Vue.use(VueAuthenticate, {
+  baseUrl: 'http://localhost:8080',
+  providers: require('@/app/token.json'),
+})
 
 new Vue({
   router,
