@@ -58,3 +58,27 @@ module "auth-signIn-cors" {
   api_id          = "${aws_api_gateway_rest_api.restapi.id}"
   api_resource_id = "${module.auth-signIn.id}"
 }
+
+module "auth-twitter" {
+  source = "lambda_api"
+
+  rest_api_id = "${aws_api_gateway_rest_api.restapi.id}"
+  parent_id = "${module.auth.id}"
+  path_part = "twitter"
+
+  methods_count = 1
+  methods = [
+    {
+      http_method = "POST"
+      function_arn = "${var.authenticator_arn}"
+    }
+  ]
+}
+
+module "auth-twitter-cors" {
+  source = "github.com/squidfunk/terraform-aws-api-gateway-enable-cors"
+  version = "0.2.0"
+
+  api_id          = "${aws_api_gateway_rest_api.restapi.id}"
+  api_resource_id = "${module.auth-twitter.id}"
+}
