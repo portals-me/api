@@ -260,6 +260,15 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				},
 				Body: url,
 			}, nil
+		} else if event.HTTPMethod == "GET" {
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin": "*",
+					"Content-Type":                "text/html",
+				},
+				Body: event.QueryStringParameters["oauth_token"],
+			}, nil
 		}
 	}
 
