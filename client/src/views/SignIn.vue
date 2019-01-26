@@ -16,7 +16,8 @@
         </v-tab>
 
         <v-tab-item>
-          <v-btn color="red" dark>Googleでアカウント作成</v-btn>
+          <p style="color: red">{{ signUpError }}</p>
+          <v-btn color="red" darkb @click="signUpWithGoogle">Googleでアカウント作成</v-btn>
           <br />
           <v-btn color="light-blue" dark>Twitterでアカウント作成</v-btn>
         </v-tab-item>
@@ -41,6 +42,7 @@ export default {
     return {
       tab: 0,
       signInError: '',
+      signUpError: '',
     };
   },
   methods: {
@@ -79,6 +81,8 @@ export default {
       localStorage.setItem('id_token', id_token);
       localStorage.setItem('user', user);
       this.$router.push('/dashboard');
+    },
+    async signUpWithGoogle () {
     },
   },
   mounted () {

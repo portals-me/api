@@ -26,7 +26,7 @@ export default new Router({
     },
     {
       path: '/signup',
-      name: 'collection',
+      name: 'signup',
       components: {
         default: SignIn,
         topbar: UnsignedTopBar,
@@ -34,7 +34,7 @@ export default new Router({
     },
     {
       path: '/signin',
-      name: 'collection',
+      name: 'signin',
       components: {
         default: SignIn,
         topbar: UnsignedTopBar,
@@ -42,7 +42,7 @@ export default new Router({
     },
     {
       path: '/signin/twitter-callback',
-      name: 'collection',
+      name: 'signin-twitter-callback',
       components: {
         default: SignIn,
         topbar: UnsignedTopBar,
