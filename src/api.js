@@ -3,7 +3,7 @@ const genSDK = (url, token, axios) => ({
     return await axios.post(`${url}/auth/signUp`, JSON.stringify(json));
   },
   signIn: async (gtoken) => {
-    return await axios.post(`${url}/auth/signIn`, gtoken);
+    return await axios.post(`${url}/auth/signIn`, JSON.stringify(gtoken));
   },
   user: {
     me: async () => {
