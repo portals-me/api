@@ -20,6 +20,7 @@ Vue.use(vueConfig, {
   axios,
   firebase,
   isDev,
+  providers: require('../../token/auth.json'),
 });
 
 Vue.use(GAuth, {

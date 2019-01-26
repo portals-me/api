@@ -115,6 +115,7 @@
 
 <script>
 import sdk from '@/app/sdk';
+import axios from 'axios';
 
 export default {
   data () {
@@ -181,8 +182,9 @@ export default {
       }
     },
     async signInWithTwitter () {
-      const authResponse = await this.$auth.authenticate('twitter');
-      console.log(authResponse);
+      const result = await axios.post('https://ibsrd4lyxk.execute-api.ap-northeast-1.amazonaws.com/dev/auth/twitter');
+      console.log(result);
+      location.href = result.data;
     },
   }
 }
