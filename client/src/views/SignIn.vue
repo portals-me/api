@@ -2,7 +2,7 @@
   <v-layout justify-center>
     <v-flex xs4>
       <v-tabs
-        v-model="dialogTab"
+        v-model="tab"
       >
         <v-tab
           ripple
@@ -21,6 +21,7 @@
           <v-btn color="light-blue" dark>Twitterでアカウント作成</v-btn>
         </v-tab-item>
         <v-tab-item>
+          <p style="color: red">{{ signInError }}</p>
           <v-btn color="red" dark @click="signInWithGoogle">Googleでログイン</v-btn>
           <br />
           <v-btn color="light-blue" dark @click="signInWithTwitter">Twitterでログイン</v-btn>
@@ -38,13 +39,8 @@ export default {
   props: [ 'signin' ],
   data () {
     return {
-      dialogTab: 0,
-      signUpStep: null,
-      form: {
-        name: '',
-        photo: '',
-      },
-      errorMessage: '',
+      tab: 0,
+      signInError: '',
     };
   },
   methods: {
@@ -68,10 +64,16 @@ export default {
       // Jump to mounted.twitter-callback
     },
     async signInWithTwitterAfter (token) {
-      const result = (await sdk.signIn({
-        twitter: `${token.oauth_token}.${token.oauth_verifier}`,
-      })).data;
-      await this.signIn(result);
+      try {
+        const result = (await sdk.signIn({
+          twitter: `${token.oauth_token}.${token.oauth_verifier}`,
+        })).data;
+        await this.signIn(result);
+      } catch (err) {
+        this.signInError = 'LoginError';
+        this.$router.push('/signin');
+        return;
+      }
     },
     async signIn ({ id_token, user }) {
       localStorage.setItem('id_token', id_token);
@@ -81,7 +83,7 @@ export default {
   },
   mounted () {
     if (this.$route.path.startsWith('/signin')) {
-      this.dialogTab = 1;
+      this.tab = 1;
     }
 
     // twitter-callback
