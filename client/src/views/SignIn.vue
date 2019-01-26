@@ -53,7 +53,7 @@ export default {
         })).data;
         await this.signIn(result);
       } catch (err) {
-        console.error(err.response.data);
+        this.signInError = err.response.data;
         return;
       }
     },
