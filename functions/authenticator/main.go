@@ -145,6 +145,11 @@ func GetTwitterUser(cred *oauth.Credentials, user *TwitterUser) error {
 	return nil
 }
 
+type SignInInput struct {
+	Twitter string `json:"twitter"`
+	Google  string `json:"google"`
+}
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
@@ -212,18 +217,48 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 	} else if event.Path == "/auth/signIn" {
 		if event.HTTPMethod == "POST" {
-			getIdReq, err := idp.GetIdRequest(&cognitoidentity.GetIdInput{
+			var input SignInInput
+			err := json.Unmarshal([]byte(event.Body), &input)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			logins := map[string]string{}
+			if input.Google != "" {
+				logins["accounts.google.com"] = input.Google
+			}
+			if input.Twitter != "" {
+				twitterKey := strings.Split(input.Twitter, ".")
+				twitter := GetTwitterClient()
+
+				fmt.Println(twitterKey)
+
+				tokenCred, _, err := twitter.RequestToken(nil, &oauth.Credentials{
+					Token:  twitterKey[0],
+					Secret: "",
+				}, twitterKey[1])
+				if err != nil {
+					return events.APIGatewayProxyResponse{}, err
+				}
+
+				var account TwitterUser
+				GetTwitterUser(tokenCred, &account)
+
+				logins["portals.me"] = "twitter-" + account.ID
+			}
+
+			getIDReq, err := idp.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
 				IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
-				Logins: map[string]string{
-					"accounts.google.com": event.Body,
-				},
+				Logins:         logins,
 			}).Send()
+
+			fmt.Printf("%+v", getIDReq)
 
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			identityID := *getIdReq.IdentityId
+			identityID := *getIDReq.IdentityId
 			userID := "user##" + identityID
 
 			getItemReq, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
@@ -236,6 +271,15 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
+			}
+			if getItemReq.Item["id"].S == nil {
+				return events.APIGatewayProxyResponse{
+					StatusCode: 404,
+					Headers: map[string]string{
+						"Access-Control-Allow-Origin": "*",
+					},
+					Body: "UserNotExist: " + userID,
+				}, nil
 			}
 
 			var user User
@@ -269,8 +313,13 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 	} else if event.Path == "/auth/twitter" {
 		if event.HTTPMethod == "POST" {
+			fmt.Println(event.Headers)
 			twitter := GetTwitterClient()
-			result, err := twitter.RequestTemporaryCredentials(nil, "https://ibsrd4lyxk.execute-api.ap-northeast-1.amazonaws.com/dev/auth/twitter", nil)
+			result, err := twitter.RequestTemporaryCredentials(
+				nil,
+				event.Headers["Referer"]+"/twitter-callback",
+				nil,
+			)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
@@ -298,25 +347,12 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			var account TwitterUser
 			GetTwitterUser(tokenCred, &account)
 
-			fmt.Printf("%+v", account)
-
-			_, err = idp.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
-				IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
-				Logins: map[string]string{
-					"portals.me": "twitter-" + account.ID,
-				},
-			}).Send()
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
 			return events.APIGatewayProxyResponse{
 				StatusCode: 200,
 				Headers: map[string]string{
 					"Access-Control-Allow-Origin": "*",
-					"Content-Type":                "text/html",
 				},
-				Body: event.QueryStringParameters["oauth_token"],
+				Body: "Please wait...",
 			}, nil
 		}
 	}

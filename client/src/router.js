@@ -8,6 +8,7 @@ import TopBar from '@/components/TopBar';
 import Landing from '@/views/Landing';
 import Home from './views/Home'
 import Collection from '@/views/Collection';
+import SignIn from '@/views/SignIn';
 
 Vue.use(Router)
 
@@ -20,6 +21,30 @@ export default new Router({
       name: 'landing',
       components: {
         default: Landing,
+        topbar: UnsignedTopBar,
+      },
+    },
+    {
+      path: '/signup',
+      name: 'collection',
+      components: {
+        default: SignIn,
+        topbar: UnsignedTopBar,
+      },
+    },
+    {
+      path: '/signin',
+      name: 'collection',
+      components: {
+        default: SignIn,
+        topbar: UnsignedTopBar,
+      },
+    },
+    {
+      path: '/signin/twitter-callback',
+      name: 'collection',
+      components: {
+        default: SignIn,
         topbar: UnsignedTopBar,
       },
     },
@@ -40,6 +65,6 @@ export default new Router({
         sidebar: SideBar,
         topbar: TopBar,
       }
-    }
+    },
   ]
 });
