@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gbrlsnchs/jwt"
@@ -24,6 +26,8 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 
 	"github.com/GoogleIdTokenVerifier/GoogleIdTokenVerifier"
+
+	"github.com/gomodule/oauth1/oauth"
 )
 
 type SignUpInput struct {
@@ -83,6 +87,38 @@ func sign(payload []byte, keyEncoded string) ([]byte, error) {
 	}
 
 	return signed, err
+}
+
+func generateRandomString(n int) string {
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return string(b)
+}
+
+func GetTwitterClient() *oauth.Client {
+	twitterKey := strings.Split(os.Getenv("TwitterKey"), ".")
+
+	return &oauth.Client{
+		TemporaryCredentialRequestURI: "https://api.twitter.com/oauth/request_token",
+		ResourceOwnerAuthorizationURI: "https://api.twitter.com/oauth/authorize",
+		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
+		Credentials: oauth.Credentials{
+			Token:  twitterKey[0],
+			Secret: twitterKey[1],
+		},
+	}
+}
+
+func GetAccessToken(cred *oauth.Credentials, oauthVerifier string) (*oauth.Credentials, error) {
+	oc := GetTwitterClient()
+	at, _, err := oc.RequestToken(nil, cred, oauthVerifier)
+
+	return at, err
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -205,6 +241,24 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 					"Access-Control-Allow-Origin": "*",
 				},
 				Body: string(body),
+			}, nil
+		}
+	} else if event.Path == "/auth/twitter" {
+		if event.HTTPMethod == "POST" {
+			twitter := GetTwitterClient()
+			result, err := twitter.RequestTemporaryCredentials(nil, "https://ibsrd4lyxk.execute-api.ap-northeast-1.amazonaws.com/dev/auth/twitter", nil)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			url := twitter.AuthorizationURL(result, nil)
+
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin": "*",
+				},
+				Body: url,
 			}, nil
 		}
 	}
