@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"math/rand"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -115,10 +117,32 @@ func GetTwitterClient() *oauth.Client {
 }
 
 func GetAccessToken(cred *oauth.Credentials, oauthVerifier string) (*oauth.Credentials, error) {
-	oc := GetTwitterClient()
-	at, _, err := oc.RequestToken(nil, cred, oauthVerifier)
+	client := GetTwitterClient()
+	at, _, err := client.RequestToken(nil, cred, oauthVerifier)
 
 	return at, err
+}
+
+type TwitterUser struct {
+	ID              string `json:"id_str"`
+	ScreenName      string `json:"screen_name"`
+	ProfileImageURL string `json:"profile_image_url"`
+}
+
+func GetTwitterUser(cred *oauth.Credentials, user *TwitterUser) error {
+	client := GetTwitterClient()
+	resp, err := client.Get(nil, cred, "https://api.twitter.com/1.1/account/verify_credentials.json", url.Values{})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(user)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -261,6 +285,31 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				Body: url,
 			}, nil
 		} else if event.HTTPMethod == "GET" {
+			twitter := GetTwitterClient()
+
+			tokenCred, _, err := twitter.RequestToken(nil, &oauth.Credentials{
+				Token:  event.QueryStringParameters["oauth_token"],
+				Secret: "",
+			}, event.QueryStringParameters["oauth_verifier"])
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			var account TwitterUser
+			GetTwitterUser(tokenCred, &account)
+
+			fmt.Printf("%+v", account)
+
+			_, err = idp.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
+				IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
+				Logins: map[string]string{
+					"portals.me": "twitter-" + account.ID,
+				},
+			}).Send()
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
 			return events.APIGatewayProxyResponse{
 				StatusCode: 200,
 				Headers: map[string]string{
