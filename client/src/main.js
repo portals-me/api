@@ -5,7 +5,6 @@ import router from './router'
 import vueConfig from 'vue-config'
 import App from './App.vue'
 import axios from 'axios'
-import firebase from 'firebase'
 import store from '@/store'
 import GAuth from 'vue-google-oauth2'
 import VueAxios from 'vue-axios'
@@ -18,7 +17,6 @@ Vue.use(vueConfig, {
   // firebase serve
   API: 'http://localhost:5000',
   axios,
-  firebase,
   isDev,
   providers: require('../../token/auth.json'),
 });
