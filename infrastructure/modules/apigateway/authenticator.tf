@@ -71,8 +71,30 @@ module "auth-twitter" {
     {
       http_method = "POST"
       function_arn = "${var.authenticator_arn}"
-    }
+    },
   ]
+}
+
+module "auth-twitter-get" {
+  source = "lambda_api_req"
+
+  rest_api_id = "${aws_api_gateway_rest_api.restapi.id}"
+  parent_id = "${module.auth.id}"
+  resource_id = "${module.auth-twitter.id}"
+  resource_path = "${module.auth-twitter.path}"
+  path_part = "twitter"
+
+  methods_count = 1
+  methods = [
+    {
+      http_method = "GET"
+      function_arn = "${var.authenticator_arn}"
+    },
+  ]
+  request_parameters = {
+    "method.request.querystring.oauth_token" = true
+    "method.request.querystring.oauth_verifier" = true
+  }
 }
 
 module "auth-twitter-cors" {
