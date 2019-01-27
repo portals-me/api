@@ -102,6 +102,7 @@ export default {
         description: this.form.description,
         cover: this.form.cover,
       });
+      this.dialog = false;
       await this.loadProjects();
     },
     async onMount () {

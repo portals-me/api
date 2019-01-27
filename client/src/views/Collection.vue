@@ -473,6 +473,7 @@ export default {
         });
       }
 
+      this.createArticleDialog = false;
       await this.loadArticles();
     },
     async loadCollection () {
