@@ -208,6 +208,10 @@
 
               <p v-if="activeArticle.id && activeArticle.entity.type == 'share'"><a :href="activeArticle.entity.url">{{ activeArticle.entity.url }}</a></p>
 
+              <v-img
+                :src="activeArticle.entity.url"
+                v-if="activeArticle.id && activeArticle.entity.type == 'image'"
+              />
               <div ref="articleDialog"></div>
             </v-card-text>
           </v-card>
@@ -398,10 +402,8 @@ export default {
 
       if (this.activeArticle.entity.type === 'share') {
         this.previewOEmbed(this.$refs.articleDialog, this.activeArticle.entity.url);
-      } else if (this.activeArticle.entity.type === 'image') {
-        const collectionId = this.$route.params.collectionId;
-        const user = JSON.parse(localStorage.getItem('user'));
-        this.$refs.articleDialog.innerHTML = `<img src="${this.activeArticle.entity.url}" />`;
+      } else {
+        this.$refs.articleDialog.innerHTML = ``;
       }
     },
     async previewOEmbed (elem, url_raw) {
