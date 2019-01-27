@@ -180,6 +180,25 @@ func (logins *Logins) ToLoginsMap() (map[string]string, error) {
 	return loginsMap, nil
 }
 
+func GetIdpIDByLogins(idp *cognitoidentity.CognitoIdentity, logins Logins) (string, error) {
+	loginsMap, err := logins.ToLoginsMap()
+	if err != nil {
+		return "", err
+	}
+
+	getIDReq, err := idp.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
+		IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
+		Logins:         loginsMap,
+	}).Send()
+	if err != nil {
+		return "", err
+	}
+
+	identityID := *getIDReq.IdentityId
+
+	return identityID, nil
+}
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
@@ -197,20 +216,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			loginsMap, err := input.Logins.ToLoginsMap()
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			getIDReq, err := idp.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
-				IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
-				Logins:         loginsMap,
-			}).Send()
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			identityID := *getIDReq.IdentityId
+			identityID, err := GetIdpIDByLogins(idp, input.Logins)
 
 			item, err := dynamodbattribute.MarshalMap(User{
 				ID:          "user##" + identityID,
@@ -272,23 +278,11 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			loginsMap, err := logins.ToLoginsMap()
+			identityID, err := GetIdpIDByLogins(idp, logins)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			getIDReq, err := idp.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
-				IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
-				Logins:         loginsMap,
-			}).Send()
-
-			fmt.Printf("%+v", getIDReq)
-
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			identityID := *getIDReq.IdentityId
 			userID := "user##" + identityID
 
 			getItemReq, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
