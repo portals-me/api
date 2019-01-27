@@ -33,10 +33,12 @@ import (
 )
 
 type SignUpInput struct {
-	GoogleToken string `json:"google_token"`
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	Picture     string `json:"picture"`
+	Form struct {
+		Name        string `json:"name"`
+		DisplayName string `json:"display_name"`
+		Picture     string `json:"picture"`
+	} `json:"form"`
+	Logins Logins `json:"logins"`
 }
 
 type User struct {
@@ -145,9 +147,37 @@ func GetTwitterUser(cred *oauth.Credentials, user *TwitterUser) error {
 	return nil
 }
 
-type SignInInput struct {
+type Logins struct {
 	Twitter string `json:"twitter"`
 	Google  string `json:"google"`
+}
+
+func (logins *Logins) ToLoginsMap() (map[string]string, error) {
+	loginsMap := map[string]string{}
+	if logins.Google != "" {
+		tokenInfo := GoogleIdTokenVerifier.Verify(logins.Google, os.Getenv("GClientId"))
+
+		if tokenInfo == nil {
+			return nil, errors.New("Invalid GoogleToken")
+		}
+
+		loginsMap["accounts.google.com"] = logins.Google
+	}
+	if logins.Twitter != "" {
+		twitterKey := strings.Split(logins.Twitter, ".")
+
+		fmt.Println(twitterKey)
+
+		var account TwitterUser
+		GetTwitterUser(&oauth.Credentials{
+			Token:  twitterKey[0],
+			Secret: twitterKey[1],
+		}, &account)
+
+		loginsMap["portals.me"] = "twitter-" + account.ID
+	}
+
+	return loginsMap, nil
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -162,36 +192,33 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	if event.Path == "/auth/signUp" {
 		if event.HTTPMethod == "POST" {
 			var input SignUpInput
-			err := json.Unmarshal([]byte(event.Body), input)
-
+			err := json.Unmarshal([]byte(event.Body), &input)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			result, err := idp.GetIdRequest(&cognitoidentity.GetIdInput{
+			loginsMap, err := input.Logins.ToLoginsMap()
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			getIDReq, err := idp.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
 				IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
-				Logins: map[string]string{
-					"accounts.google.com": input.GoogleToken,
-				},
+				Logins:         loginsMap,
 			}).Send()
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			identityID := *result.IdentityId
-			tokenInfo := GoogleIdTokenVerifier.Verify(input.GoogleToken, os.Getenv("GClientId"))
-
-			if tokenInfo == nil {
-				return events.APIGatewayProxyResponse{}, errors.New("Invalid GoogleToken")
-			}
+			identityID := *getIDReq.IdentityId
 
 			item, err := dynamodbattribute.MarshalMap(User{
 				ID:          "user##" + identityID,
 				Sort:        "detail",
 				CreatedAt:   time.Now().Unix(),
-				Name:        input.Name,
-				DisplayName: input.DisplayName,
-				Picture:     input.Picture,
+				Name:        input.Form.Name,
+				DisplayName: input.Form.DisplayName,
+				Picture:     input.Form.Picture,
 			})
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
@@ -207,49 +234,52 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			return events.APIGatewayProxyResponse{
-				StatusCode: 201,
-				Headers: map[string]string{
-					"Access-Control-Allow-Origin": "*",
-					"Location":                    "/users/" + identityID,
-				},
-			}, nil
-		}
-	} else if event.Path == "/auth/signIn" {
-		if event.HTTPMethod == "POST" {
-			var input SignInInput
-			err := json.Unmarshal([]byte(event.Body), &input)
+			var user User
+			err = dynamodbattribute.UnmarshalMap(item, &user)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			logins := map[string]string{}
-			if input.Google != "" {
-				logins["accounts.google.com"] = input.Google
+			jsn, err := json.Marshal(user.ToJwtPayload())
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
 			}
-			if input.Twitter != "" {
-				twitterKey := strings.Split(input.Twitter, ".")
-				twitter := GetTwitterClient()
 
-				fmt.Println(twitterKey)
+			token, err := sign(jsn, os.Getenv("JwtPrivate"))
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
 
-				tokenCred, _, err := twitter.RequestToken(nil, &oauth.Credentials{
-					Token:  twitterKey[0],
-					Secret: "",
-				}, twitterKey[1])
-				if err != nil {
-					return events.APIGatewayProxyResponse{}, err
-				}
+			body, err := json.Marshal(map[string]interface{}{
+				"id_token": string(token),
+				"user":     string(jsn),
+			})
 
-				var account TwitterUser
-				GetTwitterUser(tokenCred, &account)
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin": "*",
+					"Location":                    "/users/" + identityID,
+				},
+				Body: string(body),
+			}, nil
+		}
+	} else if event.Path == "/auth/signIn" {
+		if event.HTTPMethod == "POST" {
+			var logins Logins
+			err := json.Unmarshal([]byte(event.Body), &logins)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
 
-				logins["portals.me"] = "twitter-" + account.ID
+			loginsMap, err := logins.ToLoginsMap()
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
 			}
 
 			getIDReq, err := idp.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
 				IdentityPoolId: aws.String(os.Getenv("IdentityPoolId")),
-				Logins:         logins,
+				Logins:         loginsMap,
 			}).Send()
 
 			fmt.Printf("%+v", getIDReq)
@@ -335,6 +365,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			}, nil
 		} else if event.HTTPMethod == "GET" {
 			twitter := GetTwitterClient()
+			fmt.Println(event.QueryStringParameters)
 
 			tokenCred, _, err := twitter.RequestToken(nil, &oauth.Credentials{
 				Token:  event.QueryStringParameters["oauth_token"],
@@ -346,18 +377,27 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 			var account TwitterUser
 			GetTwitterUser(tokenCred, &account)
+			jsn, _ := json.Marshal(TwitterCallbackOutput{
+				Credential: tokenCred.Token + "." + tokenCred.Secret,
+				Account:    account,
+			})
 
 			return events.APIGatewayProxyResponse{
 				StatusCode: 200,
 				Headers: map[string]string{
 					"Access-Control-Allow-Origin": "*",
 				},
-				Body: "Please wait...",
+				Body: string(jsn),
 			}, nil
 		}
 	}
 
 	return events.APIGatewayProxyResponse{Body: "", StatusCode: 400}, nil
+}
+
+type TwitterCallbackOutput struct {
+	Credential string      `json:"credential"`
+	Account    TwitterUser `json:"account"`
 }
 
 func main() {
