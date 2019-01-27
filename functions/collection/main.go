@@ -84,6 +84,18 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 			var collection Collection
 			dynamodbattribute.UnmarshalMap(result.Item, &collection)
+
+			result, err = Dynamo.GetItemRequest(&dynamodb.GetItemInput{
+				TableName: aws.String(os.Getenv("EntityTable")),
+				Key: map[string]dynamodb.AttributeValue{
+					"id":   {S: aws.String(collection.OwnedBy)},
+					"sort": {S: aws.String("detail")},
+				},
+			}).Send()
+
+			// First-aid
+			collection.OwnedBy = *result.Item["name"].S
+
 			out, _ := json.Marshal(collection)
 
 			return events.APIGatewayProxyResponse{
