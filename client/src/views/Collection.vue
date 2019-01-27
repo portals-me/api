@@ -3,7 +3,7 @@
     <v-flex xs12 class="collection-title">
       <v-layout row wrap>
         <v-flex xs5>
-          <h2><v-icon>collections</v-icon> myuon / {{ collection.title }}</h2>
+          <h2><v-icon>collections</v-icon> {{ collection.owned_by }} / {{ collection.title }}</h2>
           <pre>{{ collection.description }}</pre>
         </v-flex>
         <v-spacer />
