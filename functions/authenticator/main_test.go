@@ -4,17 +4,21 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity/cognitoidentityiface"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity/cognitoidentityiface"
-
-	"github.com/aws/aws-lambda-go/events"
+	. "./verifier"
 )
 
-type fakeCognitoIdentity struct {
+type fakeCustomProvider struct {
 	cognitoidentityiface.CognitoIdentityAPI
-	payload map[string]string
-	err     error
+}
+
+func (provider *fakeCustomProvider) GetIdpID(logins Logins) (string, error) {
+	return "fake-idp", nil
 }
 
 type fakeDynamoDB struct {
@@ -23,9 +27,26 @@ type fakeDynamoDB struct {
 	err     error
 }
 
+func (ddb *fakeDynamoDB) PutItemRequest(input *dynamodb.PutItemInput) dynamodb.PutItemRequest {
+	return dynamodb.PutItemRequest{
+		Request: &aws.Request{
+			Data:  &dynamodb.PutItemOutput{},
+			Error: ddb.err,
+		},
+	}
+}
+
+type fakeSigner struct {
+}
+
+func (signer fakeSigner) Sign(payload []byte) ([]byte, error) {
+	return payload, nil
+}
+
 func TestSignUpWithGoogle(t *testing.T) {
-	idp := &fakeCognitoIdentity{}
+	idp := &fakeCustomProvider{}
 	ddb := &fakeDynamoDB{}
+	signer := &fakeSigner{}
 
 	jsn, _ := json.Marshal(SignUpInput{
 		Form: struct {
@@ -45,7 +66,7 @@ func TestSignUpWithGoogle(t *testing.T) {
 		Body: string(jsn),
 	}
 
-	resp, err := DoSignUp(req, idp, ddb)
+	resp, err := DoSignUp(req, idp, ddb, signer)
 	if err != nil {
 		t.Error("Error", err)
 	}
