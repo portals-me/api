@@ -124,12 +124,8 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 
 		_, err = Dynamo.PutItemRequest(&dynamodb.PutItemInput{
-			TableName:           aws.String(os.Getenv("EntityTable")),
-			Item:                collection,
-			ConditionExpression: aws.String("owned_by = :user_id"),
-			ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-				":user_id": {S: aws.String(user["id"].(string))},
-			},
+			TableName: aws.String(os.Getenv("EntityTable")),
+			Item:      collection,
 		}).Send()
 
 		if err != nil {
