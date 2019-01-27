@@ -2,18 +2,13 @@ package main
 
 import (
 	"context"
-	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"math/rand"
 	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
-
-	"github.com/gbrlsnchs/jwt"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
 
@@ -28,6 +23,7 @@ import (
 
 	"github.com/gomodule/oauth1/oauth"
 
+	. "./signer"
 	. "./verifier"
 )
 
@@ -84,40 +80,6 @@ func GetAccessToken(cred *oauth.Credentials, oauthVerifier string) (*oauth.Crede
 
 	return at, err
 }
-
-type ISigner interface {
-	Sign([]byte) ([]byte, error)
-}
-
-type ES256Signer struct {
-	Key string
-}
-
-func (signer ES256Signer) Sign(payload []byte) ([]byte, error) {
-	block, _ := pem.Decode([]byte(signer.Key))
-	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
-	es256 := jwt.NewES256(privateKey, &privateKey.PublicKey)
-
-	if err != nil {
-		return []byte{}, err
-	}
-
-	header, _ := json.Marshal(map[string]string{
-		"alg": "ES256",
-		"typ": "JWT",
-	})
-
-	headerEnc := base64.StdEncoding.EncodeToString(header)
-	payloadEnc := base64.StdEncoding.EncodeToString(payload)
-	signed, err := es256.Sign([]byte(headerEnc + "." + payloadEnc))
-
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return signed, err
-}
-
 func DoSignUp(
 	event events.APIGatewayProxyRequest,
 	idp ICustomProvider,
