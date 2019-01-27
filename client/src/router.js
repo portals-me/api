@@ -33,6 +33,14 @@ export default new Router({
       },
     },
     {
+      path: '/signup/twitter-callback',
+      name: 'signup-twitter-callback',
+      components: {
+        default: SignIn,
+        topbar: UnsignedTopBar,
+      },
+    },
+    {
       path: '/signin',
       name: 'signin',
       components: {
