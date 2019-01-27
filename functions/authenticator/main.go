@@ -14,6 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity/cognitoidentityiface"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
+
 	"github.com/gbrlsnchs/jwt"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
@@ -155,32 +158,26 @@ type Logins struct {
 func (logins *Logins) ToLoginsMap() (map[string]string, error) {
 	loginsMap := map[string]string{}
 	if logins.Google != "" {
-		tokenInfo := GoogleIdTokenVerifier.Verify(logins.Google, os.Getenv("GClientId"))
-
-		if tokenInfo == nil {
-			return nil, errors.New("Invalid GoogleToken")
+		verifiedID, err := GoogleVerifier{Token: logins.Google}.Verify()
+		if err != nil {
+			return nil, err
 		}
 
-		loginsMap["accounts.google.com"] = logins.Google
+		loginsMap["accounts.google.com"] = verifiedID
 	}
 	if logins.Twitter != "" {
-		twitterKey := strings.Split(logins.Twitter, ".")
+		verifiedID, err := TwitterVerifier{Token: logins.Twitter}.Verify()
+		if err != nil {
+			return nil, err
+		}
 
-		fmt.Println(twitterKey)
-
-		var account TwitterUser
-		GetTwitterUser(&oauth.Credentials{
-			Token:  twitterKey[0],
-			Secret: twitterKey[1],
-		}, &account)
-
-		loginsMap["portals.me"] = "twitter-" + account.ID
+		loginsMap["portals.me"] = verifiedID
 	}
 
 	return loginsMap, nil
 }
 
-func GetIdpIDByLogins(idp *cognitoidentity.CognitoIdentity, logins Logins) (string, error) {
+func GetIdpIDByLogins(idp cognitoidentityiface.CognitoIdentityAPI, logins Logins) (string, error) {
 	loginsMap, err := logins.ToLoginsMap()
 	if err != nil {
 		return "", err
@@ -199,6 +196,149 @@ func GetIdpIDByLogins(idp *cognitoidentity.CognitoIdentity, logins Logins) (stri
 	return identityID, nil
 }
 
+type IVerifier interface {
+	Verify() (string, error)
+}
+
+type TwitterVerifier struct {
+	Token string
+}
+
+func (str TwitterVerifier) Verify() (string, error) {
+	twitterKey := strings.Split(str.Token, ".")
+
+	var account TwitterUser
+	err := GetTwitterUser(&oauth.Credentials{
+		Token:  twitterKey[0],
+		Secret: twitterKey[1],
+	}, &account)
+
+	if err != nil {
+		return "", err
+	}
+
+	return "twitter-" + account.ID, nil
+}
+
+type GoogleVerifier struct {
+	Token string
+}
+
+func (str GoogleVerifier) Verify() (string, error) {
+	tokenInfo := GoogleIdTokenVerifier.Verify(str.Token, os.Getenv("GClientId"))
+
+	if tokenInfo == nil {
+		return "", errors.New("Invalid GoogleToken")
+	}
+
+	return str.Token, nil
+}
+
+type ICustomProvider interface {
+	GetIdpID(Logins) (string, error)
+}
+
+type CustomProvider struct {
+	IdentityPoolID          string
+	CognitoIdentityInstance cognitoidentityiface.CognitoIdentityAPI
+}
+
+func (provider *CustomProvider) GetIdpID(logins Logins) (string, error) {
+	loginsMap := map[string]string{}
+	if logins.Google != "" {
+		verified, err := GoogleVerifier{Token: logins.Google}.Verify()
+		if err != nil {
+			return "", err
+		}
+
+		loginsMap["accounts.google.com"] = verified
+	}
+	if logins.Twitter != "" {
+		verified, err := TwitterVerifier{Token: logins.Twitter}.Verify()
+		if err != nil {
+			return "", err
+		}
+
+		loginsMap["portals.me"] = verified
+	}
+
+	getIDReq, err := provider.CognitoIdentityInstance.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
+		IdentityPoolId: aws.String(provider.IdentityPoolID),
+		Logins:         loginsMap,
+	}).Send()
+	if err != nil {
+		return "", err
+	}
+
+	return *getIDReq.IdentityId, nil
+}
+
+func DoSignUp(
+	event events.APIGatewayProxyRequest,
+	idp ICustomProvider,
+	ddb dynamodbiface.DynamoDBAPI,
+) (events.APIGatewayProxyResponse, error) {
+	var input SignUpInput
+	err := json.Unmarshal([]byte(event.Body), &input)
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
+	identityID, err := idp.GetIdpID(input.Logins)
+
+	item, err := dynamodbattribute.MarshalMap(User{
+		ID:          "user##" + identityID,
+		Sort:        "detail",
+		CreatedAt:   time.Now().Unix(),
+		Name:        input.Form.Name,
+		DisplayName: input.Form.DisplayName,
+		Picture:     input.Form.Picture,
+	})
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
+	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
+		TableName:           aws.String(os.Getenv("EntityTable")),
+		Item:                item,
+		ConditionExpression: aws.String("attribute_not_exists(id)"),
+	}).Send()
+
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
+	var user User
+	err = dynamodbattribute.UnmarshalMap(item, &user)
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
+	jsn, err := json.Marshal(user.ToJwtPayload())
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
+	token, err := sign(jsn, os.Getenv("JwtPrivate"))
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
+	body, err := json.Marshal(map[string]interface{}{
+		"id_token": string(token),
+		"user":     string(jsn),
+	})
+
+	return events.APIGatewayProxyResponse{
+		StatusCode: 200,
+		Headers: map[string]string{
+			"Access-Control-Allow-Origin": "*",
+			"Location":                    "/users/" + identityID,
+		},
+		Body: string(body),
+	}, nil
+}
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
@@ -210,65 +350,11 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 	if event.Path == "/auth/signUp" {
 		if event.HTTPMethod == "POST" {
-			var input SignUpInput
-			err := json.Unmarshal([]byte(event.Body), &input)
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
+			customProvider := &CustomProvider{
+				IdentityPoolID:          os.Getenv("IdentityPoolId"),
+				CognitoIdentityInstance: idp,
 			}
-
-			identityID, err := GetIdpIDByLogins(idp, input.Logins)
-
-			item, err := dynamodbattribute.MarshalMap(User{
-				ID:          "user##" + identityID,
-				Sort:        "detail",
-				CreatedAt:   time.Now().Unix(),
-				Name:        input.Form.Name,
-				DisplayName: input.Form.DisplayName,
-				Picture:     input.Form.Picture,
-			})
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-				TableName:           aws.String(os.Getenv("EntityTable")),
-				Item:                item,
-				ConditionExpression: aws.String("attribute_not_exists(id)"),
-			}).Send()
-
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			var user User
-			err = dynamodbattribute.UnmarshalMap(item, &user)
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			jsn, err := json.Marshal(user.ToJwtPayload())
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			token, err := sign(jsn, os.Getenv("JwtPrivate"))
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			body, err := json.Marshal(map[string]interface{}{
-				"id_token": string(token),
-				"user":     string(jsn),
-			})
-
-			return events.APIGatewayProxyResponse{
-				StatusCode: 200,
-				Headers: map[string]string{
-					"Access-Control-Allow-Origin": "*",
-					"Location":                    "/users/" + identityID,
-				},
-				Body: string(body),
-			}, nil
+			DoSignUp(event, customProvider, ddb)
 		}
 	} else if event.Path == "/auth/signIn" {
 		if event.HTTPMethod == "POST" {
