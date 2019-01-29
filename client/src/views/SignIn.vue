@@ -98,14 +98,14 @@ export default {
       }
     },
     async signInWithTwitter () {
-      const twitterAuthURL = await axios.post('https://ibsrd4lyxk.execute-api.ap-northeast-1.amazonaws.com/dev/auth/twitter');
+      const twitterAuthURL = await axios.post('https://v6bnqbi2hf.execute-api.ap-northeast-1.amazonaws.com/prod/auth/twitter');
       location.href = twitterAuthURL.data;
 
       // Jump to mounted.twitter-callback
     },
     async signInWithTwitterAfter (token) {
       try {
-        const credential = (await axios.get(`https://ibsrd4lyxk.execute-api.ap-northeast-1.amazonaws.com/dev/auth/twitter?oauth_token=${token.oauth_token}&oauth_verifier=${token.oauth_verifier}`)).data.credential;
+        const credential = (await axios.get(`https://v6bnqbi2hf.execute-api.ap-northeast-1.amazonaws.com/prod/auth/twitter?oauth_token=${token.oauth_token}&oauth_verifier=${token.oauth_verifier}`)).data.credential;
         const result = (await sdk.signIn({
           twitter: credential,
         })).data;
@@ -137,11 +137,11 @@ export default {
       this.signUpStep ++;
     },
     async signUpWithTwitter () {
-      const twitterAuthURL = await axios.post('https://ibsrd4lyxk.execute-api.ap-northeast-1.amazonaws.com/dev/auth/twitter');
+      const twitterAuthURL = await axios.post('https://v6bnqbi2hf.execute-api.ap-northeast-1.amazonaws.com/prod/auth/twitter');
       location.href = twitterAuthURL.data;
     },
     async signUpWithTwitterAfter (token) {
-      const result = (await axios.get(`https://ibsrd4lyxk.execute-api.ap-northeast-1.amazonaws.com/dev/auth/twitter?oauth_token=${token.oauth_token}&oauth_verifier=${token.oauth_verifier}`)).data;
+      const result = (await axios.get(`https://v6bnqbi2hf.execute-api.ap-northeast-1.amazonaws.com/prod/auth/twitter?oauth_token=${token.oauth_token}&oauth_verifier=${token.oauth_verifier}`)).data;
       const account = result.account;
       console.log(account)
       console.log(token)
