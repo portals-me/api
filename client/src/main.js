@@ -14,9 +14,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 Vue.use(Vuetify);
 Vue.use(vueConfig, {
-  // firebase serve
-  API: 'http://localhost:5000',
-  axios,
+  API: 'https://v6bnqbi2hf.execute-api.ap-northeast-1.amazonaws.com/prod',
   isDev,
   providers: require('../../token/auth.json'),
 });
