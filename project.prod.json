@@ -9,6 +9,5 @@
     "build": "go get -v -t -d ./... && GOOS=linux GOARCH=amd64 go build -o main main.go",
     "clean": "rm -f main"
   },
-  "defaultEnvironment": "dev",
-  "nameTemplate": "{{.Project.Name}}_{{.Function.Name}}"
+  "nameTemplate": "{{.Project.Name}}_{{.Function.Name}}_prod"
 }
