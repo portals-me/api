@@ -4,6 +4,8 @@ provider "aws" {
 
 module "iam" {
   source = "../modules/iam"
+  stage = "${var.stage}"
+  service = "${var.service}"
 }
 
 module "apigateway" {
@@ -22,5 +24,6 @@ module "apigateway" {
 
 module "dynamodb" {
   source = "../modules/dynamodb"
+  stage = "${var.stage}"
   service = "${var.service}"
 }
