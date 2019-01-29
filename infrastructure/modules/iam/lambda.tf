@@ -1,5 +1,8 @@
-resource "aws_iam_role" "portals-me-default" {
-  name = "portals-me-default"
+variable "stage" {}
+variable "service" {}
+
+resource "aws_iam_role" "default" {
+  name = "${var.service}-${var.stage}-default"
 
   assume_role_policy = <<EOF
 {
@@ -17,7 +20,7 @@ resource "aws_iam_role" "portals-me-default" {
 EOF
 }
 
-data "aws_iam_policy_document" "portals-me-default-policy-doc" {
+data "aws_iam_policy_document" "default-policy-doc" {
   statement {
     actions = [
       "cognito-identity:*",
@@ -35,12 +38,12 @@ data "aws_iam_policy_document" "portals-me-default-policy-doc" {
   }
 }
 
-resource "aws_iam_role_policy" "portals-me-default-policy" {
-  name = "portals-me-default-policy"
-  role = "${aws_iam_role.portals-me-default.name}"
-  policy = "${data.aws_iam_policy_document.portals-me-default-policy-doc.json}"
+resource "aws_iam_role_policy" "default-policy" {
+  name = "${var.service}-${var.stage}-default-policy"
+  role = "${aws_iam_role.default.name}"
+  policy = "${data.aws_iam_policy_document.default-policy-doc.json}"
 }
 
-output "portals-me-default-role" {
-  value = "${aws_iam_role.portals-me-default.arn}"
+output "default-role" {
+  value = "${aws_iam_role.default.arn}"
 }
