@@ -1,6 +1,9 @@
 variable "service" {
-  type = "string"
   default = "portals-me"
+}
+
+variable "stage" {
+  default = "dev"
 }
 
 variable "aws_region" {}
