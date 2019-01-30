@@ -3,7 +3,7 @@ variable "stage" {}
 
 
 resource "aws_api_gateway_rest_api" "restapi" {
-  name = "${var.service}"
+  name = "${var.service}-${var.stage}"
 }
 
 resource "aws_api_gateway_deployment" "restapi" {

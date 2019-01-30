@@ -10,7 +10,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 Vue.use(Vuetify);
 Vue.use(vueConfig, {
-  API: 'https://v6bnqbi2hf.execute-api.ap-northeast-1.amazonaws.com/prod',
+  API: process.env.API_ENDPOINT,
   isDev,
   providers: require('../../token/auth.json'),
 });
