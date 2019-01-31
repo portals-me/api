@@ -18,14 +18,14 @@ resource "aws_dynamodb_table" "entities" {
   }
 
   attribute {
-    name = "data"
+    name = "sort_value"
     type = "S"
   }
 
   global_secondary_index {
     name = "DataTable"
     hash_key = "sort"
-    range_key = "data"
+    range_key = "sort_value"
     projection_type = "ALL"
   }
 }
