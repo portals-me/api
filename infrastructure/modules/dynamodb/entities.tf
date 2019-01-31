@@ -18,14 +18,14 @@ resource "aws_dynamodb_table" "entities" {
   }
 
   attribute {
-    name = "owned_by"
+    name = "data"
     type = "S"
   }
 
   global_secondary_index {
-    name = "owner"
-    hash_key = "owned_by"
-    range_key = "id"
+    name = "DataTable"
+    hash_key = "sort"
+    range_key = "data"
     projection_type = "ALL"
   }
 }
