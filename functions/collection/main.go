@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -32,6 +33,153 @@ type Collection struct {
 	Description    string            `json:"description"`
 }
 
+func doList(
+	user map[string]interface{},
+	ddb dynamodbiface.DynamoDBAPI,
+) ([]Collection, error) {
+	result, err := ddb.QueryRequest(&dynamodb.QueryInput{
+		TableName:              aws.String(os.Getenv("EntityTable")),
+		IndexName:              aws.String("owner"),
+		KeyConditionExpression: aws.String("owned_by = :owned_by and begins_with(id, :id)"),
+		FilterExpression:       aws.String("sort = :sort"),
+		ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
+			":owned_by": {S: aws.String(user["id"].(string))},
+			":id":       {S: aws.String("collection")},
+			":sort":     {S: aws.String("detail")},
+		},
+	}).Send()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var collections []Collection
+	dynamodbattribute.UnmarshalListOfMaps(result.Items, &collections)
+
+	return collections, nil
+}
+
+func doGet(
+	collectionID string,
+	user map[string]interface{},
+	ddb dynamodbiface.DynamoDBAPI,
+) (Collection, error) {
+	result, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
+		TableName: aws.String(os.Getenv("EntityTable")),
+		Key: map[string]dynamodb.AttributeValue{
+			"id":   {S: aws.String("collection##" + collectionID)},
+			"sort": {S: aws.String("detail")},
+		},
+	}).Send()
+	if err != nil {
+		return Collection{}, err
+	}
+
+	var collection Collection
+	dynamodbattribute.UnmarshalMap(result.Item, &collection)
+
+	result, err = ddb.GetItemRequest(&dynamodb.GetItemInput{
+		TableName: aws.String(os.Getenv("EntityTable")),
+		Key: map[string]dynamodb.AttributeValue{
+			"id":   {S: aws.String(collection.OwnedBy)},
+			"sort": {S: aws.String("detail")},
+		},
+	}).Send()
+
+	// First-aid
+	collection.OwnedBy = *result.Item["name"].S
+
+	return collection, nil
+}
+
+func doCreate(
+	createInput map[string]interface{},
+	user map[string]interface{},
+	ddb dynamodbiface.DynamoDBAPI,
+) (string, error) {
+	collectionID := uuid.Must(uuid.NewV4()).String()
+
+	// care for Cover struct
+	// You cannot cast map[string]interface{} as map[string]string...
+	coverMap := map[string]string{}
+	cover := createInput["cover"].(map[string]interface{})
+	for key, value := range cover {
+		coverMap[key] = value.(string)
+	}
+
+	collection, err := dynamodbattribute.MarshalMap(Collection{
+		ID:             "collection##" + collectionID,
+		Sort:           "detail",
+		OwnedBy:        user["id"].(string),
+		Title:          createInput["title"].(string),
+		Description:    createInput["description"].(string),
+		Cover:          coverMap,
+		Media:          []string{},
+		CommentMembers: []string{user["id"].(string)},
+		CommentCount:   0,
+		CreatedAt:      time.Now().Unix(),
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
+		TableName: aws.String(os.Getenv("EntityTable")),
+		Item:      collection,
+	}).Send()
+
+	if err != nil {
+		return "", err
+	}
+
+	return collectionID, nil
+}
+
+func doDelete(
+	collectionID string,
+	user map[string]interface{},
+	ddb dynamodbiface.DynamoDBAPI,
+) error {
+	result, err := ddb.QueryRequest(&dynamodb.QueryInput{
+		TableName:              aws.String(os.Getenv("EntityTable")),
+		KeyConditionExpression: aws.String("id = :id and owned_by = :user_id"),
+		ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
+			":id":      {S: aws.String("collection##" + collectionID)},
+			":user_id": {S: aws.String(user["id"].(string))},
+		},
+		ProjectionExpression: aws.String("sort"),
+	}).Send()
+
+	if err != nil {
+		return err
+	}
+
+	writeRequest := []dynamodb.WriteRequest{}
+	for _, item := range result.Items {
+		writeRequest = append(writeRequest, dynamodb.WriteRequest{
+			DeleteRequest: &dynamodb.DeleteRequest{
+				Key: map[string]dynamodb.AttributeValue{
+					"id":   {S: aws.String("collection##" + collectionID)},
+					"sort": item["sort"],
+				},
+			},
+		})
+	}
+
+	requestItems := map[string][]dynamodb.WriteRequest{}
+	requestItems[os.Getenv("EntityTable")] = writeRequest
+	_, err = ddb.BatchWriteItemRequest(&dynamodb.BatchWriteItemInput{
+		RequestItems: requestItems,
+	}).Send()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	user := event.RequestContext.Authorizer
 
@@ -40,64 +188,28 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		return events.APIGatewayProxyResponse{}, err
 	}
 
-	Dynamo := dynamodb.New(cfg)
+	ddb := dynamodb.New(cfg)
 
 	if event.HTTPMethod == "GET" {
 		if event.PathParameters == nil {
-			result, err := Dynamo.QueryRequest(&dynamodb.QueryInput{
-				TableName:              aws.String(os.Getenv("EntityTable")),
-				IndexName:              aws.String("owner"),
-				KeyConditionExpression: aws.String("owned_by = :owned_by and begins_with(id, :id)"),
-				FilterExpression:       aws.String("sort = :sort"),
-				ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-					":owned_by": {S: aws.String(user["id"].(string))},
-					":id":       {S: aws.String("collection")},
-					":sort":     {S: aws.String("detail")},
-				},
-			}).Send()
-
+			collections, err := doList(user, ddb)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			var collections []Collection
-			dynamodbattribute.UnmarshalListOfMaps(result.Items, &collections)
 			out, _ := json.Marshal(collections)
-
 			return events.APIGatewayProxyResponse{
 				Body:       string(out),
 				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 				StatusCode: 200,
 			}, nil
 		} else {
-			result, err := Dynamo.GetItemRequest(&dynamodb.GetItemInput{
-				TableName: aws.String(os.Getenv("EntityTable")),
-				Key: map[string]dynamodb.AttributeValue{
-					"id":   {S: aws.String("collection##" + event.PathParameters["collectionId"])},
-					"sort": {S: aws.String("detail")},
-				},
-			}).Send()
-
+			collection, err := doGet(event.PathParameters["collectionId"], user, ddb)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			var collection Collection
-			dynamodbattribute.UnmarshalMap(result.Item, &collection)
-
-			result, err = Dynamo.GetItemRequest(&dynamodb.GetItemInput{
-				TableName: aws.String(os.Getenv("EntityTable")),
-				Key: map[string]dynamodb.AttributeValue{
-					"id":   {S: aws.String(collection.OwnedBy)},
-					"sort": {S: aws.String("detail")},
-				},
-			}).Send()
-
-			// First-aid
-			collection.OwnedBy = *result.Item["name"].S
-
 			out, _ := json.Marshal(collection)
-
 			return events.APIGatewayProxyResponse{
 				Body:       string(out),
 				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
@@ -108,38 +220,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		var createInput map[string]interface{}
 		json.Unmarshal([]byte(event.Body), &createInput)
 
-		collectionID := uuid.Must(uuid.NewV4()).String()
-
-		// care for Cover struct
-		// You cannot cast map[string]interface{} as map[string]string...
-		coverMap := map[string]string{}
-		cover := createInput["cover"].(map[string]interface{})
-		for key, value := range cover {
-			coverMap[key] = value.(string)
-		}
-
-		collection, err := dynamodbattribute.MarshalMap(Collection{
-			ID:             "collection##" + collectionID,
-			Sort:           "detail",
-			OwnedBy:        user["id"].(string),
-			Title:          createInput["title"].(string),
-			Description:    createInput["description"].(string),
-			Cover:          coverMap,
-			Media:          []string{},
-			CommentMembers: []string{user["id"].(string)},
-			CommentCount:   0,
-			CreatedAt:      time.Now().Unix(),
-		})
-
-		if err != nil {
-			return events.APIGatewayProxyResponse{}, err
-		}
-
-		_, err = Dynamo.PutItemRequest(&dynamodb.PutItemInput{
-			TableName: aws.String(os.Getenv("EntityTable")),
-			Item:      collection,
-		}).Send()
-
+		collectionID, err := doCreate(createInput, user, ddb)
 		if err != nil {
 			return events.APIGatewayProxyResponse{}, err
 		}
@@ -152,38 +233,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			StatusCode: 201,
 		}, nil
 	} else if event.HTTPMethod == "DELETE" {
-		result, err := Dynamo.QueryRequest(&dynamodb.QueryInput{
-			TableName:              aws.String(os.Getenv("EntityTable")),
-			KeyConditionExpression: aws.String("id = :id and owned_by = :user_id"),
-			ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-				":id":      {S: aws.String("collection##" + event.PathParameters["collectionId"])},
-				":user_id": {S: aws.String(user["id"].(string))},
-			},
-			ProjectionExpression: aws.String("sort"),
-		}).Send()
-
-		if err != nil {
-			return events.APIGatewayProxyResponse{}, err
-		}
-
-		writeRequest := []dynamodb.WriteRequest{}
-		for _, item := range result.Items {
-			writeRequest = append(writeRequest, dynamodb.WriteRequest{
-				DeleteRequest: &dynamodb.DeleteRequest{
-					Key: map[string]dynamodb.AttributeValue{
-						"id":   {S: aws.String("collection##" + event.PathParameters["collectionId"])},
-						"sort": item["sort"],
-					},
-				},
-			})
-		}
-
-		requestItems := map[string][]dynamodb.WriteRequest{}
-		requestItems[os.Getenv("EntityTable")] = writeRequest
-		_, err = Dynamo.BatchWriteItemRequest(&dynamodb.BatchWriteItemInput{
-			RequestItems: requestItems,
-		}).Send()
-
+		err := doDelete(event.PathParameters["collectionId"], user, ddb)
 		if err != nil {
 			return events.APIGatewayProxyResponse{}, err
 		}
