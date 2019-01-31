@@ -26,7 +26,7 @@ type Collection struct {
 	CommentCount   int               `json:"comment_count"`
 	Media          []string          `json:"media"`
 	Cover          map[string]string `json:"cover"`
-	OwnedBy        string            `json:"owned_by"`
+	OwnedBy        string            `json:"sort_value"`
 	Title          string            `json:"title"`
 	CreatedAt      int64             `json:"created_at"`
 	Sort           string            `json:"sort"`
@@ -39,13 +39,11 @@ func doList(
 ) ([]Collection, error) {
 	result, err := ddb.QueryRequest(&dynamodb.QueryInput{
 		TableName:              aws.String(os.Getenv("EntityTable")),
-		IndexName:              aws.String("owner"),
-		KeyConditionExpression: aws.String("owned_by = :owned_by and begins_with(id, :id)"),
-		FilterExpression:       aws.String("sort = :sort"),
+		IndexName:              aws.String(os.Getenv("SortIndex")),
+		KeyConditionExpression: aws.String("sort = :sort and sort_value = :sort_value"),
 		ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-			":owned_by": {S: aws.String(user["id"].(string))},
-			":id":       {S: aws.String("collection")},
-			":sort":     {S: aws.String("detail")},
+			":sort":       {S: aws.String("collection##detail")},
+			":sort_value": {S: aws.String(user["id"].(string))},
 		},
 	}).Send()
 
@@ -68,7 +66,7 @@ func doGet(
 		TableName: aws.String(os.Getenv("EntityTable")),
 		Key: map[string]dynamodb.AttributeValue{
 			"id":   {S: aws.String("collection##" + collectionID)},
-			"sort": {S: aws.String("detail")},
+			"sort": {S: aws.String("collection##detail")},
 		},
 	}).Send()
 	if err != nil {
@@ -92,44 +90,39 @@ func doGet(
 	return collection, nil
 }
 
+type CreateInput struct {
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Cover       map[string]string `json:"cover"`
+}
+
 func doCreate(
-	createInput map[string]interface{},
+	createInput CreateInput,
 	user map[string]interface{},
 	ddb dynamodbiface.DynamoDBAPI,
 ) (string, error) {
 	collectionID := uuid.Must(uuid.NewV4()).String()
 
-	// care for Cover struct
-	// You cannot cast map[string]interface{} as map[string]string...
-	coverMap := map[string]string{}
-	cover := createInput["cover"].(map[string]interface{})
-	for key, value := range cover {
-		coverMap[key] = value.(string)
-	}
-
 	collection, err := dynamodbattribute.MarshalMap(Collection{
 		ID:             "collection##" + collectionID,
-		Sort:           "detail",
+		Sort:           "collection##detail",
 		OwnedBy:        user["id"].(string),
-		Title:          createInput["title"].(string),
-		Description:    createInput["description"].(string),
-		Cover:          coverMap,
+		Title:          createInput.Title,
+		Description:    createInput.Description,
+		Cover:          createInput.Cover,
 		Media:          []string{},
 		CommentMembers: []string{user["id"].(string)},
 		CommentCount:   0,
 		CreatedAt:      time.Now().Unix(),
 	})
-
 	if err != nil {
 		return "", err
 	}
 
-	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
+	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
 		TableName: aws.String(os.Getenv("EntityTable")),
 		Item:      collection,
-	}).Send()
-
-	if err != nil {
+	}).Send(); err != nil {
 		return "", err
 	}
 
@@ -217,7 +210,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			}, nil
 		}
 	} else if event.HTTPMethod == "POST" {
-		var createInput map[string]interface{}
+		var createInput CreateInput
 		json.Unmarshal([]byte(event.Body), &createInput)
 
 		collectionID, err := doCreate(createInput, user, ddb)
