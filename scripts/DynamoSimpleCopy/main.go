@@ -13,8 +13,8 @@ func main() {
 
 	ddb := dynamodb.New(cfg)
 
-	sourceTable := "portals-me-dev-entities"
-	targetTable := "portals-me-prod-entities"
+	sourceTable := ""
+	targetTable := ""
 
 	req := ddb.ScanRequest(&dynamodb.ScanInput{
 		TableName: aws.String(sourceTable),
