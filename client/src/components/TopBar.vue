@@ -15,6 +15,10 @@
 
     <v-spacer></v-spacer>
 
+    <v-chip color="purple lighten-2" small v-if="$config.isDev">
+      Development
+    </v-chip>
+
     <v-toolbar-items v-if="user != null">
       <v-menu offset-y>
         <v-btn
