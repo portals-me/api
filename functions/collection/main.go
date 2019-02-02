@@ -141,12 +141,12 @@ func doGet(
 		TableName: aws.String(os.Getenv("EntityTable")),
 		Key: map[string]dynamodb.AttributeValue{
 			"id":   {S: aws.String(collection.Owner)},
-			"sort": {S: aws.String("detail")},
+			"sort": {S: aws.String("user##detail")},
 		},
 	}).Send()
 
 	// First-aid
-	collection.Owner = *result.Item["name"].S
+	collection.Owner = *result.Item["sort_value"].S
 
 	return collection, nil
 }
