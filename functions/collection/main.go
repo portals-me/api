@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
@@ -20,17 +21,81 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
+type CollectionDBO struct {
+	ID             string            `json:"id"`
+	CommentMembers []string          `json:"comment_members"`
+	CommentCount   int               `json:"comment_count"`
+	Media          []string          `json:"media"`
+	Cover          map[string]string `json:"cover"`
+	Owner          string            `json:"sort_value"`
+	Title          string            `json:"title"`
+	CreatedAt      int64             `json:"created_at"`
+	Sort           string            `json:"sort"`
+	Description    string            `json:"description"`
+}
+
 type Collection struct {
 	ID             string            `json:"id"`
 	CommentMembers []string          `json:"comment_members"`
 	CommentCount   int               `json:"comment_count"`
 	Media          []string          `json:"media"`
 	Cover          map[string]string `json:"cover"`
-	OwnedBy        string            `json:"sort_value"`
+	Owner          string            `json:"owner"`
 	Title          string            `json:"title"`
 	CreatedAt      int64             `json:"created_at"`
-	Sort           string            `json:"sort"`
 	Description    string            `json:"description"`
+}
+
+func (collection Collection) toDBO() CollectionDBO {
+	return CollectionDBO{
+		ID:             "collection##" + collection.ID,
+		CommentMembers: collection.CommentMembers,
+		CommentCount:   collection.CommentCount,
+		Media:          collection.Media,
+		Cover:          collection.Cover,
+		Owner:          collection.Owner,
+		Title:          collection.Title,
+		CreatedAt:      collection.CreatedAt,
+		Description:    collection.Description,
+		Sort:           "collection##sort",
+	}
+}
+
+func (collection CollectionDBO) fromDBO() Collection {
+	return Collection{
+		ID:             strings.Split(collection.ID, "collection##")[1],
+		CommentMembers: collection.CommentMembers,
+		CommentCount:   collection.CommentCount,
+		Media:          collection.Media,
+		Cover:          collection.Cover,
+		Owner:          collection.Owner,
+		Title:          collection.Title,
+		CreatedAt:      collection.CreatedAt,
+		Description:    collection.Description,
+	}
+}
+
+func parseCollections(attrs []map[string]dynamodb.AttributeValue) []Collection {
+	var collectionsDBO []CollectionDBO
+	dynamodbattribute.UnmarshalListOfMaps(attrs, &collectionsDBO)
+
+	var collections []Collection
+	for _, v := range collectionsDBO {
+		collections = append(collections, v.fromDBO())
+	}
+
+	return collections
+}
+
+func parseCollection(attr map[string]dynamodb.AttributeValue) Collection {
+	var collectionDBO CollectionDBO
+	dynamodbattribute.UnmarshalMap(attr, &collectionDBO)
+
+	return collectionDBO.fromDBO()
+}
+
+func dumpCollection(collection Collection) (map[string]dynamodb.AttributeValue, error) {
+	return dynamodbattribute.MarshalMap(collection.toDBO())
 }
 
 func doList(
@@ -51,10 +116,7 @@ func doList(
 		return nil, err
 	}
 
-	var collections []Collection
-	dynamodbattribute.UnmarshalListOfMaps(result.Items, &collections)
-
-	return collections, nil
+	return parseCollections(result.Items), nil
 }
 
 func doGet(
@@ -73,19 +135,18 @@ func doGet(
 		return Collection{}, err
 	}
 
-	var collection Collection
-	dynamodbattribute.UnmarshalMap(result.Item, &collection)
+	collection := parseCollection(result.Item)
 
 	result, err = ddb.GetItemRequest(&dynamodb.GetItemInput{
 		TableName: aws.String(os.Getenv("EntityTable")),
 		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String(collection.OwnedBy)},
+			"id":   {S: aws.String(collection.Owner)},
 			"sort": {S: aws.String("detail")},
 		},
 	}).Send()
 
 	// First-aid
-	collection.OwnedBy = *result.Item["name"].S
+	collection.Owner = *result.Item["name"].S
 
 	return collection, nil
 }
@@ -103,10 +164,9 @@ func doCreate(
 ) (string, error) {
 	collectionID := uuid.Must(uuid.NewV4()).String()
 
-	collection, err := dynamodbattribute.MarshalMap(Collection{
-		ID:             "collection##" + collectionID,
-		Sort:           "collection##detail",
-		OwnedBy:        user["id"].(string),
+	item, err := dumpCollection(Collection{
+		ID:             collectionID,
+		Owner:          user["id"].(string),
 		Title:          createInput.Title,
 		Description:    createInput.Description,
 		Cover:          createInput.Cover,
@@ -121,7 +181,7 @@ func doCreate(
 
 	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
 		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      collection,
+		Item:      item,
 	}).Send(); err != nil {
 		return "", err
 	}
