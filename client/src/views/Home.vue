@@ -61,7 +61,7 @@
             </v-card-title>
 
             <v-card-actions>
-              <v-btn flat color="indigo" @click="$router.push(`/collections/${collection.id.split('collection##')[1]}`)">Open</v-btn>
+              <v-btn flat color="indigo" @click="$router.push(`/collections/${collection.id}`)">Open</v-btn>
               <v-spacer></v-spacer>
               <v-icon v-if="collection.media && collection.media.includes('document')">edit</v-icon>
               <v-icon v-if="collection.media && collection.media.includes('picture')">brush</v-icon>
