@@ -3,9 +3,6 @@ package main
 import (
 	"errors"
 	"strings"
-	"time"
-
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
@@ -158,43 +155,18 @@ func transformArticle(attr map[string]dynamodb.AttributeValue) (map[string]dynam
 	return transformed, nil
 }
 
-func transform(attr map[string]dynamodb.AttributeValue) (map[string]dynamodb.AttributeValue, error, map[string]dynamodb.AttributeValue) {
+func transform(attr map[string]dynamodb.AttributeValue) (map[string]dynamodb.AttributeValue, error) {
 	ID := *attr["id"].S
 	Sort := *attr["sort"].S
 	if strings.HasPrefix(ID, "user##") {
-		x, y := transformUser(attr)
-
-		transformed, err := dynamodbattribute.MarshalMap(NewCollection{
-			CommentCount: 0,
-			CommentMembers: []string{
-				ID,
-			},
-			Cover: map[string]string{
-				"color": "teal darken-2",
-				"sort":  "solid",
-			},
-			CreatedAt:   time.Now().Unix(),
-			Description: "",
-			ID:          "collection##" + uuid.Must(uuid.NewV4()).String(),
-			Media:       []string{},
-			Sort:        "collection##detail",
-			Owner:       *attr["id"].S,
-			Title:       *attr["display_name"].S,
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		return x, y, transformed
+		return transformUser(attr)
 	} else if strings.HasPrefix(ID, "collection##") && strings.HasPrefix(Sort, "article##") {
-		x, y := transformArticle(attr)
-		return x, y, nil
+		return transformArticle(attr)
 	} else if strings.HasPrefix(ID, "collection##") {
-		x, y := transformCollection(attr)
-		return x, y, nil
+		return transformCollection(attr)
 	}
 
-	return nil, errors.New("Unsupported record: " + ID), nil
+	return nil, errors.New("Unsupported record: " + ID)
 }
 
 func main() {
@@ -218,7 +190,7 @@ func main() {
 		var requests []dynamodb.WriteRequest
 
 		for _, item := range page.Items {
-			newData, err, optional := transform(item)
+			newData, err := transform(item)
 			if err != nil {
 				panic(err)
 			}
@@ -228,14 +200,6 @@ func main() {
 					Item: newData,
 				},
 			})
-
-			if optional != nil {
-				requests = append(requests, dynamodb.WriteRequest{
-					PutRequest: &dynamodb.PutRequest{
-						Item: optional,
-					},
-				})
-			}
 		}
 
 		_, err := ddb.BatchWriteItemRequest(&dynamodb.BatchWriteItemInput{
