@@ -101,17 +101,11 @@ func createUserCollection(
 }
 
 func DoSignUp(
-	event events.APIGatewayProxyRequest,
+	input SignUpInput,
 	idp ICustomProvider,
 	ddb dynamodbiface.DynamoDBAPI,
 	signer ISigner,
-) (events.APIGatewayProxyResponse, error) {
-	var input SignUpInput
-	err := json.Unmarshal([]byte(event.Body), &input)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
-
+) (string, string, error) {
 	identityID, err := idp.GetIdpID(input.Logins)
 
 	item, err := DumpUser(User{
@@ -122,38 +116,34 @@ func DoSignUp(
 		Picture:     input.Form.Picture,
 	})
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return "", "", err
 	}
 
-	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
+	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
 		TableName:           aws.String(os.Getenv("EntityTable")),
 		Item:                item,
 		ConditionExpression: aws.String("attribute_not_exists(id)"),
-	}).Send()
-
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+	}).Send(); err != nil {
+		return "", "", err
 	}
 
 	var user User
-	err = dynamodbattribute.UnmarshalMap(item, &user)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+	if err = dynamodbattribute.UnmarshalMap(item, &user); err != nil {
+		return "", "", err
 	}
 
 	jsn, err := json.Marshal(user.ToJwtPayload())
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return "", "", err
 	}
 
 	token, err := signer.Sign(jsn)
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return "", "", err
 	}
 
-	err = createUserCollection(user, ddb)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+	if err = createUserCollection(user, ddb); err != nil {
+		return "", "", err
 	}
 
 	body, err := json.Marshal(map[string]interface{}{
@@ -161,14 +151,7 @@ func DoSignUp(
 		"user":     string(jsn),
 	})
 
-	return events.APIGatewayProxyResponse{
-		StatusCode: 200,
-		Headers: map[string]string{
-			"Access-Control-Allow-Origin": "*",
-			"Location":                    "/users/" + identityID,
-		},
-		Body: string(body),
-	}, nil
+	return string(body), identityID, nil
 }
 
 func DoSignIn(
@@ -261,7 +244,25 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 	if event.Resource == "/auth/signUp" {
 		if event.HTTPMethod == "POST" {
-			return DoSignUp(event, customProvider, ddb, signer)
+			var input SignUpInput
+			err := json.Unmarshal([]byte(event.Body), &input)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			body, identityID, err := DoSignUp(input, customProvider, ddb, signer)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin": "*",
+					"Location":                    "/users/" + identityID,
+				},
+				Body: string(body),
+			}, nil
 		}
 	} else if event.Resource == "/auth/signIn" {
 		if event.HTTPMethod == "POST" {
