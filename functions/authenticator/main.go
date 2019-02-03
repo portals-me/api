@@ -41,11 +41,51 @@ type SignUpInput struct {
 
 type User struct {
 	ID          string `json:"id"`
-	Sort        string `json:"sort"`
 	CreatedAt   int64  `json:"created_at"`
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Picture     string `json:"picture"`
+}
+
+type UserDBO struct {
+	ID          string `json:"id"`
+	Sort        string `json:"sort"`
+	CreatedAt   int64  `json:"created_at"`
+	Name        string `json:"sort_value"`
+	DisplayName string `json:"display_name"`
+	Picture     string `json:"picture"`
+}
+
+func (user User) toDBO() UserDBO {
+	return UserDBO{
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		Name:        user.Name,
+		DisplayName: user.DisplayName,
+		Picture:     user.Picture,
+		Sort:        "user##detail",
+	}
+}
+
+func (user UserDBO) fromDBO() User {
+	return User{
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		Name:        user.Name,
+		DisplayName: user.DisplayName,
+		Picture:     user.Picture,
+	}
+}
+
+func parseUser(attr map[string]dynamodb.AttributeValue) User {
+	var userDBO UserDBO
+	dynamodbattribute.UnmarshalMap(attr, &userDBO)
+
+	return userDBO.fromDBO()
+}
+
+func dumpUser(user User) (map[string]dynamodb.AttributeValue, error) {
+	return dynamodbattribute.MarshalMap(user.toDBO())
 }
 
 type JwtPayload struct {
@@ -157,9 +197,8 @@ func DoSignUp(
 
 	identityID, err := idp.GetIdpID(input.Logins)
 
-	item, err := dynamodbattribute.MarshalMap(User{
+	item, err := dumpUser(User{
 		ID:          "user##" + identityID,
-		Sort:        "user##detail",
 		CreatedAt:   time.Now().Unix(),
 		Name:        input.Form.Name,
 		DisplayName: input.Form.DisplayName,
@@ -251,11 +290,7 @@ func DoSignIn(
 		}, nil
 	}
 
-	var user User
-	err = dynamodbattribute.UnmarshalMap(getItemReq.Item, &user)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
+	user := parseUser(getItemReq.Item)
 
 	jsn, err := json.Marshal(user.ToJwtPayload())
 	if err != nil {
