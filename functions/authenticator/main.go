@@ -10,8 +10,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
@@ -108,13 +106,15 @@ func DoSignUp(
 ) (string, string, error) {
 	identityID, err := idp.GetIdpID(input.Logins)
 
-	item, err := DumpUser(User{
+	user := User{
 		ID:          "user##" + identityID,
 		CreatedAt:   time.Now().Unix(),
 		Name:        input.Form.Name,
 		DisplayName: input.Form.DisplayName,
 		Picture:     input.Form.Picture,
-	})
+	}
+
+	item, err := DumpUser(user)
 	if err != nil {
 		return "", "", err
 	}
@@ -124,11 +124,6 @@ func DoSignUp(
 		Item:                item,
 		ConditionExpression: aws.String("attribute_not_exists(id)"),
 	}).Send(); err != nil {
-		return "", "", err
-	}
-
-	var user User
-	if err = dynamodbattribute.UnmarshalMap(item, &user); err != nil {
 		return "", "", err
 	}
 
