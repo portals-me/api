@@ -25,6 +25,7 @@ data "aws_iam_policy_document" "default-policy-doc" {
     actions = [
       "cognito-identity:*",
       "dynamodb:*",
+      "lambda:InvokeFunction",
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
       "logs:PutLogEvents",

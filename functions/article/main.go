@@ -149,7 +149,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 	} else if event.HTTPMethod == "POST" {
 		// OMG
-		if strings.HasSuffix(event.Path, "/articles-presigned") {
+		if strings.HasSuffix(event.Resource, "/articles-presigned") {
 			if event.Body == "" {
 				return events.APIGatewayProxyResponse{}, errors.New("Empty filepath")
 			}
