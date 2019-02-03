@@ -57,7 +57,7 @@ func (collection Collection) toDBO() CollectionDBO {
 		Title:          collection.Title,
 		CreatedAt:      collection.CreatedAt,
 		Description:    collection.Description,
-		Sort:           "collection##sort",
+		Sort:           "collection##detail",
 	}
 }
 
@@ -242,6 +242,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	}
 
 	ddb := dynamodb.New(cfg)
+	fmt.Println(event)
 
 	if event.HTTPMethod == "GET" {
 		if event.PathParameters == nil {

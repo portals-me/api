@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/lambdaiface"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 
@@ -18,8 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
 	"github.com/aws/aws-lambda-go/events"
-
-	"github.com/aws/aws-lambda-go/lambda"
+	lambda_handler "github.com/aws/aws-lambda-go/lambda"
 
 	"github.com/gomodule/oauth1/oauth"
 
@@ -80,6 +83,66 @@ func GetAccessToken(cred *oauth.Credentials, oauthVerifier string) (*oauth.Crede
 
 	return at, err
 }
+
+type CreateInput struct {
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Cover       map[string]string `json:"cover"`
+}
+
+func createUserCollection(
+	user User,
+	ddb dynamodbiface.DynamoDBAPI,
+	lam lambdaiface.LambdaAPI,
+) error {
+	result, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
+		TableName: aws.String(os.Getenv("EntityTable")),
+		Key: map[string]dynamodb.AttributeValue{
+			"id":   {S: aws.String("collection##" + user.Name)},
+			"sort": {S: aws.String("collection##detail")},
+		},
+	}).Send()
+
+	if err != nil {
+		return err
+	}
+
+	if result.Item != nil {
+		return nil
+	}
+
+	// Call collection handler
+	// Isn't there a better way?
+	input, _ := json.Marshal(CreateInput{
+		Title:       user.Name,
+		Description: "",
+		Cover: map[string]string{
+			"color": "red lighten-3",
+			"sort":  "solid",
+		},
+	})
+
+	userData, _ := json.Marshal(user)
+	var authorizer map[string]interface{}
+	json.Unmarshal(userData, &authorizer)
+
+	payload, _ := json.Marshal(events.APIGatewayProxyRequest{
+		HTTPMethod: "POST",
+		Body:       string(input),
+		RequestContext: events.APIGatewayProxyRequestContext{
+			Authorizer: authorizer,
+		},
+	})
+
+	funcResult, err := lam.InvokeRequest(&lambda.InvokeInput{
+		FunctionName: aws.String(strings.Replace(os.Getenv("LAMBDA_FUNCTION_NAME"), "authenticator", "collection", 1)),
+		Payload:      payload,
+	}).Send()
+	fmt.Println(funcResult)
+
+	return err
+}
+
 func DoSignUp(
 	event events.APIGatewayProxyRequest,
 	idp ICustomProvider,
@@ -96,7 +159,7 @@ func DoSignUp(
 
 	item, err := dynamodbattribute.MarshalMap(User{
 		ID:          "user##" + identityID,
-		Sort:        "detail",
+		Sort:        "user##detail",
 		CreatedAt:   time.Now().Unix(),
 		Name:        input.Form.Name,
 		DisplayName: input.Form.DisplayName,
@@ -151,6 +214,7 @@ func DoSignIn(
 	event events.APIGatewayProxyRequest,
 	idp ICustomProvider,
 	ddb dynamodbiface.DynamoDBAPI,
+	lam lambdaiface.LambdaAPI,
 	signer ISigner,
 ) (events.APIGatewayProxyResponse, error) {
 	var logins Logins
@@ -170,7 +234,7 @@ func DoSignIn(
 		TableName: aws.String(os.Getenv("EntityTable")),
 		Key: map[string]dynamodb.AttributeValue{
 			"id":   {S: aws.String(userID)},
-			"sort": {S: aws.String("detail")},
+			"sort": {S: aws.String("user##detail")},
 		},
 	}).Send()
 
@@ -208,6 +272,11 @@ func DoSignIn(
 		"user":     string(jsn),
 	})
 
+	err = createUserCollection(user, ddb, lam)
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
 		Headers: map[string]string{
@@ -225,6 +294,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 	ddb := dynamodb.New(cfg)
 	idp := cognitoidentity.New(cfg)
+	lam := lambda.New(cfg)
 
 	customProvider := &CustomProvider{
 		IdentityPoolID:          os.Getenv("IdentityPoolId"),
@@ -234,15 +304,15 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		Key: os.Getenv("JwtPrivate"),
 	}
 
-	if event.Path == "/auth/signUp" {
+	if event.Resource == "/auth/signUp" {
 		if event.HTTPMethod == "POST" {
 			return DoSignUp(event, customProvider, ddb, signer)
 		}
-	} else if event.Path == "/auth/signIn" {
+	} else if event.Resource == "/auth/signIn" {
 		if event.HTTPMethod == "POST" {
-			return DoSignIn(event, customProvider, ddb, signer)
+			return DoSignIn(event, customProvider, ddb, lam, signer)
 		}
-	} else if event.Path == "/auth/twitter" {
+	} else if event.Resource == "/auth/twitter" {
 		if event.HTTPMethod == "POST" {
 			fmt.Println(event.Headers)
 			twitter := GetTwitterClient()
@@ -302,5 +372,5 @@ type TwitterCallbackOutput struct {
 }
 
 func main() {
-	lambda.Start(handler)
+	lambda_handler.Start(handler)
 }
