@@ -23,85 +23,10 @@ import (
 	"github.com/gomodule/oauth1/oauth"
 
 	collection "../collection/lib"
+	. "./lib"
 	. "./signer"
 	. "./verifier"
 )
-
-type SignUpInput struct {
-	Form struct {
-		Name        string `json:"name"`
-		DisplayName string `json:"display_name"`
-		Picture     string `json:"picture"`
-	} `json:"form"`
-	Logins Logins `json:"logins"`
-}
-
-type User struct {
-	ID          string `json:"id"`
-	CreatedAt   int64  `json:"created_at"`
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	Picture     string `json:"picture"`
-}
-
-type UserDBO struct {
-	ID          string `json:"id"`
-	Sort        string `json:"sort"`
-	CreatedAt   int64  `json:"created_at"`
-	Name        string `json:"sort_value"`
-	DisplayName string `json:"display_name"`
-	Picture     string `json:"picture"`
-}
-
-func (user User) toDBO() UserDBO {
-	return UserDBO{
-		ID:          user.ID,
-		CreatedAt:   user.CreatedAt,
-		Name:        user.Name,
-		DisplayName: user.DisplayName,
-		Picture:     user.Picture,
-		Sort:        "user##detail",
-	}
-}
-
-func (user UserDBO) fromDBO() User {
-	return User{
-		ID:          user.ID,
-		CreatedAt:   user.CreatedAt,
-		Name:        user.Name,
-		DisplayName: user.DisplayName,
-		Picture:     user.Picture,
-	}
-}
-
-func parseUser(attr map[string]dynamodb.AttributeValue) User {
-	var userDBO UserDBO
-	dynamodbattribute.UnmarshalMap(attr, &userDBO)
-
-	return userDBO.fromDBO()
-}
-
-func dumpUser(user User) (map[string]dynamodb.AttributeValue, error) {
-	return dynamodbattribute.MarshalMap(user.toDBO())
-}
-
-type JwtPayload struct {
-	ID          string `json:"id"`
-	CreatedAt   int64  `json:"created_at"`
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	Picture     string `json:"picture"`
-}
-
-func (user User) ToJwtPayload() JwtPayload {
-	return JwtPayload{
-		ID:          user.ID,
-		CreatedAt:   user.CreatedAt,
-		Name:        user.Name,
-		DisplayName: user.DisplayName,
-		Picture:     user.Picture,
-	}
-}
 
 func generateRandomString(n int) string {
 	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -147,8 +72,6 @@ func createUserCollection(
 		return nil
 	}
 
-	// Call collection handler
-	// Isn't there a better way?
 	item, err := collection.DumpCollection(collection.Collection{
 		ID:          user.Name,
 		Owner:       user.ID,
@@ -191,7 +114,7 @@ func DoSignUp(
 
 	identityID, err := idp.GetIdpID(input.Logins)
 
-	item, err := dumpUser(User{
+	item, err := DumpUser(User{
 		ID:          "user##" + identityID,
 		CreatedAt:   time.Now().Unix(),
 		Name:        input.Form.Name,
@@ -288,7 +211,7 @@ func DoSignIn(
 		}, nil
 	}
 
-	user := parseUser(getItemReq.Item)
+	user := ParseUser(getItemReq.Item)
 
 	jsn, err := json.Marshal(user.ToJwtPayload())
 	if err != nil {
