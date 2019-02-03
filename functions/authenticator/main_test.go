@@ -20,16 +20,43 @@ func (provider *fakeCustomProvider) GetIdpID(logins Logins) (string, error) {
 	return "fake-idp", nil
 }
 
+type operation struct {
+	request  string
+	argument interface{}
+}
+
 type fakeDynamoDB struct {
 	dynamodbiface.DynamoDBAPI
-	payload map[string]string
-	err     error
+	callStack []operation
+	payload   map[string]map[string]dynamodb.AttributeValue
+	err       error
 }
 
 func (ddb *fakeDynamoDB) PutItemRequest(input *dynamodb.PutItemInput) dynamodb.PutItemRequest {
+	ddb.callStack = append(ddb.callStack, operation{
+		request:  "PutItemRequest",
+		argument: input,
+	})
+
 	return dynamodb.PutItemRequest{
 		Request: &aws.Request{
 			Data:  &dynamodb.PutItemOutput{},
+			Error: ddb.err,
+		},
+	}
+}
+
+func (ddb *fakeDynamoDB) GetItemRequest(input *dynamodb.GetItemInput) dynamodb.GetItemRequest {
+	ddb.callStack = append(ddb.callStack, operation{
+		request:  "GetItemRequest",
+		argument: input,
+	})
+
+	return dynamodb.GetItemRequest{
+		Request: &aws.Request{
+			Data: &dynamodb.GetItemOutput{
+				Item: ddb.payload[*input.Key["id"].S+"-"+*input.Key["sort"].S],
+			},
 			Error: ddb.err,
 		},
 	}
@@ -61,12 +88,12 @@ func TestSignUpWithGoogle(t *testing.T) {
 			Google: "id_token",
 		},
 	}
-	resp, err := DoSignUp(input, idp, ddb, signer)
+	_, identityID, err := DoSignUp(input, idp, ddb, signer)
 
 	if err != nil {
 		t.Error("Error", err)
 	}
-	if resp.StatusCode != 200 {
-		t.Error("StatusCode != 200", resp)
+	if identityID != "fake-idp" {
+		t.Error("Error", err)
 	}
 }
