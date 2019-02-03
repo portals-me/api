@@ -39,6 +39,8 @@ func (ddb *fakeDynamoDB) PutItemRequest(input *dynamodb.PutItemInput) dynamodb.P
 		argument: input,
 	})
 
+	ddb.payload[*input.Item["id"].S+"-"+*input.Item["sort"].S] = input.Item
+
 	return dynamodb.PutItemRequest{
 		Request: &aws.Request{
 			Data:  &dynamodb.PutItemOutput{},
@@ -72,7 +74,9 @@ func (signer fakeSigner) Sign(payload []byte) ([]byte, error) {
 
 func TestCanSignUpWithGoogle(t *testing.T) {
 	idp := &fakeCustomProvider{}
-	ddb := &fakeDynamoDB{}
+	ddb := &fakeDynamoDB{
+		payload: map[string]map[string]dynamodb.AttributeValue{},
+	}
 	signer := &fakeSigner{}
 
 	testUser := struct {
@@ -134,14 +138,17 @@ func TestCanSignUpWithGoogle(t *testing.T) {
 	}
 
 	col := collection.ParseCollection(ddb.callStack[callStackIndex].argument.(*dynamodb.PutItemInput).Item)
-	if !(col.ID == "collection#"+testUser.Name) {
+	if !(col.ID == testUser.Name &&
+		col.Title == testUser.Name) {
 		t.Errorf("Argument does not match: %+v", ddb.callStack[callStackIndex].argument)
 	}
 }
 
 func TestCanSignUpWithTwitter(t *testing.T) {
 	idp := &fakeCustomProvider{}
-	ddb := &fakeDynamoDB{}
+	ddb := &fakeDynamoDB{
+		payload: map[string]map[string]dynamodb.AttributeValue{},
+	}
 	signer := &fakeSigner{}
 
 	input := SignUpInput{
