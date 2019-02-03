@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"testing"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity/cognitoidentityiface"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -49,7 +47,7 @@ func TestSignUpWithGoogle(t *testing.T) {
 	ddb := &fakeDynamoDB{}
 	signer := &fakeSigner{}
 
-	jsn, _ := json.Marshal(SignUpInput{
+	input := SignUpInput{
 		Form: struct {
 			Name        string `json:"name"`
 			DisplayName string `json:"display_name"`
@@ -62,12 +60,9 @@ func TestSignUpWithGoogle(t *testing.T) {
 		Logins: Logins{
 			Google: "id_token",
 		},
-	})
-	req := events.APIGatewayProxyRequest{
-		Body: string(jsn),
 	}
+	resp, err := DoSignUp(input, idp, ddb, signer)
 
-	resp, err := DoSignUp(req, idp, ddb, signer)
 	if err != nil {
 		t.Error("Error", err)
 	}
