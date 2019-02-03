@@ -6,11 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
-
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	"github.com/aws/aws-sdk-go-v2/service/lambda/lambdaiface"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 
@@ -26,6 +22,7 @@ import (
 
 	"github.com/gomodule/oauth1/oauth"
 
+	collection "../collection/lib"
 	. "./signer"
 	. "./verifier"
 )
@@ -133,7 +130,6 @@ type CreateInput struct {
 func createUserCollection(
 	user User,
 	ddb dynamodbiface.DynamoDBAPI,
-	lam lambdaiface.LambdaAPI,
 ) error {
 	result, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
 		TableName: aws.String(os.Getenv("EntityTable")),
@@ -153,32 +149,30 @@ func createUserCollection(
 
 	// Call collection handler
 	// Isn't there a better way?
-	input, _ := json.Marshal(CreateInput{
+	item, err := collection.DumpCollection(collection.Collection{
+		ID:          user.Name,
+		Owner:       user.ID,
 		Title:       user.Name,
 		Description: "",
 		Cover: map[string]string{
 			"color": "red lighten-3",
 			"sort":  "solid",
 		},
+		Media:          []string{},
+		CommentMembers: []string{user.ID},
+		CommentCount:   0,
+		CreatedAt:      time.Now().Unix(),
 	})
+	if err != nil {
+		return err
+	}
 
-	userData, _ := json.Marshal(user)
-	var authorizer map[string]interface{}
-	json.Unmarshal(userData, &authorizer)
-
-	payload, _ := json.Marshal(events.APIGatewayProxyRequest{
-		HTTPMethod: "POST",
-		Body:       string(input),
-		RequestContext: events.APIGatewayProxyRequestContext{
-			Authorizer: authorizer,
-		},
-	})
-
-	funcResult, err := lam.InvokeRequest(&lambda.InvokeInput{
-		FunctionName: aws.String(strings.Replace(os.Getenv("LAMBDA_FUNCTION_NAME"), "authenticator", "collection", 1)),
-		Payload:      payload,
-	}).Send()
-	fmt.Println(funcResult)
+	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
+		TableName: aws.String(os.Getenv("EntityTable")),
+		Item:      item,
+	}).Send(); err != nil {
+		return err
+	}
 
 	return err
 }
@@ -234,6 +228,11 @@ func DoSignUp(
 		return events.APIGatewayProxyResponse{}, err
 	}
 
+	err = createUserCollection(user, ddb)
+	if err != nil {
+		return events.APIGatewayProxyResponse{}, err
+	}
+
 	body, err := json.Marshal(map[string]interface{}{
 		"id_token": string(token),
 		"user":     string(jsn),
@@ -253,7 +252,6 @@ func DoSignIn(
 	event events.APIGatewayProxyRequest,
 	idp ICustomProvider,
 	ddb dynamodbiface.DynamoDBAPI,
-	lam lambdaiface.LambdaAPI,
 	signer ISigner,
 ) (events.APIGatewayProxyResponse, error) {
 	var logins Logins
@@ -307,7 +305,7 @@ func DoSignIn(
 		"user":     string(jsn),
 	})
 
-	err = createUserCollection(user, ddb, lam)
+	err = createUserCollection(user, ddb)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}
@@ -329,7 +327,6 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 	ddb := dynamodb.New(cfg)
 	idp := cognitoidentity.New(cfg)
-	lam := lambda.New(cfg)
 
 	customProvider := &CustomProvider{
 		IdentityPoolID:          os.Getenv("IdentityPoolId"),
@@ -345,7 +342,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 	} else if event.Resource == "/auth/signIn" {
 		if event.HTTPMethod == "POST" {
-			return DoSignIn(event, customProvider, ddb, lam, signer)
+			return DoSignIn(event, customProvider, ddb, signer)
 		}
 	} else if event.Resource == "/auth/twitter" {
 		if event.HTTPMethod == "POST" {

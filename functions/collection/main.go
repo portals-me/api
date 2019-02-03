@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
@@ -14,89 +13,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
 
 	"github.com/aws/aws-lambda-go/events"
 
 	"github.com/aws/aws-lambda-go/lambda"
+
+	. "./lib"
 )
-
-type CollectionDBO struct {
-	ID             string            `json:"id"`
-	CommentMembers []string          `json:"comment_members"`
-	CommentCount   int               `json:"comment_count"`
-	Media          []string          `json:"media"`
-	Cover          map[string]string `json:"cover"`
-	Owner          string            `json:"sort_value"`
-	Title          string            `json:"title"`
-	CreatedAt      int64             `json:"created_at"`
-	Sort           string            `json:"sort"`
-	Description    string            `json:"description"`
-}
-
-type Collection struct {
-	ID             string            `json:"id"`
-	CommentMembers []string          `json:"comment_members"`
-	CommentCount   int               `json:"comment_count"`
-	Media          []string          `json:"media"`
-	Cover          map[string]string `json:"cover"`
-	Owner          string            `json:"owner"`
-	Title          string            `json:"title"`
-	CreatedAt      int64             `json:"created_at"`
-	Description    string            `json:"description"`
-}
-
-func (collection Collection) toDBO() CollectionDBO {
-	return CollectionDBO{
-		ID:             "collection##" + collection.ID,
-		CommentMembers: collection.CommentMembers,
-		CommentCount:   collection.CommentCount,
-		Media:          collection.Media,
-		Cover:          collection.Cover,
-		Owner:          collection.Owner,
-		Title:          collection.Title,
-		CreatedAt:      collection.CreatedAt,
-		Description:    collection.Description,
-		Sort:           "collection##detail",
-	}
-}
-
-func (collection CollectionDBO) fromDBO() Collection {
-	return Collection{
-		ID:             strings.Split(collection.ID, "collection##")[1],
-		CommentMembers: collection.CommentMembers,
-		CommentCount:   collection.CommentCount,
-		Media:          collection.Media,
-		Cover:          collection.Cover,
-		Owner:          collection.Owner,
-		Title:          collection.Title,
-		CreatedAt:      collection.CreatedAt,
-		Description:    collection.Description,
-	}
-}
-
-func parseCollections(attrs []map[string]dynamodb.AttributeValue) []Collection {
-	var collectionsDBO []CollectionDBO
-	dynamodbattribute.UnmarshalListOfMaps(attrs, &collectionsDBO)
-
-	var collections []Collection
-	for _, v := range collectionsDBO {
-		collections = append(collections, v.fromDBO())
-	}
-
-	return collections
-}
-
-func parseCollection(attr map[string]dynamodb.AttributeValue) Collection {
-	var collectionDBO CollectionDBO
-	dynamodbattribute.UnmarshalMap(attr, &collectionDBO)
-
-	return collectionDBO.fromDBO()
-}
-
-func dumpCollection(collection Collection) (map[string]dynamodb.AttributeValue, error) {
-	return dynamodbattribute.MarshalMap(collection.toDBO())
-}
 
 func doList(
 	user map[string]interface{},
@@ -116,7 +39,7 @@ func doList(
 		return nil, err
 	}
 
-	return parseCollections(result.Items), nil
+	return ParseCollections(result.Items), nil
 }
 
 func doGet(
@@ -135,7 +58,7 @@ func doGet(
 		return Collection{}, err
 	}
 
-	collection := parseCollection(result.Item)
+	collection := ParseCollection(result.Item)
 
 	result, err = ddb.GetItemRequest(&dynamodb.GetItemInput{
 		TableName: aws.String(os.Getenv("EntityTable")),
@@ -164,7 +87,7 @@ func doCreate(
 ) (string, error) {
 	collectionID := uuid.Must(uuid.NewV4()).String()
 
-	item, err := dumpCollection(Collection{
+	item, err := DumpCollection(Collection{
 		ID:             collectionID,
 		Owner:          user["id"].(string),
 		Title:          createInput.Title,
