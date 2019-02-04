@@ -237,15 +237,22 @@ func TestCanSignInWithoutUserCollection(t *testing.T) {
 }
 
 func TestCanSignInWithUserCollection(t *testing.T) {
-	testUser, _ := DumpUser(User{
+	testUser := User{
 		ID:   "user-id",
 		Name: "user-name",
-	})
+	}
+	testUserDump, _ := DumpUser(testUser)
+
+	testUserCollection := collection.Collection{
+		ID: testUser.Name,
+	}
+	testUserCollectionDump, _ := collection.DumpCollection(testUserCollection)
 
 	idp := &fakeCustomProvider{}
 	ddb := &fakeDynamoDB{
 		payload: map[string]map[string]dynamodb.AttributeValue{
-			"user##fake-idp-user##detail": testUser,
+			"user##fake-idp-user##detail":                          testUserDump,
+			"collection##" + testUser.Name + "-collection##detail": testUserCollectionDump,
 		},
 	}
 	signer := &fakeSigner{}
@@ -268,5 +275,22 @@ func TestCanSignInWithUserCollection(t *testing.T) {
 	getItemKey := ddb.callStack[callStackIndex].argument.(*dynamodb.GetItemInput).Key
 	if !(*getItemKey["id"].S == "user##fake-idp") {
 		t.Errorf("Argument does not match: %+v", ddb.callStack[callStackIndex].argument)
+	}
+
+	callStackIndex = 1
+
+	// user collection check
+	if ddb.callStack[callStackIndex].request != "GetItemRequest" {
+		t.Error("Invalid callStack order: ", ddb.callStack[callStackIndex])
+	}
+
+	getItemKey = ddb.callStack[callStackIndex].argument.(*dynamodb.GetItemInput).Key
+	if !(*getItemKey["id"].S == "collection##"+testUser.Name) {
+		t.Errorf("Argument does not match: %+v", ddb.callStack[callStackIndex].argument)
+	}
+
+	// get user collection and done
+	if len(ddb.callStack) != 2 {
+		t.Error("Invalid callStack size: ", len(ddb.callStack))
 	}
 }
