@@ -105,7 +105,7 @@ func TestCanSignUpWithGoogle(t *testing.T) {
 
 	callStackIndex := 0
 
-	// user existence check
+	// user create
 	if ddb.callStack[callStackIndex].request != "PutItemRequest" {
 		t.Error("Invalid callStack order: ", ddb.callStack[callStackIndex])
 	}
@@ -172,5 +172,101 @@ func TestCanSignUpWithTwitter(t *testing.T) {
 	}
 	if identityID != "fake-idp" {
 		t.Error("Error", err)
+	}
+}
+
+func TestCanSignInWithoutUserCollection(t *testing.T) {
+	testUser := User{
+		ID:   "user-id",
+		Name: "user-name",
+	}
+	testUserDump, _ := DumpUser(testUser)
+
+	idp := &fakeCustomProvider{}
+	ddb := &fakeDynamoDB{
+		payload: map[string]map[string]dynamodb.AttributeValue{
+			"user##fake-idp-user##detail": testUserDump,
+		},
+	}
+	signer := &fakeSigner{}
+	logins := Logins{
+		Twitter: "id_token",
+	}
+
+	_, err := DoSignIn(logins, idp, ddb, signer)
+	if err != nil {
+		t.Error("Error", err)
+	}
+
+	callStackIndex := 0
+
+	// user get
+	if ddb.callStack[callStackIndex].request != "GetItemRequest" {
+		t.Error("Invalid callStack order: ", ddb.callStack[callStackIndex])
+	}
+
+	getItemKey := ddb.callStack[callStackIndex].argument.(*dynamodb.GetItemInput).Key
+	if !(*getItemKey["id"].S == "user##fake-idp") {
+		t.Errorf("Argument does not match: %+v", ddb.callStack[callStackIndex].argument)
+	}
+
+	callStackIndex = 1
+
+	// user collection check
+	if ddb.callStack[callStackIndex].request != "GetItemRequest" {
+		t.Error("Invalid callStack order: ", ddb.callStack[callStackIndex])
+	}
+
+	getItemKey = ddb.callStack[callStackIndex].argument.(*dynamodb.GetItemInput).Key
+	if !(*getItemKey["id"].S == "collection##"+testUser.Name) {
+		t.Errorf("Argument does not match: %+v", ddb.callStack[callStackIndex].argument)
+	}
+
+	callStackIndex = 2
+
+	// put user collection
+	if ddb.callStack[callStackIndex].request != "PutItemRequest" {
+		t.Error("Invalid callStack order: ", ddb.callStack[callStackIndex])
+	}
+
+	col := collection.ParseCollection(ddb.callStack[callStackIndex].argument.(*dynamodb.PutItemInput).Item)
+	if !(col.ID == testUser.Name &&
+		col.Title == testUser.Name) {
+		t.Errorf("Argument does not match: %+v", ddb.callStack[callStackIndex].argument)
+	}
+}
+
+func TestCanSignInWithUserCollection(t *testing.T) {
+	testUser, _ := DumpUser(User{
+		ID:   "user-id",
+		Name: "user-name",
+	})
+
+	idp := &fakeCustomProvider{}
+	ddb := &fakeDynamoDB{
+		payload: map[string]map[string]dynamodb.AttributeValue{
+			"user##fake-idp-user##detail": testUser,
+		},
+	}
+	signer := &fakeSigner{}
+	logins := Logins{
+		Twitter: "id_token",
+	}
+
+	_, err := DoSignIn(logins, idp, ddb, signer)
+	if err != nil {
+		t.Error("Error", err)
+	}
+
+	callStackIndex := 0
+
+	// user get
+	if ddb.callStack[callStackIndex].request != "GetItemRequest" {
+		t.Error("Invalid callStack order: ", ddb.callStack[callStackIndex])
+	}
+
+	getItemKey := ddb.callStack[callStackIndex].argument.(*dynamodb.GetItemInput).Key
+	if !(*getItemKey["id"].S == "user##fake-idp") {
+		t.Errorf("Argument does not match: %+v", ddb.callStack[callStackIndex].argument)
 	}
 }

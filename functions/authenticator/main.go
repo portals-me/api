@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -150,20 +151,14 @@ func DoSignUp(
 }
 
 func DoSignIn(
-	event events.APIGatewayProxyRequest,
+	logins Logins,
 	idp ICustomProvider,
 	ddb dynamodbiface.DynamoDBAPI,
 	signer ISigner,
-) (events.APIGatewayProxyResponse, error) {
-	var logins Logins
-	err := json.Unmarshal([]byte(event.Body), &logins)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
-
+) (string, error) {
 	identityID, err := idp.GetIdpID(logins)
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return "", err
 	}
 
 	userID := "user##" + identityID
@@ -175,30 +170,24 @@ func DoSignIn(
 			"sort": {S: aws.String("user##detail")},
 		},
 	}).Send()
-
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return "", err
 	}
+
 	if getItemReq.Item["id"].S == nil {
-		return events.APIGatewayProxyResponse{
-			StatusCode: 404,
-			Headers: map[string]string{
-				"Access-Control-Allow-Origin": "*",
-			},
-			Body: "UserNotExist: " + userID,
-		}, nil
+		return "", errors.New("UserNotExist: " + userID)
 	}
 
 	user := ParseUser(getItemReq.Item)
 
 	jsn, err := json.Marshal(user.ToJwtPayload())
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return "", err
 	}
 
 	token, err := signer.Sign(jsn)
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return "", err
 	}
 
 	body, err := json.Marshal(map[string]interface{}{
@@ -208,16 +197,10 @@ func DoSignIn(
 
 	err = createUserCollection(user, ddb)
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return "", err
 	}
 
-	return events.APIGatewayProxyResponse{
-		StatusCode: 200,
-		Headers: map[string]string{
-			"Access-Control-Allow-Origin": "*",
-		},
-		Body: string(body),
-	}, nil
+	return string(body), nil
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -261,7 +244,24 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 	} else if event.Resource == "/auth/signIn" {
 		if event.HTTPMethod == "POST" {
-			return DoSignIn(event, customProvider, ddb, signer)
+			var logins Logins
+			err := json.Unmarshal([]byte(event.Body), &logins)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			body, err := DoSignIn(logins, customProvider, ddb, signer)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Access-Control-Allow-Origin": "*",
+				},
+				Body: string(body),
+			}, nil
 		}
 	} else if event.Resource == "/auth/twitter" {
 		if event.HTTPMethod == "POST" {
