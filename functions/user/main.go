@@ -12,12 +12,9 @@ import (
 	"github.com/guregu/dynamo"
 
 	authenticator "../authenticator/lib"
+	feed "../entity-stream/lib"
 	"github.com/aws/aws-lambda-go/lambda"
 )
-
-var db = dynamo.New(session.New(), &aws.Config{})
-var sortIndexTable = db.Table(os.Getenv("SortIndex"))
-var feedTable = db.Table(os.Getenv("FeedTable"))
 
 func getUser(s map[string]interface{}) (authenticator.User, error) {
 	var user authenticator.User
@@ -34,15 +31,26 @@ func getUser(s map[string]interface{}) (authenticator.User, error) {
 	return user, nil
 }
 
-func DoListFeed(name string) ([]interface{}, error) {
+func DoListFeed(
+	name string,
+	entityTable dynamo.Table,
+	feedTable dynamo.Table,
+) ([]feed.FeedEvent, error) {
 	var user authenticator.UserDBO
-	err := sortIndexTable.Get("user##detail", name).One(&user)
+	err := entityTable.
+		Get("sort", "user##detail").
+		Range("sort_value", dynamo.Equal, name).
+		Index(os.Getenv("SortIndex")).
+		One(&user)
 	if err != nil {
 		return nil, err
 	}
 
-	var items []interface{}
-	err = feedTable.Get(user.ID, nil).Limit(10).All(&items)
+	var items []feed.FeedEvent
+	err = feedTable.
+		Get("user_id", user.ID).
+		Limit(10).
+		All(&items)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +61,10 @@ func DoListFeed(name string) ([]interface{}, error) {
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	userName := event.PathParameters["userName"]
 
+	db := dynamo.New(session.New(), &aws.Config{})
+	entityTable := db.Table(os.Getenv("EntityTable"))
+	feedTable := db.Table(os.Getenv("FeedTable"))
+
 	if event.HTTPMethod == "GET" {
 		if userName == "me" {
 			out, _ := json.Marshal(event.RequestContext.Authorizer)
@@ -60,7 +72,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 
 		if strings.HasSuffix(event.Resource, "/feed") {
-			items, err := DoListFeed(userName)
+			items, err := DoListFeed(userName, entityTable, feedTable)
 			if err != nil {
 				return events.APIGatewayProxyResponse{
 					Body:       err.Error(),
