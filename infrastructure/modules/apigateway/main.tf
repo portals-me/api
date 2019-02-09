@@ -20,4 +20,8 @@ resource "aws_api_gateway_deployment" "restapi" {
   variables {
     deployed_at = "${timestamp()}"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }

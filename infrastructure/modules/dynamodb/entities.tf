@@ -28,4 +28,8 @@ resource "aws_dynamodb_table" "entities" {
     range_key = "sort_value"
     projection_type = "ALL"
   }
+
+  stream_enabled = true
+  stream_view_type = "KEYS_ONLY"
+  
 }
