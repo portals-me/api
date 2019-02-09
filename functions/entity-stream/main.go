@@ -38,9 +38,6 @@ func handler(ctx context.Context, event events.DynamoDBEvent) error {
 				ItemID:    record.Change.Keys["id"].String(),
 			}
 			items = append(items, feed)
-
-			s, _ := dynamo.MarshalItem(feed)
-			fmt.Println(s)
 		}
 	}
 

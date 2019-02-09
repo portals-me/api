@@ -11,7 +11,7 @@ resource "aws_dynamodb_table" "feeds" {
 
   attribute {
     name = "timestamp"
-    type = "S"
+    type = "N"
   }
 
   attribute {
