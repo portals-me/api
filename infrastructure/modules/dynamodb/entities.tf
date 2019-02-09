@@ -27,7 +27,7 @@ resource "aws_dynamodb_table" "entities" {
   }
 
   stream_enabled = true
-  stream_view_type = "KEYS_ONLY"
+  stream_view_type = "NEW_IMAGE"
 }
 
 resource "aws_lambda_event_source_mapping" "entities-stream" {
