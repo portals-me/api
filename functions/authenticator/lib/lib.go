@@ -27,10 +27,10 @@ type User struct {
 type UserDBO struct {
 	ID          string `json:"id" dynamo:"id"`
 	Sort        string `json:"sort" dynamo:"sort"`
-	CreatedAt   int64  `json:"created_at"`
-	Name        string `json:"sort_value" dynamodb:"sort_value"`
-	DisplayName string `json:"display_name"`
-	Picture     string `json:"picture"`
+	CreatedAt   int64  `json:"created_at" dynamo:"created_at"`
+	Name        string `json:"sort_value" dynamo:"sort_value"`
+	DisplayName string `json:"display_name" dynamo:"display_name"`
+	Picture     string `json:"picture" dynamo:"picture"`
 }
 
 func (user User) ToDBO() UserDBO {
