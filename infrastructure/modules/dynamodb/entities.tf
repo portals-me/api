@@ -1,7 +1,3 @@
-variable "stage" {}
-variable "service" {}
-variable "entity-stream_arn" {}
-
 resource "aws_dynamodb_table" "entities" {
   name = "${var.service}-${var.stage}-entities"
   billing_mode = "PAY_PER_REQUEST"
