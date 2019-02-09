@@ -26,4 +26,6 @@ module "dynamodb" {
   source = "../modules/dynamodb"
   stage = "${var.stage}"
   service = "${var.service}"
+
+  entity-stream_arn = "${var.apex_function_entity-stream}"
 }
