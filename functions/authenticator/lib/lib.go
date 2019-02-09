@@ -25,10 +25,10 @@ type User struct {
 }
 
 type UserDBO struct {
-	ID          string `json:"id"`
-	Sort        string `json:"sort"`
+	ID          string `json:"id" dynamo:"id"`
+	Sort        string `json:"sort" dynamo:"sort"`
 	CreatedAt   int64  `json:"created_at"`
-	Name        string `json:"sort_value"`
+	Name        string `json:"sort_value" dynamodb:"sort_value"`
 	DisplayName string `json:"display_name"`
 	Picture     string `json:"picture"`
 }
