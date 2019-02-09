@@ -59,7 +59,7 @@ func DoListFeed(
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	userName := event.PathParameters["userName"]
+	userName := event.PathParameters["userId"]
 
 	db := dynamo.New(session.New(), &aws.Config{})
 	entityTable := db.Table(os.Getenv("EntityTable"))
