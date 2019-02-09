@@ -1,3 +1,9 @@
+variable "entity-stream_arn" {}
+variable "stream-count" {
+  default = 1
+}
+
+
 resource "aws_dynamodb_table" "entities" {
   name = "${var.service}-${var.stage}-entities"
   billing_mode = "PAY_PER_REQUEST"
@@ -32,6 +38,7 @@ resource "aws_dynamodb_table" "entities" {
 
 resource "aws_lambda_event_source_mapping" "entities-stream" {
   depends_on = ["aws_dynamodb_table.entities"]
+  count = "${var.stream-count}"
   batch_size = 100
   event_source_arn = "${aws_dynamodb_table.entities.stream_arn}"
   enabled = true
