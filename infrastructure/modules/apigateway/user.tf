@@ -39,3 +39,33 @@ module "users-user" {
     }
   ]
 }
+
+module "users-user-feed" {
+  source = "lambda_api_path"
+
+  rest_api_id = "${aws_api_gateway_rest_api.restapi.id}"
+  parent_id = "${module.users-user.id}"
+  path_part = "feed"
+  methods_count = 1
+  authorization = "CUSTOM"
+  authorizer_id = "${aws_api_gateway_authorizer.lambda_authorizer.id}"
+
+  request_parameters = {
+    "method.request.path.userId" = true
+  }
+
+  methods = [
+    {
+      http_method = "GET"
+      function_arn = "${var.user_arn}"
+    },
+  ]
+}
+
+module "users-user-feed-cors" {
+  source = "github.com/squidfunk/terraform-aws-api-gateway-enable-cors"
+  version = "0.2.0"
+
+  api_id          = "${aws_api_gateway_rest_api.restapi.id}"
+  api_resource_id = "${module.users-user-feed.id}"
+}
