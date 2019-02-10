@@ -31,6 +31,10 @@ func handler(ctx context.Context, event events.DynamoDBEvent) error {
 				Timestamp: record.Change.ApproximateCreationDateTime.Unix(),
 				EventName: "INSERT_COLLECTION",
 				ItemID:    record.Change.Keys["id"].String(),
+				Entity: map[string]interface{}{
+					"title":       record.Change.NewImage["title"].String(),
+					"description": record.Change.NewImage["description"].String(),
+				},
 			}
 			items = append(items, feed)
 		}
