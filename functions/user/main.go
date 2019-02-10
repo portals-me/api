@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
@@ -58,6 +57,23 @@ func DoListFeed(
 	return items, nil
 }
 
+func DoGetUser(
+	userName string,
+	entityTable dynamo.Table,
+) (authenticator.User, error) {
+	var user authenticator.UserDBO
+	err := entityTable.
+		Get("sort", "user##detail").
+		Range("sort_value", dynamo.Equal, userName).
+		Index(os.Getenv("SortIndex")).
+		One(&user)
+	if err != nil {
+		return authenticator.User{}, err
+	}
+
+	return user.FromDBO(), nil
+}
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	userName := event.PathParameters["userId"]
 
@@ -66,12 +82,27 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	feedTable := db.Table(os.Getenv("FeedTable"))
 
 	if event.HTTPMethod == "GET" {
-		if userName == "me" {
-			out, _ := json.Marshal(event.RequestContext.Authorizer)
-			return events.APIGatewayProxyResponse{Body: string(out), StatusCode: 200}, nil
-		}
+		if event.Resource == "/users/{userId}" {
+			if userName == "me" {
+				out, _ := json.Marshal(event.RequestContext.Authorizer)
+				return events.APIGatewayProxyResponse{Body: string(out), StatusCode: 200}, nil
+			}
 
-		if strings.HasSuffix(event.Resource, "/feed") {
+			user, err := DoGetUser(userName, entityTable)
+			if err != nil {
+				return events.APIGatewayProxyResponse{
+					Body:       err.Error(),
+					StatusCode: 400,
+				}, nil
+			}
+
+			out, _ := json.Marshal(user)
+			return events.APIGatewayProxyResponse{
+				Body:       string(out),
+				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+				StatusCode: 200,
+			}, nil
+		} else if event.Resource == "/users/{userId}/feed" {
 			items, err := DoListFeed(userName, entityTable, feedTable)
 			if err != nil {
 				return events.APIGatewayProxyResponse{
@@ -90,7 +121,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 	}
 
-	return events.APIGatewayProxyResponse{Body: "/user", StatusCode: 200}, nil
+	return events.APIGatewayProxyResponse{Body: "Invalid path: " + event.Resource, StatusCode: 400}, nil
 }
 
 func main() {

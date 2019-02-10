@@ -32,9 +32,14 @@
         </v-btn>
         <v-list>
           <v-list-tile
+            @click="$router.push(`/users/${user.name}`)"
+          >
+            <v-list-tile-title>プロフィール</v-list-tile-title>
+          </v-list-tile>
+          <v-list-tile
             @click="signOut"
           >
-            <v-list-tile-title>Sign Out</v-list-tile-title>
+            <v-list-tile-title>サインアウト</v-list-tile-title>
           </v-list-tile>
         </v-list>
       </v-menu>
