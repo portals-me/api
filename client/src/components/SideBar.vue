@@ -1,6 +1,6 @@
 <template>
   <v-navigation-drawer
-    v-model="drawer"
+    v-model="isDrawerOpened"
     fixed
     clipped
     app
@@ -95,17 +95,16 @@
   </v-navigation-drawer>
 </template>
 
-<script>
-export default {
-  data () {
-    return {
-    };
-  },
-  computed: {
-    drawer () {
-      return this.$store.state.isDrawerOpened
-    }
-  }
-}
-</script>
+<script lang="ts">
+import Vue,{ ComponentOptions } from 'vue';
+import { mapGetters, mapMutations } from 'vuex';
 
+interface SideBarComponent extends Vue {
+}
+
+export default Vue.extend({
+  computed: {
+    ...mapGetters({ isDrawerOpened: 'isDrawerOpened' }),
+  },
+}) as ComponentOptions<SideBarComponent>;
+</script>

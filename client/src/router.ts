@@ -1,14 +1,15 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 
-import SideBar from '@/components/SideBar';
-import UnsignedTopBar from '@/components/UnsignedTopBar';
-import TopBar from '@/components/TopBar';
+import SideBar from '@/components/SideBar.vue';
+import UnsignedTopBar from '@/components/UnsignedTopBar.vue';
+import TopBar from '@/components/TopBar.vue';
 
-import Landing from '@/views/Landing';
-import Home from './views/Home'
-import Collection from '@/views/Collection';
-import SignIn from '@/views/SignIn';
+import Landing from '@/views/Landing.vue';
+import Home from '@/views/Home.vue'
+import Collection from '@/views/Collection.vue';
+import SignIn from '@/views/SignIn.vue';
+import User from '@/views/User.vue';
 
 Vue.use(Router)
 
@@ -71,6 +72,14 @@ export default new Router({
       components: {
         default: Collection,
         sidebar: SideBar,
+        topbar: TopBar,
+      }
+    },
+    {
+      path: '/users/:userId',
+      name: 'user',
+      components: {
+        default: User,
         topbar: TopBar,
       }
     },

@@ -7,17 +7,3 @@
     </v-content>
   </v-app>
 </template>
-
-<script>
-export default {
-  data () {
-    return {
-      user: null,
-    }
-  },
-  methods: {
-  },
-  mounted: async function () {
-  }
-}
-</script>

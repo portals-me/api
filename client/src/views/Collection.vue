@@ -1,7 +1,7 @@
 <template>
   <v-container grid-list-md fluid>
     <v-flex xs12 class="collection-title">
-      <v-layout row wrap>
+      <v-layout row wrap class="text-sm-left">
         <v-flex xs5>
           <h2><v-icon>collections</v-icon> {{ collection.owner }} / {{ collection.title }}</h2>
           <pre>{{ collection.description }}</pre>
@@ -200,7 +200,7 @@
           v-model="articleDialog"
           max-width="600"
         >
-          <v-card>
+          <v-card class="text-sm-left">
             <v-card-title class="headline" v-if="activeArticle.id">{{ activeArticle.title }}</v-card-title>
 
             <v-card-text>
@@ -219,7 +219,7 @@
       </v-tab-item>
 
       <v-tab-item>
-        <v-layout>
+        <v-layout class="text-sm-left">
           <v-flex xs12 class="message">
             <v-avatar>
               <v-img
@@ -247,7 +247,7 @@
 
         <v-divider />
 
-        <v-layout>
+        <v-layout class="text-sm-left">
           <v-flex xs12 class="message">
             <v-avatar>
               <v-img
@@ -270,7 +270,7 @@
         </v-layout>
 
         <v-layout>
-          <v-flex xs12 class="message">
+          <v-flex xs12 class="message text-sm-left">
             <v-avatar>
               <v-img
                 src="https://lh6.googleusercontent.com/-HrqEjsNu_No/AAAAAAAAAAI/AAAAAAAAAMI/Rg4RwE9Y7So/s96-c/photo.jpg"
@@ -291,7 +291,7 @@
           </v-flex>
         </v-layout>
 
-        <v-layout>
+        <v-layout class="text-sm-left">
           <v-flex xs12 class="message">
             <v-avatar>
               <v-img
