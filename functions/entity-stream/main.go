@@ -16,11 +16,12 @@ import (
 	feed "./lib"
 )
 
-var db = dynamo.New(session.New(), &aws.Config{})
-var table = db.Table(os.Getenv("FeedTable"))
+var db *dynamo.DB
+var table dynamo.Table
 
 func handler(ctx context.Context, event events.DynamoDBEvent) error {
-	items := []interface{}{}
+	insertItems := []interface{}{}
+	deleteItems := []dynamo.Keyed{}
 
 	for _, record := range event.Records {
 		fmt.Printf("%+v\n", record)
@@ -36,18 +37,45 @@ func handler(ctx context.Context, event events.DynamoDBEvent) error {
 					"description": record.Change.NewImage["description"].String(),
 				},
 			}
-			items = append(items, feed)
+
+			insertItems = append(insertItems, feed)
+		} else if record.EventName == "REMOVE" && strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") {
+			var events []feed.FeedEvent
+			err := table.
+				Get("item_id", record.Change.Keys["id"].String()).
+				Index("ItemID").
+				All(&events)
+			if err != nil {
+				return err
+			}
+
+			for _, event := range events {
+				deleteItems = append(deleteItems, dynamo.Keys{event.UserID, event.Timestamp})
+			}
 		}
 	}
 
-	_, err := table.Batch().Write().Put(items...).Run()
-	if err != nil {
-		return err
+	if len(insertItems) > 0 {
+		_, err := table.Batch().Write().Put(insertItems...).Run()
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(deleteItems) > 0 {
+		fmt.Printf("%+v\n", deleteItems)
+		_, err := table.Batch("user_id", "timestamp").Write().Delete(deleteItems...).Run()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func main() {
+	db = dynamo.New(session.New(), &aws.Config{})
+	table = db.Table(os.Getenv("FeedTable"))
+
 	lambda.Start(handler)
 }

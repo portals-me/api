@@ -21,8 +21,7 @@ resource "aws_dynamodb_table" "feeds" {
 
   global_secondary_index {
     name = "ItemID"
-    hash_key = "user_id"
-    range_key = "item_id"
+    hash_key = "item_id"
     projection_type = "KEYS_ONLY"
   }
 }
