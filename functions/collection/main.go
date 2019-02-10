@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -56,6 +57,9 @@ func doGet(
 	}).Send()
 	if err != nil {
 		return Collection{}, err
+	}
+	if len(result.Item) == 0 {
+		return Collection{}, errors.New("Not exist")
 	}
 
 	collection := ParseCollection(result.Item)
@@ -119,7 +123,7 @@ func doDelete(
 ) error {
 	result, err := ddb.QueryRequest(&dynamodb.QueryInput{
 		TableName:              aws.String(os.Getenv("EntityTable")),
-		KeyConditionExpression: aws.String("id = :id and owned_by = :user_id"),
+		KeyConditionExpression: aws.String("id = :id and sort = :user_id"),
 		ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
 			":id":      {S: aws.String("collection##" + collectionID)},
 			":user_id": {S: aws.String(user["id"].(string))},
@@ -131,7 +135,17 @@ func doDelete(
 		return err
 	}
 
-	writeRequest := []dynamodb.WriteRequest{}
+	writeRequest := []dynamodb.WriteRequest{
+		dynamodb.WriteRequest{
+			DeleteRequest: &dynamodb.DeleteRequest{
+				Key: map[string]dynamodb.AttributeValue{
+					"id":   {S: aws.String("collection##" + collectionID)},
+					"sort": {S: aws.String("collection##detail")},
+				},
+			},
+		},
+	}
+
 	for _, item := range result.Items {
 		writeRequest = append(writeRequest, dynamodb.WriteRequest{
 			DeleteRequest: &dynamodb.DeleteRequest{
