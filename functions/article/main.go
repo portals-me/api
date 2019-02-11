@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
+
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	uuid "github.com/satori/go.uuid"
@@ -93,6 +95,99 @@ func (dto ArticleDTO) FromDTO() Article {
 	}
 }
 
+func doList(
+	collectionID string,
+	ddb dynamodbiface.DynamoDBAPI,
+) (int, []Article, error) {
+	result, err := ddb.QueryRequest(&dynamodb.QueryInput{
+		TableName:              aws.String(os.Getenv("EntityTable")),
+		KeyConditionExpression: aws.String("id = :id and begins_with(sort, :sort)"),
+		ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
+			":id": {
+				S: aws.String("collection##" + collectionID),
+			},
+			":sort": {
+				S: aws.String("article##"),
+			},
+		},
+	}).Send()
+
+	if err != nil {
+		return 502, nil, err
+	}
+
+	if len(result.Items) == 0 {
+		return 200, []Article{}, nil
+	}
+
+	var articles []Article
+	var articleDTOs []ArticleDTO
+	dynamodbattribute.UnmarshalListOfMaps(result.Items, &articleDTOs)
+	for _, value := range articleDTOs {
+		articles = append(articles, value.FromDTO())
+	}
+
+	return 200, articles, nil
+}
+
+func doCreate(
+	collectionID string,
+	user map[string]interface{},
+	createInput map[string]interface{},
+	ddb dynamodbiface.DynamoDBAPI,
+) (int, string, error) {
+	articleID := uuid.Must(uuid.NewV4()).String()
+
+	// care for Entity struct
+	entityMap := map[string]string{}
+	entity := createInput["entity"].(map[string]interface{})
+	for key, value := range entity {
+		entityMap[key] = value.(string)
+	}
+
+	collection, err := dynamodbattribute.MarshalMap(Article{
+		ID:          articleID,
+		Entity:      entityMap,
+		Title:       createInput["title"].(string),
+		Description: createInput["description"].(string),
+		CreatedAt:   time.Now().Unix(),
+		OwnedBy:     user["id"].(string),
+	}.ToDTO(collectionID))
+
+	if err != nil {
+		return 400, "", err
+	}
+
+	result, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
+		TableName: aws.String(os.Getenv("EntityTable")),
+		Key: map[string]dynamodb.AttributeValue{
+			"id":   {S: aws.String("collection##" + collectionID)},
+			"sort": {S: aws.String("detail")},
+		},
+	}).Send()
+	if len(result.Item) == 0 {
+		return 404, "", errors.New("Not Found")
+	}
+	if err != nil {
+		return 502, "", err
+	}
+
+	if user["id"].(string) != *result.Item["owned_by"].S {
+		return 403, "", errors.New("AccessDenied")
+	}
+
+	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
+		TableName: aws.String(os.Getenv("EntityTable")),
+		Item:      collection,
+	}).Send()
+
+	if err != nil {
+		return 502, "", err
+	}
+
+	return 201, articleID, nil
+}
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	user := event.RequestContext.Authorizer
 
@@ -101,50 +196,27 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		return events.APIGatewayProxyResponse{}, err
 	}
 
-	Dynamo := dynamodb.New(cfg)
+	ddb := dynamodb.New(cfg)
 	collectionID := event.PathParameters["collectionId"]
 
 	if event.HTTPMethod == "GET" {
 		if _, ok := event.PathParameters["articleId"]; ok {
 		} else {
-			result, err := Dynamo.QueryRequest(&dynamodb.QueryInput{
-				TableName:              aws.String(os.Getenv("EntityTable")),
-				KeyConditionExpression: aws.String("id = :id and begins_with(sort, :sort)"),
-				ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-					":id": {
-						S: aws.String("collection##" + collectionID),
-					},
-					":sort": {
-						S: aws.String("article##"),
-					},
-				},
-			}).Send()
+			statusCode, articles, err := doList(collectionID, ddb)
 
 			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			if len(result.Items) == 0 {
 				return events.APIGatewayProxyResponse{
-					Body:       "[]",
+					Body:       err.Error(),
 					Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
-					StatusCode: 200,
+					StatusCode: statusCode,
 				}, nil
 			}
 
-			var articles []Article
-			var articleDTOs []ArticleDTO
-			dynamodbattribute.UnmarshalListOfMaps(result.Items, &articleDTOs)
-			for _, value := range articleDTOs {
-				articles = append(articles, value.FromDTO())
-			}
-
 			out, _ := json.Marshal(articles)
-
 			return events.APIGatewayProxyResponse{
 				Body:       string(out),
 				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
-				StatusCode: 200,
+				StatusCode: statusCode,
 			}, nil
 		}
 	} else if event.HTTPMethod == "POST" {
@@ -174,51 +246,21 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			var createInput map[string]interface{}
 			json.Unmarshal([]byte(event.Body), &createInput)
 
-			articleID := uuid.Must(uuid.NewV4()).String()
-
-			// care for Entity struct
-			entityMap := map[string]string{}
-			entity := createInput["entity"].(map[string]interface{})
-			for key, value := range entity {
-				entityMap[key] = value.(string)
-			}
-
-			collection, err := dynamodbattribute.MarshalMap(Article{
-				ID:          articleID,
-				Entity:      entityMap,
-				Title:       createInput["title"].(string),
-				Description: createInput["description"].(string),
-				CreatedAt:   time.Now().Unix(),
-				OwnedBy:     user["id"].(string),
-			}.ToDTO(collectionID))
+			statusCode, articleID, err := doCreate(
+				collectionID,
+				user,
+				createInput,
+				ddb,
+			)
 
 			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			result, err := Dynamo.GetItemRequest(&dynamodb.GetItemInput{
-				TableName: aws.String(os.Getenv("EntityTable")),
-				Key: map[string]dynamodb.AttributeValue{
-					"id":   {S: aws.String("collection##" + collectionID)},
-					"sort": {S: aws.String("detail")},
-				},
-			}).Send()
-
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
-			}
-
-			if user["id"].(string) != *result.Item["owned_by"].S {
-				return events.APIGatewayProxyResponse{}, errors.New("AccessDenied")
-			}
-
-			_, err = Dynamo.PutItemRequest(&dynamodb.PutItemInput{
-				TableName: aws.String(os.Getenv("EntityTable")),
-				Item:      collection,
-			}).Send()
-
-			if err != nil {
-				return events.APIGatewayProxyResponse{}, err
+				return events.APIGatewayProxyResponse{
+					Body: err.Error(),
+					Headers: map[string]string{
+						"Access-Control-Allow-Origin": "*",
+					},
+					StatusCode: statusCode,
+				}, nil
 			}
 
 			return events.APIGatewayProxyResponse{
@@ -226,7 +268,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 					"Access-Control-Allow-Origin": "*",
 					"Location":                    "/collections/" + collectionID + "/articles/" + articleID,
 				},
-				StatusCode: 201,
+				StatusCode: statusCode,
 			}, nil
 		}
 	}
