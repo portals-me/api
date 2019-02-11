@@ -26,7 +26,9 @@ func handler(ctx context.Context, event events.DynamoDBEvent) error {
 	for _, record := range event.Records {
 		fmt.Printf("%+v\n", record)
 
-		if record.EventName == "INSERT" && strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") {
+		if record.EventName == "INSERT" &&
+			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
+			record.Change.Keys["sort"].String() == "collection##detail" {
 			feed := feed.FeedEvent{
 				UserID:    record.Change.NewImage["sort_value"].String(),
 				Timestamp: record.Change.ApproximateCreationDateTime.Unix(),
@@ -39,7 +41,24 @@ func handler(ctx context.Context, event events.DynamoDBEvent) error {
 			}
 
 			insertItems = append(insertItems, feed)
-		} else if record.EventName == "REMOVE" && strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") {
+		} else if record.EventName == "INSERT" &&
+			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
+			strings.HasPrefix(record.Change.Keys["sort"].String(), "article##") {
+			feed := feed.FeedEvent{
+				UserID:    record.Change.NewImage["sort_value"].String(),
+				Timestamp: record.Change.ApproximateCreationDateTime.Unix(),
+				EventName: "INSERT_ARTICLE",
+				ItemID:    record.Change.Keys["id"].String() + "/" + record.Change.Keys["sort"].String(),
+				Entity: map[string]interface{}{
+					"title":       record.Change.NewImage["title"].String(),
+					"description": record.Change.NewImage["description"].String(),
+				},
+			}
+
+			insertItems = append(insertItems, feed)
+		} else if record.EventName == "REMOVE" &&
+			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
+			record.Change.Keys["sort"].String() == "collection##detail" {
 			var events []feed.FeedEvent
 			err := table.
 				Get("item_id", record.Change.Keys["id"].String()).

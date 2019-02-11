@@ -68,7 +68,7 @@ type ArticleDTO struct {
 	Entity      map[string]string `json:"entity"`
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
-	OwnedBy     string            `json:"owned_by"`
+	OwnedBy     string            `json:"sort_value"`
 	CreatedAt   int64             `json:"created_at"`
 }
 
