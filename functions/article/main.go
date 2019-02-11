@@ -145,7 +145,7 @@ func doCreate(
 		entityMap[key] = value.(string)
 	}
 
-	collection, err := dynamodbattribute.MarshalMap(Article{
+	article, err := dynamodbattribute.MarshalMap(Article{
 		ID:          articleID,
 		Entity:      entityMap,
 		Title:       createInput["title"].(string),
@@ -178,7 +178,7 @@ func doCreate(
 
 	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
 		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      collection,
+		Item:      article,
 	}).Send()
 
 	if err != nil {
