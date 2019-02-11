@@ -7,15 +7,14 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-
-	authenticator "../authenticator/lib"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
-	. "./api"
+	authenticator "../authenticator/lib"
+	collection_api "../collection/api"
 )
 
-func TestCanCreateAndDelete(t *testing.T) {
+func TestCreate(t *testing.T) {
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
 		t.Error(err)
@@ -33,6 +32,7 @@ func TestCanCreateAndDelete(t *testing.T) {
 	})
 
 	ddb := dynamodb.New(cfg)
+
 	testUser := authenticator.User{
 		ID:          "test-user",
 		CreatedAt:   time.Now().Unix(),
@@ -49,58 +49,15 @@ func TestCanCreateAndDelete(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	testInput := CreateInput{
-		Title:       "test-title",
-		Description: "hoge",
-		Cover:       map[string]string{},
-	}
-	collectionID, err := DoCreate(
-		testInput,
+	collection_api.DoCreate(
+		collection_api.CreateInput{
+			Title:       "test-title",
+			Description: "test-description",
+			Cover:       map[string]string{},
+		},
 		map[string]interface{}{
-			"id": testUser.ID,
+			"id": "test-user",
 		},
 		ddb,
 	)
-	if err != nil {
-		t.Error(err.Error())
-	}
-
-	collection, err := DoGet(
-		collectionID,
-		map[string]interface{}{
-			"id": testUser.ID,
-		},
-		ddb,
-	)
-	if err != nil {
-		t.Error(err.Error())
-	}
-
-	if !(collectionID == collection.ID &&
-		testInput.Title == collection.Title &&
-		testInput.Description == collection.Description) {
-		t.Errorf("Invalid collection returned: %+v", collection)
-	}
-
-	err = DoDelete(
-		collectionID,
-		map[string]interface{}{
-			"id": testUser.ID,
-		},
-		ddb,
-	)
-	if err != nil {
-		t.Error(err.Error())
-	}
-
-	collection, err = DoGet(
-		collectionID,
-		map[string]interface{}{
-			"id": testUser.ID,
-		},
-		ddb,
-	)
-	if err == nil {
-		t.Error(err.Error())
-	}
 }
