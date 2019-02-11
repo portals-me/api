@@ -32,6 +32,9 @@
                   <v-list-tile-title v-if="item.event_name == 'INSERT_COLLECTION'">
                     コレクション<a @click="$router.push(`/collections/${item.item_id.split('collection##')[1]}`)">{{ item.entity.title }}</a>を作りました
                   </v-list-tile-title>
+                  <v-list-tile-title v-if="item.event_name == 'INSERT_ARTICLE'">
+                    作品<a @click="$router.push(`/collections/${item.item_id.split('/')[0].split('collection##')[1]}`)">{{ item.entity.title }}</a>を投稿しました
+                  </v-list-tile-title>
                   <v-list-tile-sub-title v-if="item.entity.description">{{ item.entity.description }}</v-list-tile-sub-title>
                 </v-list-tile-content>
 
