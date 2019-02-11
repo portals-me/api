@@ -162,7 +162,7 @@ func doCreate(
 		TableName: aws.String(os.Getenv("EntityTable")),
 		Key: map[string]dynamodb.AttributeValue{
 			"id":   {S: aws.String("collection##" + collectionID)},
-			"sort": {S: aws.String("detail")},
+			"sort": {S: aws.String("collection##detail")},
 		},
 	}).Send()
 	if len(result.Item) == 0 {
@@ -172,7 +172,7 @@ func doCreate(
 		return 502, "", err
 	}
 
-	if user["id"].(string) != *result.Item["owned_by"].S {
+	if user["id"].(string) != *result.Item["sort_value"].S {
 		return 403, "", errors.New("AccessDenied")
 	}
 

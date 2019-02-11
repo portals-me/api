@@ -53,7 +53,7 @@ func TestCreate(t *testing.T) {
 		collection_api.CreateInput{
 			Title:       "test-title",
 			Description: "test-description",
-			Cover:       map[string]string{},
+			Cover:       nil,
 		},
 		map[string]interface{}{
 			"id": "test-user",
@@ -82,6 +82,6 @@ func TestCreate(t *testing.T) {
 		t.Error(err)
 	}
 	if statusCode != 201 {
-		t.Error("Invalid StatusCode: " + statusCode)
+		t.Errorf("Invalid StatusCode: %v", statusCode)
 	}
 }
