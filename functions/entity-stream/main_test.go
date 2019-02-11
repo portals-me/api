@@ -29,7 +29,8 @@ func TestSendInsertAndRemove(t *testing.T) {
 				Change: events.DynamoDBStreamRecord{
 					ApproximateCreationDateTime: events.SecondsEpochTime{Time: time.Now()},
 					Keys: map[string]events.DynamoDBAttributeValue{
-						"id": events.NewStringAttribute("collection##aaaa"),
+						"id":   events.NewStringAttribute("collection##aaaa"),
+						"sort": events.NewStringAttribute("collection##detail"),
 					},
 					NewImage: map[string]events.DynamoDBAttributeValue{
 						"sort_value":  events.NewStringAttribute("user##u"),
@@ -44,7 +45,8 @@ func TestSendInsertAndRemove(t *testing.T) {
 				Change: events.DynamoDBStreamRecord{
 					ApproximateCreationDateTime: events.SecondsEpochTime{Time: time.Now()},
 					Keys: map[string]events.DynamoDBAttributeValue{
-						"id": events.NewStringAttribute("collection##aaaa"),
+						"id":   events.NewStringAttribute("collection##aaaa"),
+						"sort": events.NewStringAttribute("collection##detail"),
 					},
 					NewImage: map[string]events.DynamoDBAttributeValue{
 						"sort_value":  events.NewStringAttribute("user##k"),
@@ -73,7 +75,8 @@ func TestSendInsertAndRemove(t *testing.T) {
 				Change: events.DynamoDBStreamRecord{
 					ApproximateCreationDateTime: events.SecondsEpochTime{Time: time.Now()},
 					Keys: map[string]events.DynamoDBAttributeValue{
-						"id": events.NewStringAttribute("collection##aaaa"),
+						"id":   events.NewStringAttribute("collection##aaaa"),
+						"sort": events.NewStringAttribute("collection##detail"),
 					},
 				},
 			},
