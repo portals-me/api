@@ -114,7 +114,7 @@ func TestSendArticleInsert(t *testing.T) {
 					NewImage: map[string]events.DynamoDBAttributeValue{
 						"sort_value":  events.NewStringAttribute("user##u"),
 						"title":       events.NewStringAttribute("article-title"),
-						"description": events.NewStringAttribute("article-description"),
+						"description": events.NewNullAttribute(),
 					},
 				},
 			},
