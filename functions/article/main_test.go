@@ -49,7 +49,7 @@ func TestCreate(t *testing.T) {
 		t.Error(err.Error())
 	}
 
-	collection_api.DoCreate(
+	collectionID, err := collection_api.DoCreate(
 		collection_api.CreateInput{
 			Title:       "test-title",
 			Description: "test-description",
@@ -60,4 +60,28 @@ func TestCreate(t *testing.T) {
 		},
 		ddb,
 	)
+	if err != nil {
+		t.Error(err)
+	}
+
+	statusCode, _, err := doCreate(
+		collectionID,
+		map[string]interface{}{
+			"id": "test-user",
+		},
+		map[string]interface{}{
+			"title":       "hoge",
+			"description": "description",
+			"entity": map[string]interface{}{
+				"hoge": "piyo",
+			},
+		},
+		ddb,
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	if statusCode != 201 {
+		t.Error("Invalid StatusCode: " + statusCode)
+	}
 }
