@@ -92,3 +92,41 @@ func TestSendInsertAndRemove(t *testing.T) {
 		t.Errorf("Invalid items: %+v", items)
 	}
 }
+
+func TestSendArticleInsert(t *testing.T) {
+	db := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
+	})
+	table = db.Table(os.Getenv("FeedTable"))
+
+	err := handler(nil, events.DynamoDBEvent{
+		Records: []events.DynamoDBEventRecord{
+			events.DynamoDBEventRecord{
+				EventID:   "1",
+				EventName: "INSERT",
+				Change: events.DynamoDBStreamRecord{
+					ApproximateCreationDateTime: events.SecondsEpochTime{Time: time.Now()},
+					Keys: map[string]events.DynamoDBAttributeValue{
+						"id":   events.NewStringAttribute("collection##aaaa"),
+						"sort": events.NewStringAttribute("article##1234"),
+					},
+					NewImage: map[string]events.DynamoDBAttributeValue{
+						"sort_value":  events.NewStringAttribute("user##u"),
+						"title":       events.NewStringAttribute("article-title"),
+						"description": events.NewStringAttribute("article-description"),
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	var items []feed.FeedEvent
+	table.Get("item_id", "collection##aaaa/article##1234").Index("ItemID").All(&items)
+	if len(items) != 1 {
+		t.Errorf("Invalid items: %+v", items)
+	}
+}
