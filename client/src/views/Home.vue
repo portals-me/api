@@ -78,6 +78,7 @@
 import Vue,{ ComponentOptions } from 'vue';
 import { Component } from 'vue-property-decorator';
 import VueRouter from 'vue-router';
+import Vuex from 'vuex';
 import * as types from '@/types';
 import sdk from '@/app/sdk';
 
@@ -106,12 +107,14 @@ export default class Home extends Vue {
     await this.loadCollections();
   }
 
-  async loadCollections () {
-    this.collections = (await sdk.collection.list()).data;
+  async loadCollections (): Promise<Array<types.Collection>> {
+    return (await sdk.collection.list()).data;
   }
 
   async mounted () {
-    await this.loadCollections();
+    await this.$store.dispatch('loadCollections', this.loadCollections);
+
+    this.collections = this.$store.state.collections;
   }
 }
 </script>
