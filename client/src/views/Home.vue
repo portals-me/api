@@ -86,7 +86,6 @@ import sdk from '@/app/sdk';
 })
 export default class Home extends Vue {
   dialog = false;
-  collections: Array<types.Collection> = [];
   form = {
     title: '',
     description: '',
@@ -96,6 +95,10 @@ export default class Home extends Vue {
     }
   };
 
+  public get collections (): Array<types.Collection> {
+    return this.$store.state.collections || [];
+  }
+
   async createProject () {
     await sdk.collection.create({
       title: this.form.title,
@@ -104,7 +107,10 @@ export default class Home extends Vue {
     });
 
     this.dialog = false;
-    await this.loadCollections();
+    await this.$store.dispatch('loadCollections', {
+      loader: this.loadCollections,
+      force: true,
+    });
   }
 
   async loadCollections (): Promise<Array<types.Collection>> {
@@ -112,9 +118,9 @@ export default class Home extends Vue {
   }
 
   async mounted () {
-    await this.$store.dispatch('loadCollections', this.loadCollections);
-
-    this.collections = this.$store.state.collections;
+    await this.$store.dispatch('loadCollections', {
+      loader: this.loadCollections,
+    });
   }
 }
 </script>

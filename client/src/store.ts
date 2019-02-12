@@ -30,9 +30,9 @@ const mutations: MutationTree<State> = {
 }
 
 const actions: ActionTree<State, State> = {
-  async loadCollections ({ commit, state }, loader: () => Promise<Array<types.Collection>>) {
-    if (state.collections == null) {
-      commit('setCollections', await loader());
+  async loadCollections ({ commit, state }, payload: { loader: () => Promise<Array<types.Collection>>, force?: boolean }) {
+    if (state.collections == null || payload.force === true) {
+      commit('setCollections', await payload.loader());
     }
   }
 };
