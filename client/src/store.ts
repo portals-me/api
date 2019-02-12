@@ -1,6 +1,7 @@
 import Vue from 'vue';
-import Vuex, { StoreOptions, MutationTree, GetterTree, ActionTree } from 'vuex';
+import Vuex, { MutationTree, GetterTree, ActionTree } from 'vuex';
 import * as types from '@/types';
+import sdk from '@/app/sdk';
 
 Vue.use(Vuex);
 
@@ -30,9 +31,9 @@ const mutations: MutationTree<State> = {
 }
 
 const actions: ActionTree<State, State> = {
-  async loadCollections ({ commit, state }, payload: { loader: () => Promise<Array<types.Collection>>, force?: boolean }) {
+  async loadCollections ({ commit, state }, payload: { force?: boolean }) {
     if (state.collections == null || payload.force === true) {
-      commit('setCollections', await payload.loader());
+      commit('setCollections', (await sdk.collection.list()).data);
     }
   }
 };

@@ -108,19 +108,12 @@ export default class Home extends Vue {
 
     this.dialog = false;
     await this.$store.dispatch('loadCollections', {
-      loader: this.loadCollections,
       force: true,
     });
   }
 
-  async loadCollections (): Promise<Array<types.Collection>> {
-    return (await sdk.collection.list()).data;
-  }
-
   async mounted () {
-    await this.$store.dispatch('loadCollections', {
-      loader: this.loadCollections,
-    });
+    await this.$store.dispatch('loadCollections');
   }
 }
 </script>
