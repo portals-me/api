@@ -74,43 +74,44 @@
   </v-flex>
 </template>
 
-<script>
+<script lang="ts">
+import Vue,{ ComponentOptions } from 'vue';
+import { Component } from 'vue-property-decorator';
+import VueRouter from 'vue-router';
+import * as types from '@/types';
 import sdk from '@/app/sdk';
 
-export default {
-  data () {
-    return {
-      dialog: false,
-      collections: [],
-      form: {
-        title: '',
-        description: '',
-        cover: {
-          color: 'teal darken-2',
-          sort: 'solid',
-        }
-      },
-    };
-  },
-  methods: {
-    async loadProjects () {
-      this.collections = (await sdk.collection.list()).data;
-    },
-    async createProject () {
-      await sdk.collection.create({
-        title: this.form.title,
-        description: this.form.description,
-        cover: this.form.cover,
-      });
-      this.dialog = false;
-      await this.loadProjects();
-    },
-    async onMount () {
-      await this.loadProjects();
-    },
-  },
-  mounted: async function () {
-    await this.onMount();
-  },
+@Component({
+})
+export default class Home extends Vue {
+  dialog = false;
+  collections: Array<types.Collection> = [];
+  form = {
+    title: '',
+    description: '',
+    cover: {
+      color: 'teal darken-2',
+      sort: 'solid',
+    }
+  };
+
+  async createProject () {
+    await sdk.collection.create({
+      title: this.form.title,
+      description: this.form.description,
+      cover: this.form.cover,
+    });
+
+    this.dialog = false;
+    await this.loadCollections();
+  }
+
+  async loadCollections () {
+    this.collections = (await sdk.collection.list()).data;
+  }
+
+  async mounted () {
+    await this.loadCollections();
+  }
 }
 </script>
