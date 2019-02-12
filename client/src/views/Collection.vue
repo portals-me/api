@@ -523,6 +523,7 @@ export default {
     async deleteCollection () {
       const collectionId = this.$route.params.collectionId;
       await sdk.collection.delete(collectionId);
+      await this.$store.dispatch('markCollectionsReload');
       this.$router.push('/dashboard');
     },
   },

@@ -8,11 +8,13 @@ Vue.use(Vuex);
 interface State {
   isDrawerOpened: boolean,
   collections: Array<types.Collection> | null,
+  collectionsForceReload: boolean,
 }
 
 const state: State = {
   isDrawerOpened: true,
   collections: null,
+  collectionsForceReload: false,
 };
 
 const getters: GetterTree<State, State> = {
@@ -28,12 +30,19 @@ const mutations: MutationTree<State> = {
   setCollections (state, collections: Array<types.Collection>) {
     state.collections = collections;
   },
+  markCollectionsReload (state) {
+    state.collectionsForceReload = true;
+  },
+  unmarkCollectionsReload (state) {
+    state.collectionsForceReload = false;
+  },
 }
 
 const actions: ActionTree<State, State> = {
   async loadCollections ({ commit, state }, payload: { force?: boolean }) {
-    if (state.collections == null || payload.force === true) {
+    if (state.collections == null || payload.force === true || state.collectionsForceReload) {
       commit('setCollections', (await sdk.collection.list()).data);
+      commit('unmarkCollectionsReload');
     }
   }
 };
