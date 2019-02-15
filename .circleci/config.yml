@@ -1,6 +1,14 @@
 version: 2
 
-jobs: 
+jobs:
+  test:
+    docker:
+      - image: golang
+      - image: java
+    steps:
+      - checkout
+      - run: make install
+      - run: make test
   build:
     docker:
       - image: node
@@ -31,6 +39,8 @@ workflows:
   build-deploy:
     jobs:
       - build
+      - test
       - deploy:
           requires:
+            - test
             - build
