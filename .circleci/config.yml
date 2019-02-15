@@ -9,6 +9,14 @@ jobs:
       - run: apt update
       - run: apt install -y openjdk-8-jdk unzip
       - run: make install
+      - run: go get -u github.com/aws/aws-lambda-go
+      - run: go get -u github.com/aws/aws-sdk-go-v2
+      - run: go get -u github.com/satori/go.uuid
+      - run: go get -u github.com/GoogleIdTokenVerifier/GoogleIdTokenVerifier
+      - run: go get -u github.com/gbrlsnchs/jwt
+      - run: go get -u github.com/gomodule/oauth1/oauth
+      - run: go get -u github.com/gofrs/uuid
+      - run: go get -u github.com/guregu/dynamo
       - run: wget https://releases.hashicorp.com/terraform/0.11.11/terraform_0.11.11_linux_amd64.zip
       - run: unzip terraform_0.11.11_linux_amd64.zip && cp terraform /usr/local/bin
       - run: cd infrastructure/local && terraform init
@@ -35,6 +43,14 @@ jobs:
       - run: cp /tmp/workspace/env.json ./
       - run: apt-get install -y curl
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
+      - run: go get -u github.com/aws/aws-lambda-go
+      - run: go get -u github.com/aws/aws-sdk-go-v2
+      - run: go get -u github.com/satori/go.uuid
+      - run: go get -u github.com/GoogleIdTokenVerifier/GoogleIdTokenVerifier
+      - run: go get -u github.com/gbrlsnchs/jwt
+      - run: go get -u github.com/gomodule/oauth1/oauth
+      - run: go get -u github.com/gofrs/uuid
+      - run: go get -u github.com/guregu/dynamo
       - run: apex version
       - run: apex deploy --env-file env.json --env prod
 
