@@ -35,7 +35,7 @@ jobs:
           root: /tmp/workspace
           paths:
             - env.json
-  deploy:
+  deploy-apex:
     docker: 
       - image: golang:1.11.5-stretch
     steps: 
@@ -57,6 +57,14 @@ jobs:
       - run: go get -u github.com/jmespath/go-jmespath
       - run: apex version
       - run: apex deploy --env-file env.json --env prod
+  deploy-terraform:
+    docker:
+      - image: hashicorp/terraform:light
+    steps:
+      - checkout
+      - run: cd infrastructure/prod && terraform init
+      - run: cd infrastructure/prod && terraform validate
+      - run: cd infrastructure/prod && terraform apply -auto-approve
 
 workflows:
   version: 2
@@ -67,10 +75,14 @@ workflows:
           filters:
             branches:
               only: master
-      - deploy:
+      - deploy-apex:
           requires:
             - test
             - build
           filters:
             branches:
               only: master
+      - deploy-terraform:
+          requires:
+            - test
+            - deploy-apex
