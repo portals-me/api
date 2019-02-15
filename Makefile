@@ -13,12 +13,7 @@ install:
 	tar -xf ./dynamodb_local_latest.tar.gz
 
 test:
-	$(MAKE) startTest
-
-	export EntityTable=portals-me-test-entities; \
-	export SortIndex=DataTable; \
-	export FeedTable=portals-me-test-feeds; \
-	go test ./functions/... && $(MAKE) endTest || $(MAKE) endTest
+	$(MAKE) startTest && $(MAKE) runTest && $(MAKE) endTest || $(MAKE) endTest
 
 endTest:
 	kill `cat .dynamo.pid`
@@ -31,3 +26,9 @@ startTest:
 
 	cd infrastructure/local && terraform apply -auto-approve
 	sleep 2
+
+runTest:
+	export EntityTable=portals-me-test-entities; \
+	export SortIndex=DataTable; \
+	export FeedTable=portals-me-test-feeds; \
+	go test ./functions/...
