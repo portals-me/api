@@ -7,11 +7,20 @@ jobs:
     steps:
       - checkout
       - run: node env.js prod > env.json
+      - run: mkdir -p /tmp/workspace
+      - run: cp env.json /tmp/workspace/
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - env.json
   deploy:
     docker: 
       - image: golang
     steps: 
       - checkout
+      - attach_workspace:
+          at: /tmp/workspace
+      - run: cp /tmp/workspace/env.json ./
       - run: apt-get install -y curl
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
       - run: apex version
