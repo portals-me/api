@@ -9,7 +9,8 @@ jobs:
       - run: apt update
       - run: apt install -y openjdk-8-jdk unzip
       - run: make install
-      - run: go get -u github.com/aws/aws-lambda-go
+      - run: go get -u github.com/aws/aws-lambda-go/lambda
+      - run: go get -u github.com/aws/aws-lambda-go/events
       - run: go get -u github.com/aws/aws-sdk-go-v2
       - run: go get -u github.com/satori/go.uuid
       - run: go get -u github.com/GoogleIdTokenVerifier/GoogleIdTokenVerifier
@@ -43,7 +44,8 @@ jobs:
       - run: cp /tmp/workspace/env.json ./
       - run: apt-get install -y curl
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
-      - run: go get -u github.com/aws/aws-lambda-go
+      - run: go get -u github.com/aws/aws-lambda-go/lambda
+      - run: go get -u github.com/aws/aws-lambda-go/events
       - run: go get -u github.com/aws/aws-sdk-go-v2
       - run: go get -u github.com/satori/go.uuid
       - run: go get -u github.com/GoogleIdTokenVerifier/GoogleIdTokenVerifier
