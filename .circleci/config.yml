@@ -1,0 +1,16 @@
+version: 2
+
+jobs:
+  deploy:
+    docker:
+      - image: kakakakakku/apex:v1.0.0-rc2
+    steps:
+      - checkout
+      - run: apex version
+      - run: make deploy END=prod
+
+workflows:
+  version: 2
+  apex:
+    jobs:
+      - deploy
