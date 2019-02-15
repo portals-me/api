@@ -8,9 +8,3 @@ jobs:
       - checkout
       - run: apex version
       - run: make deploy END=prod
-
-workflows:
-  version: 2
-  apex:
-    jobs:
-      - deploy
