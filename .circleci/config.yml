@@ -1,10 +1,27 @@
 version: 2
 
-jobs:
-  deploy:
+jobs: 
+  build:
     docker:
-      - image: kakakakakku/apex:v1.0.0-rc2
+      - image: node
     steps:
       - checkout
+      - run: node env.js prod > env.json
+  deploy:
+    docker: 
+      - image: golang
+    steps: 
+      - checkout
+      - run: apt-get install -y curl
+      - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
       - run: apex version
-      - run: make deploy END=prod
+      - run: apex deploy --env-file env.json --env prod
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
