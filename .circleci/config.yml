@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - run: apt update
-      - run: apt install openjdk-8-jdk
+      - run: apt install -y openjdk-8-jdk
       - run: make install
       - run: make test
   build:
