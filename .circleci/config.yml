@@ -3,7 +3,7 @@ version: 2
 jobs:
   test:
     docker:
-      - image: golang
+      - image: golang:1.11.5-stretch
     steps:
       - checkout
       - run: apt install openjdk-11-jdk
@@ -23,7 +23,7 @@ jobs:
             - env.json
   deploy:
     docker: 
-      - image: golang
+      - image: golang:1.11.5-stretch
     steps: 
       - checkout
       - attach_workspace:
