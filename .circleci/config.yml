@@ -62,7 +62,8 @@ jobs:
       - image: hashicorp/terraform:light
     steps:
       - checkout
-      - run: apt-get install -y curl
+      - run: apk update
+      - run: apk add curl
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
       - run: apex infra -e prod init
       - run: apex infra -e prod validate
