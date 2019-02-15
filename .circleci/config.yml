@@ -4,9 +4,9 @@ jobs:
   test:
     docker:
       - image: golang
-      - image: java
     steps:
       - checkout
+      - run: apt install openjdk-11-jdk
       - run: make install
       - run: make test
   build:
