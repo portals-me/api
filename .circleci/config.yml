@@ -66,7 +66,7 @@ jobs:
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
       - run: apex infra -e prod init
       - run: apex infra -e prod validate
-      - run: cd infrastructure/prod && terraform apply -auto-approve
+      - run: apex infra -e apply -auto-approve
 
 workflows:
   version: 2
@@ -88,3 +88,6 @@ workflows:
           requires:
             - test
             - deploy-apex
+          filters:
+            branches:
+              only: master
