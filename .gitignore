@@ -11,3 +11,4 @@ token
 
 .terraform
 terraform.*
+backend.plan
