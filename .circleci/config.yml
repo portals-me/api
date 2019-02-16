@@ -53,11 +53,10 @@ jobs:
   deploy-client:
     docker:
       - image: node
-    working_directory: ~/portals-me/client
     steps:
       - checkout
-      - run: yarn
-      - run: yarn deploy
+      - run: cd client && yarn
+      - run: cd client && yarn deploy
 
 workflows:
   version: 2
