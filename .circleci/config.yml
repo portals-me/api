@@ -50,6 +50,14 @@ jobs:
       - run: apex infra -e prod init
       - run: apex infra -e prod validate
       - run: apex infra -e apply -auto-approve
+  deploy-client:
+    docker:
+      - image: node
+    working_directory: ~/portals-me/client
+    steps:
+      - checkout
+      - run: yarn
+      - run: yarn deploy
 
 workflows:
   version: 2
@@ -74,3 +82,6 @@ workflows:
           filters:
             branches:
               only: master
+      - deploy-client:
+          requires:
+            - test
