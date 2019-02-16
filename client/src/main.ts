@@ -12,7 +12,7 @@ Vue.use(Vuetify);
 Vue.use(vueConfig, {
   API: process.env.API_ENDPOINT,
   isDev,
-  providers: require('../../token/auth.json'),
+  providers: process.env.AUTH_TOKEN ? JSON.parse(process.env.AUTH_TOKEN) : require('../../token/auth.json'),
 });
 
 new Vue({
