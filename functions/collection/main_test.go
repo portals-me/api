@@ -8,11 +8,11 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 
-	authenticator "../authenticator/lib"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
 
-	. "./api"
+	. "github.com/myuon/portals-me/functions/collection/api"
 )
 
 func TestCanCreateAndDelete(t *testing.T) {
