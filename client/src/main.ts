@@ -8,7 +8,7 @@ const vueConfig = require('vue-config');
 
 const isDev = process.env.NODE_ENV === 'development';
 
-let key = process.env.TWITTER_KEY;
+let key = process.env.VUE_APP_TWITTER_KEY;
 if (key == null) {
   key = require('../../token/auth.json').twitter;
 }
