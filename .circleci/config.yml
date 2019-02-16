@@ -55,7 +55,7 @@ jobs:
       - image: node
     steps:
       - checkout
-      - run: echo $TWITTER_KEY
+      - run: cd client && echo "TWITTER_KEY=$TWITTER_KEY" >> .env.production
       - run: cd client && yarn
       - run: cd client && yarn deploy
 
