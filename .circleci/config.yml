@@ -55,7 +55,7 @@ jobs:
       - image: node
     steps:
       - checkout
-      - run: apk --update add python3 pip
+      - run: apt update && apt install python3 python3-pip
       - run: pip install awscli
       - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production
       - run: cd client && yarn
