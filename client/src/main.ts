@@ -8,7 +8,11 @@ const vueConfig = require('vue-config');
 
 const isDev = process.env.NODE_ENV === 'development';
 
-const key = (process.env.TWITTER_KEY || require('../../token/auth.json').twitter).split('.');
+let key = process.env.TWITTER_KEY;
+if (!key) {
+  key = require('../../token/auth.json').twitter;
+}
+key = key.split('.');
 
 Vue.use(Vuetify);
 Vue.use(vueConfig, {
