@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 
-	feed "./lib"
+	feed "github.com/myuon/portals-me/functions/entity-stream/lib"
 )
 
 func TestSendInsertAndRemove(t *testing.T) {
