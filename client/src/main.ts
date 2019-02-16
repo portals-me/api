@@ -8,11 +8,26 @@ const vueConfig = require('vue-config');
 
 const isDev = process.env.NODE_ENV === 'development';
 
+let key = process.env.VUE_APP_TWITTER_KEY;
+try {
+  key = require('../../token/auth.json').twitter;
+} catch (e) {
+  console.log(e);
+}
+key = key.split('.');
+
 Vue.use(Vuetify);
 Vue.use(vueConfig, {
   API: process.env.API_ENDPOINT,
   isDev,
-  providers: require('../../token/auth.json'),
+  providers: {
+    auth: {
+      twitter: {
+        clientId: key[0],
+        clientSecret: key[1],
+      }
+    }
+  },
 });
 
 new Vue({

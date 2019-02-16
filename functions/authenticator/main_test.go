@@ -8,9 +8,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 
-	collection "../collection/lib"
-	. "./lib"
-	. "./verifier"
+	. "github.com/myuon/portals-me/functions/authenticator/lib"
+	. "github.com/myuon/portals-me/functions/authenticator/verifier"
+	collection "github.com/myuon/portals-me/functions/collection/lib"
 )
 
 type fakeCustomProvider struct {

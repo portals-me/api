@@ -1,27 +1,92 @@
 version: 2
 
-jobs: 
+jobs:
+  test:
+    docker:
+      - image: golang:1.11.5-stretch
+    steps:
+      - checkout
+      - run: apt update
+      - run: apt install -y openjdk-8-jdk unzip
+      - run: make install
+      - run: go mod download
+      - run: wget https://releases.hashicorp.com/terraform/0.11.11/terraform_0.11.11_linux_amd64.zip
+      - run: unzip terraform_0.11.11_linux_amd64.zip && cp terraform /usr/local/bin
+      - run: cd infrastructure/local && terraform init
+      - run: make startTest && make runTest
   build:
     docker:
       - image: node
     steps:
       - checkout
       - run: node env.js prod > env.json
-  deploy:
+      - run: mkdir -p /tmp/workspace
+      - run: cp env.json /tmp/workspace/
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - env.json
+  deploy-apex:
     docker: 
-      - image: golang
+      - image: golang:1.11.5-stretch
     steps: 
       - checkout
+      - attach_workspace:
+          at: /tmp/workspace
+      - run: cp /tmp/workspace/env.json ./
       - run: apt-get install -y curl
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
+      - run: go mod download
       - run: apex version
       - run: apex deploy --env-file env.json --env prod
+  deploy-terraform:
+    docker:
+      - image: hashicorp/terraform:light
+    steps:
+      - checkout
+      - run: apk update
+      - run: apk add curl
+      - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
+      - run: apex infra -e prod init
+      - run: apex infra -e prod validate
+      - run: apex infra -e apply -auto-approve
+  deploy-client:
+    docker:
+      - image: node
+    steps:
+      - checkout
+      - run: apt update && apt install -y python3 python3-pip
+      - run: pip3 install awscli
+      - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production
+      - run: cd client && yarn
+      - run: cd client && yarn deploy
 
 workflows:
   version: 2
   build-deploy:
     jobs:
-      - build
-      - deploy:
+      - test
+      - build:
+          filters:
+            branches:
+              only: master
+      - deploy-apex:
           requires:
+            - test
             - build
+          filters:
+            branches:
+              only: master
+      - deploy-terraform:
+          requires:
+            - test
+            - deploy-apex
+          filters:
+            branches:
+              only: master
+      - deploy-client:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master

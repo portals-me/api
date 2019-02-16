@@ -13,7 +13,7 @@ import (
 
 	"github.com/guregu/dynamo"
 
-	feed "./lib"
+	feed "github.com/myuon/portals-me/functions/entity-stream/lib"
 )
 
 var db *dynamo.DB

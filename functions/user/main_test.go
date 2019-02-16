@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	authenticator "../authenticator/lib"
-	feed "../entity-stream/lib"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
+	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
+	feed "github.com/myuon/portals-me/functions/entity-stream/lib"
 )
 
 func TestListFeed(t *testing.T) {

@@ -10,9 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 
-	authenticator "../authenticator/lib"
-	feed "../entity-stream/lib"
 	"github.com/aws/aws-lambda-go/lambda"
+	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
+	feed "github.com/myuon/portals-me/functions/entity-stream/lib"
 )
 
 func getUser(s map[string]interface{}) (authenticator.User, error) {
