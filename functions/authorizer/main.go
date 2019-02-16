@@ -53,6 +53,7 @@ func generatePolicy(principalID string, effect string, isGuest bool, context map
 }
 
 func verify(token string, keyEncoded string) (string, error) {
+	fmt.Println(token, keyEncoded)
 	block, _ := pem.Decode([]byte(keyEncoded))
 	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
 	es256 := jwt.NewES256(privateKey, &privateKey.PublicKey)
