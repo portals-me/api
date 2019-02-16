@@ -4,7 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
 
-	. "../verifier"
+	. "github.com/myuon/portals-me/functions/authenticator/verifier"
 )
 
 type SignUpInput struct {

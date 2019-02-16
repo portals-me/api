@@ -13,7 +13,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/gbrlsnchs/jwt"
+	jwt "github.com/gbrlsnchs/jwt/v2"
 )
 
 func generatePolicy(principalID string, effect string, isGuest bool, context map[string]interface{}) events.APIGatewayCustomAuthorizerResponse {
