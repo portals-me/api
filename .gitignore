@@ -12,3 +12,6 @@ token
 .terraform
 terraform.*
 backend.plan
+
+go/
+go.sum
