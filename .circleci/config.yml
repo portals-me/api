@@ -48,7 +48,6 @@ jobs:
       - run: apk add curl
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
       - run: apex infra -e prod init
-      - run: apex infra -e prod validate
       - run: apex infra -e apply -auto-approve
   deploy-client:
     docker:
