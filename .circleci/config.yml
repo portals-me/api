@@ -87,3 +87,6 @@ workflows:
       - deploy-client:
           requires:
             - test
+          filters:
+            branches:
+              only: master
