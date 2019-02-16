@@ -6,8 +6,8 @@ const env = {
   "SortIndex": `DataTable`,
   "FeedTable": `portals-me-${process.argv[2]}-feeds`,
   "IdentityPoolId": process.env.COGNITO_IDP || fs.readFileSync('./token/cognito.key', 'utf8'),
-  "JwtPrivate": process.env.JWT_PRIVATE || fs.readFileSync('./token/jwtES256.key', 'utf8'),
-  "JwtPublic": process.env.JWT_PUBLIC || fs.readFileSync('./token/jwtES256.key.pub', 'utf8'),
+  "JwtPrivate": process.env.JWT_PRIVATE ? process.env.JWT_PRIVATE.split(' ').join('\n') : fs.readFileSync('./token/jwtES256.key', 'utf8'),
+  "JwtPublic": process.env.JWT_PUBLIC ? process.env.JWT_PUBLIC.split(' ').join('\n') : fs.readFileSync('./token/jwtES256.key.pub', 'utf8'),
   "TwitterKey": process.env.TWITTER_KEY || fs.readFileSync('./token/twitter.key', 'utf8'),
 };
 
