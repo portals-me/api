@@ -136,7 +136,7 @@ func doCreate(
 	createInput map[string]interface{},
 	ddb dynamodbiface.DynamoDBAPI,
 ) (int, string, error) {
-	articleID := uuid.Must(uuid.NewV4()).String()
+	articleID := uuid.NewV4().String()
 
 	// care for Entity struct
 	entityMap := map[string]string{}

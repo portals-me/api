@@ -21,10 +21,10 @@ import (
 
 	"github.com/gomodule/oauth1/oauth"
 
-	collection "../collection/lib"
-	. "./lib"
-	. "./signer"
-	. "./verifier"
+	. "github.com/myuon/portals-me/functions/authenticator/lib"
+	. "github.com/myuon/portals-me/functions/authenticator/signer"
+	. "github.com/myuon/portals-me/functions/authenticator/verifier"
+	collection "github.com/myuon/portals-me/functions/collection/lib"
 )
 
 func generateRandomString(n int) string {

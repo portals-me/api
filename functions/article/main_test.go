@@ -10,8 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
-	authenticator "../authenticator/lib"
-	collection_api "../collection/api"
+	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
+	collection_api "github.com/myuon/portals-me/functions/collection/api"
 )
 
 func TestCreate(t *testing.T) {

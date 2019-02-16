@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 
-	"github.com/gbrlsnchs/jwt"
+	jwt "github.com/gbrlsnchs/jwt/v2"
 )
 
 type ISigner interface {

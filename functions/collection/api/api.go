@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 	"github.com/gofrs/uuid"
 
-	. "../lib"
+	. "github.com/myuon/portals-me/functions/collection/lib"
 )
 
 func DoList(
