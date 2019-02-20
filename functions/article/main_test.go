@@ -1,37 +1,25 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/guregu/dynamo"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
 	collection_api "github.com/myuon/portals-me/functions/collection/api"
 )
 
 func TestCreate(t *testing.T) {
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		t.Error(err)
-	}
-	cfg.Region = "ap-notheast-1"
-	cfg.EndpointResolver = aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-		if service == "dynamodb" {
-			return aws.Endpoint{
-				URL:           "http://localhost:8000",
-				SigningRegion: cfg.Region,
-			}, nil
-		}
-
-		panic(fmt.Errorf(service, region))
+	ddb := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
 	})
-
-	ddb := dynamodb.New(cfg)
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
 
 	testUser := authenticator.User{
 		ID:          "test-user",
@@ -40,13 +28,10 @@ func TestCreate(t *testing.T) {
 		DisplayName: "test-user-display-name",
 		Picture:     "",
 	}
-	testUserOut, _ := authenticator.DumpUser(testUser)
-	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      testUserOut,
-	}).Send()
-	if err != nil {
-		t.Error(err.Error())
+	if err := entityTable.
+		Put(testUser.ToDBO()).
+		Run(); err != nil {
+		t.Fatal(err)
 	}
 
 	collectionID, err := collection_api.DoCreate(
@@ -55,20 +40,16 @@ func TestCreate(t *testing.T) {
 			Description: "test-description",
 			Cover:       nil,
 		},
-		map[string]interface{}{
-			"id": "test-user",
-		},
-		ddb,
+		"test-user",
+		entityTable,
 	)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	statusCode, _, err := doCreate(
 		collectionID,
-		map[string]interface{}{
-			"id": "test-user",
-		},
+		"test-user",
 		map[string]interface{}{
 			"title":       "hoge",
 			"description": "description",
@@ -76,12 +57,12 @@ func TestCreate(t *testing.T) {
 				"hoge": "piyo",
 			},
 		},
-		ddb,
+		entityTable,
 	)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if statusCode != 201 {
-		t.Errorf("Invalid StatusCode: %v", statusCode)
+		t.Fatalf("Invalid StatusCode: %v", statusCode)
 	}
 }

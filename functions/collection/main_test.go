@@ -73,7 +73,7 @@ func TestCanCreateAndDelete(t *testing.T) {
 		collectionID,
 		entityTable,
 	)
-	if err == nil {
+	if err != nil {
 		t.Fatal(err)
 	}
 }
