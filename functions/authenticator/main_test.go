@@ -1,15 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity/cognitoidentityiface"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cognitoidentity/cognitoidentityiface"
+	"github.com/guregu/dynamo"
 
 	. "github.com/myuon/portals-me/functions/authenticator/api"
 	. "github.com/myuon/portals-me/functions/authenticator/lib"
@@ -35,45 +33,6 @@ type operation struct {
 	argument interface{}
 }
 
-type fakeDynamoDB struct {
-	dynamodbiface.DynamoDBAPI
-	callStack []operation
-	payload   map[string]map[string]dynamodb.AttributeValue
-	err       error
-}
-
-func (ddb *fakeDynamoDB) PutItemRequest(input *dynamodb.PutItemInput) dynamodb.PutItemRequest {
-	ddb.callStack = append(ddb.callStack, operation{
-		request:  "PutItemRequest",
-		argument: input,
-	})
-
-	ddb.payload[*input.Item["id"].S+"-"+*input.Item["sort"].S] = input.Item
-
-	return dynamodb.PutItemRequest{
-		Request: &aws.Request{
-			Data:  &dynamodb.PutItemOutput{},
-			Error: ddb.err,
-		},
-	}
-}
-
-func (ddb *fakeDynamoDB) GetItemRequest(input *dynamodb.GetItemInput) dynamodb.GetItemRequest {
-	ddb.callStack = append(ddb.callStack, operation{
-		request:  "GetItemRequest",
-		argument: input,
-	})
-
-	return dynamodb.GetItemRequest{
-		Request: &aws.Request{
-			Data: &dynamodb.GetItemOutput{
-				Item: ddb.payload[*input.Key["id"].S+"-"+*input.Key["sort"].S],
-			},
-			Error: ddb.err,
-		},
-	}
-}
-
 type fakeSigner struct {
 }
 
@@ -82,23 +41,12 @@ func (signer fakeSigner) Sign(payload []byte) ([]byte, error) {
 }
 
 func TestCanSignUpWithGoogle(t *testing.T) {
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		t.Error(err)
-	}
-	cfg.Region = "ap-notheast-1"
-	cfg.EndpointResolver = aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-		if service == "dynamodb" {
-			return aws.Endpoint{
-				URL:           "http://localhost:8000",
-				SigningRegion: cfg.Region,
-			}, nil
-		}
-
-		panic(fmt.Errorf(service, region))
+	ddb := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
 	})
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
 
-	ddb := dynamodb.New(cfg)
 	idp := &fakeCustomProvider{}
 	signer := &fakeSigner{}
 
@@ -117,79 +65,58 @@ func TestCanSignUpWithGoogle(t *testing.T) {
 			Google: "id_token",
 		},
 	}
-	_, identityID, err := DoSignUp(input, idp, ddb, signer)
+	_, identityID, err := DoSignUp(input, idp, entityTable, signer)
 
 	if err != nil {
-		t.Error("Error", err)
+		t.Fatal(err)
 	}
 	if identityID != "fake-idp" {
-		t.Error("Error", err)
+		t.Fatal(err)
 	}
 
-	item, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String("user##" + identityID)},
-			"sort": {S: aws.String("user##detail")},
-		},
-	}).Send()
-	if err != nil {
-		t.Error("error", err)
+	var userDBO UserDBO
+	if err := entityTable.
+		Get("id", "user##"+identityID).
+		Range("sort", dynamo.Equal, "user##detail").
+		One(&userDBO); err != nil {
+		t.Fatal(err)
 	}
 
-	if !(*item.Item["sort_value"].S == testUser.Name &&
-		*item.Item["display_name"].S == testUser.DisplayName &&
-		*item.Item["picture"].S == testUser.Picture) {
-		t.Errorf("Argument does not match: %+v", item.Item)
+	user := userDBO.FromDBO()
+	if !(user.Name == testUser.Name &&
+		user.DisplayName == testUser.DisplayName &&
+		user.Picture == testUser.Picture) {
+		t.Fatalf("Argument does not match: %+v", user)
 	}
 
-	item, err = ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String("collection##" + testUser.Name)},
-			"sort": {S: aws.String("collection##detail")},
-		},
-	}).Send()
-	if err != nil {
-		t.Error("error", err)
+	var colDBO collection.CollectionDBO
+	if err := entityTable.
+		Get("id", "collection##"+user.Name).
+		Range("sort", dynamo.Equal, "collection##detail").
+		One(&colDBO); err != nil {
+		t.Fatal(err)
 	}
+	col := colDBO.FromDBO()
 
-	if !(*item.Item["title"].S == testUser.Name) {
-		t.Errorf("Argument does not match: %+v", item.Item)
+	if !(col.ID == testUser.Name) {
+		t.Errorf("Argument does not match: %+v", col)
 	}
 }
 
 func TestCanSignInWithoutUserCollectionTwice(t *testing.T) {
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		t.Error(err)
-	}
-	cfg.Region = "ap-notheast-1"
-	cfg.EndpointResolver = aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-		if service == "dynamodb" {
-			return aws.Endpoint{
-				URL:           "http://localhost:8000",
-				SigningRegion: cfg.Region,
-			}, nil
-		}
-
-		panic(fmt.Errorf(service, region))
+	ddb := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
 	})
-
-	ddb := dynamodb.New(cfg)
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
 
 	testUser := User{
 		ID:   "user##user-id",
 		Name: "user-name",
 	}
-	testUserDump, _ := DumpUser(testUser)
 
-	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      testUserDump,
-	}).Send()
-	if err != nil {
-		t.Error("error", err)
+	if err := entityTable.Put(testUser.ToDBO()).Run(); err != nil {
+		t.Fatal(err)
 	}
 
 	idp := &fakeCustomProvider{
@@ -200,30 +127,26 @@ func TestCanSignInWithoutUserCollectionTwice(t *testing.T) {
 		Twitter: "id_token",
 	}
 
-	_, err = DoSignIn(logins, idp, ddb, signer)
-	if err != nil {
-		t.Error("Error", err)
+	if _, err := DoSignIn(logins, idp, entityTable, signer); err != nil {
+		t.Fatal(err)
 	}
 
-	item, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String("collection##" + testUser.Name)},
-			"sort": {S: aws.String("collection##detail")},
-		},
-	}).Send()
-	if err != nil {
-		t.Error("error", err)
+	var colDBO collection.CollectionDBO
+	if err := entityTable.
+		Get("id", "collection##"+testUser.Name).
+		Range("sort", dynamo.Equal, "collection##detail").
+		One(&colDBO); err != nil {
+		t.Fatal(err)
 	}
 
-	col := collection.ParseCollection(item.Item)
+	col := colDBO.FromDBO()
+
 	if !(col.ID == testUser.Name &&
 		col.Title == testUser.Name) {
-		t.Errorf("Argument does not match: %+v", item.Item)
+		t.Fatalf("Argument does not match: %+v", col)
 	}
 
-	_, err = DoSignIn(logins, idp, ddb, signer)
-	if err != nil {
-		t.Error("Error", err)
+	if _, err := DoSignIn(logins, idp, entityTable, signer); err != nil {
+		t.Fatal(err)
 	}
 }
