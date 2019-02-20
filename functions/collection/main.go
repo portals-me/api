@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/guregu/dynamo"
+
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 
 	"github.com/aws/aws-lambda-go/events"
 
@@ -17,18 +20,14 @@ import (
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	user := event.RequestContext.Authorizer
+	sess := session.Must(session.NewSession())
 
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
-
-	ddb := dynamodb.New(cfg)
-	fmt.Println(event)
+	ddb := dynamo.NewFromIface(dynamodb.New(sess))
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
 
 	if event.HTTPMethod == "GET" {
 		if event.PathParameters == nil {
-			collections, err := DoList(user, ddb)
+			collections, err := DoList(user["id"].(string), entityTable)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
@@ -40,7 +39,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				StatusCode: 200,
 			}, nil
 		} else {
-			collection, err := DoGet(event.PathParameters["collectionId"], user, ddb)
+			collection, err := DoGet(event.PathParameters["collectionId"], entityTable)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
@@ -56,7 +55,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		var createInput CreateInput
 		json.Unmarshal([]byte(event.Body), &createInput)
 
-		collectionID, err := DoCreate(createInput, user, ddb)
+		collectionID, err := DoCreate(createInput, user["id"].(string), entityTable)
 		if err != nil {
 			return events.APIGatewayProxyResponse{}, err
 		}
@@ -69,7 +68,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			StatusCode: 201,
 		}, nil
 	} else if event.HTTPMethod == "DELETE" {
-		err := DoDelete(event.PathParameters["collectionId"], user, ddb)
+		err := DoDelete(event.PathParameters["collectionId"], user["id"].(string), entityTable)
 		if err != nil {
 			return events.APIGatewayProxyResponse{}, err
 		}

@@ -1,72 +1,66 @@
 package api
 
 import (
-	"errors"
 	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
+	"github.com/guregu/dynamo"
+
 	"github.com/gofrs/uuid"
 
+	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
 	. "github.com/myuon/portals-me/functions/collection/lib"
 )
 
 func DoList(
-	user map[string]interface{},
-	ddb dynamodbiface.DynamoDBAPI,
+	userID string,
+	entityTable dynamo.Table,
 ) ([]Collection, error) {
-	result, err := ddb.QueryRequest(&dynamodb.QueryInput{
-		TableName:              aws.String(os.Getenv("EntityTable")),
-		IndexName:              aws.String(os.Getenv("SortIndex")),
-		KeyConditionExpression: aws.String("sort = :sort and sort_value = :sort_value"),
-		ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-			":sort":       {S: aws.String("collection##detail")},
-			":sort_value": {S: aws.String(user["id"].(string))},
-		},
-	}).Send()
-
-	if err != nil {
+	var colDBOs []CollectionDBO
+	if err := entityTable.
+		Get("sort", "collection##detail").
+		Index(os.Getenv("SortIndex")).
+		Filter("$ = ?", "sort_value", userID).
+		All(&colDBOs); err != nil {
 		return nil, err
 	}
 
-	return ParseCollections(result.Items), nil
+	var cols []Collection = make([]Collection, len(colDBOs))
+	for index, col := range colDBOs {
+		cols[index] = col.FromDBO()
+	}
+
+	return cols, nil
 }
 
 func DoGet(
 	collectionID string,
-	user map[string]interface{},
-	ddb dynamodbiface.DynamoDBAPI,
+	entityTable dynamo.Table,
 ) (Collection, error) {
-	result, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String("collection##" + collectionID)},
-			"sort": {S: aws.String("collection##detail")},
-		},
-	}).Send()
-	if err != nil {
+	var colDBO CollectionDBO
+	if err := entityTable.
+		Get("id", "collection##"+collectionID).
+		Range("sort", dynamo.Equal, "collection##detail").
+		One(&colDBO); err != nil {
 		return Collection{}, err
 	}
-	if len(result.Item) == 0 {
-		return Collection{}, errors.New("Not exist")
+
+	col := colDBO.FromDBO()
+
+	var userDBO authenticator.UserDBO
+	if err := entityTable.
+		Get("id", col.Owner).
+		Range("sort", dynamo.Equal, "user##detail").
+		One(&userDBO); err != nil {
+		return Collection{}, err
 	}
 
-	collection := ParseCollection(result.Item)
-
-	result, err = ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String(collection.Owner)},
-			"sort": {S: aws.String("user##detail")},
-		},
-	}).Send()
+	user := userDBO.FromDBO()
 
 	// First-aid
-	collection.Owner = *result.Item["sort_value"].S
+	col.Owner = user.Name
 
-	return collection, nil
+	return col, nil
 }
 
 type CreateInput struct {
@@ -77,30 +71,24 @@ type CreateInput struct {
 
 func DoCreate(
 	createInput CreateInput,
-	user map[string]interface{},
-	ddb dynamodbiface.DynamoDBAPI,
+	userID string,
+	entityTable dynamo.Table,
 ) (string, error) {
 	collectionID := uuid.Must(uuid.NewV4()).String()
 
-	item, err := DumpCollection(Collection{
+	col := Collection{
 		ID:             collectionID,
-		Owner:          user["id"].(string),
+		Owner:          userID,
 		Title:          createInput.Title,
 		Description:    createInput.Description,
 		Cover:          createInput.Cover,
 		Media:          []string{},
-		CommentMembers: []string{user["id"].(string)},
+		CommentMembers: []string{userID},
 		CommentCount:   0,
 		CreatedAt:      time.Now().Unix(),
-	})
-	if err != nil {
-		return "", err
 	}
 
-	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      item,
-	}).Send(); err != nil {
+	if err := entityTable.Put(col.ToDBO()).Run(); err != nil {
 		return "", err
 	}
 
@@ -109,52 +97,27 @@ func DoCreate(
 
 func DoDelete(
 	collectionID string,
-	user map[string]interface{},
-	ddb dynamodbiface.DynamoDBAPI,
+	userID string,
+	entityTable dynamo.Table,
 ) error {
-	result, err := ddb.QueryRequest(&dynamodb.QueryInput{
-		TableName:              aws.String(os.Getenv("EntityTable")),
-		KeyConditionExpression: aws.String("id = :id and sort = :user_id"),
-		ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-			":id":      {S: aws.String("collection##" + collectionID)},
-			":user_id": {S: aws.String(user["id"].(string))},
-		},
-		ProjectionExpression: aws.String("sort"),
-	}).Send()
-
-	if err != nil {
+	var idList []string
+	if err := entityTable.
+		Get("id", "collection##"+collectionID).
+		Range("sort", dynamo.Equal, userID).
+		Project("sort").
+		All(&idList); err != nil {
 		return err
 	}
 
-	writeRequest := []dynamodb.WriteRequest{
-		dynamodb.WriteRequest{
-			DeleteRequest: &dynamodb.DeleteRequest{
-				Key: map[string]dynamodb.AttributeValue{
-					"id":   {S: aws.String("collection##" + collectionID)},
-					"sort": {S: aws.String("collection##detail")},
-				},
-			},
-		},
+	var keys = make([]dynamo.Keyed, len(idList))
+	for index, id := range idList {
+		keys[index] = dynamo.Keys{"collection##" + collectionID, id}
 	}
-
-	for _, item := range result.Items {
-		writeRequest = append(writeRequest, dynamodb.WriteRequest{
-			DeleteRequest: &dynamodb.DeleteRequest{
-				Key: map[string]dynamodb.AttributeValue{
-					"id":   {S: aws.String("collection##" + collectionID)},
-					"sort": item["sort"],
-				},
-			},
-		})
-	}
-
-	requestItems := map[string][]dynamodb.WriteRequest{}
-	requestItems[os.Getenv("EntityTable")] = writeRequest
-	_, err = ddb.BatchWriteItemRequest(&dynamodb.BatchWriteItemInput{
-		RequestItems: requestItems,
-	}).Send()
-
-	if err != nil {
+	if _, err := entityTable.
+		Batch("id", "sort").
+		Write().
+		Delete(keys...).
+		Run(); err != nil {
 		return err
 	}
 
