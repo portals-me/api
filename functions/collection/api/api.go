@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/guregu/dynamo"
+	"github.com/pkg/errors"
 
 	"github.com/gofrs/uuid"
 
@@ -89,7 +90,7 @@ func DoCreate(
 	}
 
 	if err := entityTable.Put(col.ToDBO()).Run(); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "putCollection failed")
 	}
 
 	return collectionID, nil
