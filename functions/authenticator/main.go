@@ -7,9 +7,11 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/guregu/dynamo"
+
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cognitoidentity"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 
 	"github.com/aws/aws-lambda-go/events"
 	lambda_handler "github.com/aws/aws-lambda-go/lambda"
@@ -41,13 +43,12 @@ func GetAccessToken(cred *oauth.Credentials, oauthVerifier string) (*oauth.Crede
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
+	sess := session.Must(session.NewSession())
 
-	ddb := dynamodb.New(cfg)
-	idp := cognitoidentity.New(cfg)
+	ddb := dynamo.NewFromIface(dynamodb.New(sess))
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
+
+	idp := cognitoidentity.New(sess)
 
 	customProvider := &CustomProvider{
 		IdentityPoolID:          os.Getenv("IdentityPoolId"),
@@ -65,7 +66,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			body, identityID, err := DoSignUp(input, customProvider, ddb, signer)
+			body, identityID, err := DoSignUp(input, customProvider, entityTable, signer)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
@@ -87,7 +88,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			body, err := DoSignIn(logins, customProvider, ddb, signer)
+			body, err := DoSignIn(logins, customProvider, entityTable, signer)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}

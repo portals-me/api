@@ -2,13 +2,11 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
-	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
+	"github.com/pkg/errors"
+
+	"github.com/guregu/dynamo"
 
 	. "github.com/myuon/portals-me/functions/authenticator/lib"
 	. "github.com/myuon/portals-me/functions/authenticator/signer"
@@ -18,25 +16,22 @@ import (
 
 func createUserCollection(
 	user User,
-	ddb dynamodbiface.DynamoDBAPI,
+	entityTable dynamo.Table,
 ) error {
-	result, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String("collection##" + user.Name)},
-			"sort": {S: aws.String("collection##detail")},
-		},
-	}).Send()
-
-	if err != nil {
-		return err
+	var colDBO collection.CollectionDBO
+	if err := entityTable.
+		Get("id", "collection##"+user.Name).
+		Range("sort", dynamo.Equal, "collection##detail").
+		One(&colDBO); err != nil {
+		if err != dynamo.ErrNotFound {
+			return err
+		}
 	}
-
-	if result.Item != nil {
+	if colDBO.ID != "" {
 		return nil
 	}
 
-	item, err := collection.DumpCollection(collection.Collection{
+	col := collection.Collection{
 		ID:          user.Name,
 		Owner:       user.ID,
 		Title:       user.Name,
@@ -49,19 +44,8 @@ func createUserCollection(
 		CommentMembers: []string{user.ID},
 		CommentCount:   0,
 		CreatedAt:      time.Now().Unix(),
-	})
-	if err != nil {
-		return err
 	}
-
-	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      item,
-	}).Send(); err != nil {
-		return err
-	}
-
-	return err
+	return entityTable.Put(col.ToDBO()).Run()
 }
 
 type CreateInput struct {
@@ -73,7 +57,7 @@ type CreateInput struct {
 func DoSignUp(
 	input SignUpInput,
 	idp ICustomProvider,
-	ddb dynamodbiface.DynamoDBAPI,
+	entityTable dynamo.Table,
 	signer ISigner,
 ) (string, string, error) {
 	identityID, err := idp.GetIdpID(input.Logins)
@@ -86,31 +70,25 @@ func DoSignUp(
 		Picture:     input.Form.Picture,
 	}
 
-	item, err := DumpUser(user)
-	if err != nil {
-		return "", "", err
-	}
-
-	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName:           aws.String(os.Getenv("EntityTable")),
-		Item:                item,
-		ConditionExpression: aws.String("attribute_not_exists(id)"),
-	}).Send(); err != nil {
-		return "", "", err
+	if err := entityTable.
+		Put(user.ToDBO()).
+		If("attribute_not_exists(id)").
+		Run(); err != nil {
+		return "", "", errors.Wrap(err, "putUser failed")
 	}
 
 	jsn, err := json.Marshal(user.ToJwtPayload())
 	if err != nil {
-		return "", "", err
+		return "", "", errors.Wrap(err, "marshalUser failed")
 	}
 
 	token, err := signer.Sign(jsn)
 	if err != nil {
-		return "", "", err
+		return "", "", errors.Wrap(err, "sign failed")
 	}
 
-	if err = createUserCollection(user, ddb); err != nil {
-		return "", "", err
+	if err = createUserCollection(user, entityTable); err != nil {
+		return "", "", errors.Wrap(err, "createUserCollection failed")
 	}
 
 	body, err := json.Marshal(map[string]interface{}{
@@ -124,7 +102,7 @@ func DoSignUp(
 func DoSignIn(
 	logins Logins,
 	idp ICustomProvider,
-	ddb dynamodbiface.DynamoDBAPI,
+	entityTable dynamo.Table,
 	signer ISigner,
 ) (string, error) {
 	identityID, err := idp.GetIdpID(logins)
@@ -134,22 +112,14 @@ func DoSignIn(
 
 	userID := "user##" + identityID
 
-	getItemReq, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String(userID)},
-			"sort": {S: aws.String("user##detail")},
-		},
-	}).Send()
-	if err != nil {
+	var userDBO UserDBO
+	if err := entityTable.
+		Get("id", userID).
+		Range("sort", dynamo.Equal, "user##detail").
+		One(&userDBO); err != nil {
 		return "", err
 	}
-
-	if getItemReq.Item["id"].S == nil {
-		return "", errors.New("UserNotExist: " + userID)
-	}
-
-	user := ParseUser(getItemReq.Item)
+	user := userDBO.FromDBO()
 
 	jsn, err := json.Marshal(user.ToJwtPayload())
 	if err != nil {
@@ -166,7 +136,7 @@ func DoSignIn(
 		"user":     string(jsn),
 	})
 
-	err = createUserCollection(user, ddb)
+	err = createUserCollection(user, entityTable)
 	if err != nil {
 		return "", err
 	}
