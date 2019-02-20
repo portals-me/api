@@ -1,38 +1,26 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/guregu/dynamo"
 
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
 
 	. "github.com/myuon/portals-me/functions/collection/api"
 )
 
 func TestCanCreateAndDelete(t *testing.T) {
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		t.Error(err)
-	}
-	cfg.Region = "ap-notheast-1"
-	cfg.EndpointResolver = aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-		if service == "dynamodb" {
-			return aws.Endpoint{
-				URL:           "http://localhost:8000",
-				SigningRegion: cfg.Region,
-			}, nil
-		}
-
-		panic(fmt.Errorf(service, region))
+	ddb := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
 	})
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
 
-	ddb := dynamodb.New(cfg)
 	testUser := authenticator.User{
 		ID:          "test-user",
 		CreatedAt:   time.Now().Unix(),
@@ -40,13 +28,8 @@ func TestCanCreateAndDelete(t *testing.T) {
 		DisplayName: "test-user-display-name",
 		Picture:     "",
 	}
-	testUserOut, _ := authenticator.DumpUser(testUser)
-	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      testUserOut,
-	}).Send()
-	if err != nil {
-		t.Error(err.Error())
+	if err := entityTable.Put(testUser.ToDBO()).Run(); err != nil {
+		t.Fatal(err)
 	}
 
 	testInput := CreateInput{
@@ -56,51 +39,41 @@ func TestCanCreateAndDelete(t *testing.T) {
 	}
 	collectionID, err := DoCreate(
 		testInput,
-		map[string]interface{}{
-			"id": testUser.ID,
-		},
-		ddb,
+		testUser.ID,
+		entityTable,
 	)
 	if err != nil {
-		t.Error(err.Error())
+		t.Fatal(err)
 	}
 
 	collection, err := DoGet(
 		collectionID,
-		map[string]interface{}{
-			"id": testUser.ID,
-		},
-		ddb,
+		entityTable,
 	)
 	if err != nil {
-		t.Error(err.Error())
+		t.Fatal(err)
 	}
 
 	if !(collectionID == collection.ID &&
 		testInput.Title == collection.Title &&
 		testInput.Description == collection.Description) {
-		t.Errorf("Invalid collection returned: %+v", collection)
+		t.Fatalf("Invalid collection returned: %+v", collection)
 	}
 
 	err = DoDelete(
 		collectionID,
-		map[string]interface{}{
-			"id": testUser.ID,
-		},
-		ddb,
+		testUser.ID,
+		entityTable,
 	)
 	if err != nil {
-		t.Error(err.Error())
+		t.Fatal(err)
 	}
 
 	collection, err = DoGet(
 		collectionID,
-		map[string]interface{}{
-			"id": testUser.ID,
-		},
-		ddb,
+		entityTable,
 	)
 	if err == nil {
-		t.Error(err.Error())
+		t.Fatal(err)
 	}
 }
