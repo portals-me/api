@@ -17,40 +17,44 @@ type SignUpInput struct {
 }
 
 type User struct {
-	ID          string `json:"id"`
-	CreatedAt   int64  `json:"created_at"`
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	Picture     string `json:"picture"`
+	ID               string `json:"id"`
+	CreatedAt        int64  `json:"created_at"`
+	Name             string `json:"name"`
+	DisplayName      string `json:"display_name"`
+	Picture          string `json:"picture"`
+	UserCollectionID string `json:"user_collection_id"`
 }
 
 type UserDBO struct {
-	ID          string `json:"id" dynamo:"id"`
-	Sort        string `json:"sort" dynamo:"sort"`
-	CreatedAt   int64  `json:"created_at" dynamo:"created_at"`
-	Name        string `json:"sort_value" dynamo:"sort_value"`
-	DisplayName string `json:"display_name" dynamo:"display_name"`
-	Picture     string `json:"picture" dynamo:"picture"`
+	ID               string `json:"id" dynamo:"id"`
+	Sort             string `json:"sort" dynamo:"sort"`
+	CreatedAt        int64  `json:"created_at" dynamo:"created_at"`
+	Name             string `json:"sort_value" dynamo:"sort_value"`
+	DisplayName      string `json:"display_name" dynamo:"display_name"`
+	Picture          string `json:"picture" dynamo:"picture"`
+	UserCollectionID string `json:"user_collection_id"`
 }
 
 func (user User) ToDBO() UserDBO {
 	return UserDBO{
-		ID:          user.ID,
-		CreatedAt:   user.CreatedAt,
-		Name:        user.Name,
-		DisplayName: user.DisplayName,
-		Picture:     user.Picture,
-		Sort:        "user##detail",
+		ID:               user.ID,
+		CreatedAt:        user.CreatedAt,
+		Name:             user.Name,
+		DisplayName:      user.DisplayName,
+		Picture:          user.Picture,
+		Sort:             "user##detail",
+		UserCollectionID: user.UserCollectionID,
 	}
 }
 
 func (user UserDBO) FromDBO() User {
 	return User{
-		ID:          user.ID,
-		CreatedAt:   user.CreatedAt,
-		Name:        user.Name,
-		DisplayName: user.DisplayName,
-		Picture:     user.Picture,
+		ID:               user.ID,
+		CreatedAt:        user.CreatedAt,
+		Name:             user.Name,
+		DisplayName:      user.DisplayName,
+		Picture:          user.Picture,
+		UserCollectionID: user.UserCollectionID,
 	}
 }
 

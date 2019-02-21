@@ -11,41 +11,25 @@ import (
 	. "github.com/myuon/portals-me/functions/authenticator/lib"
 	. "github.com/myuon/portals-me/functions/authenticator/signer"
 	. "github.com/myuon/portals-me/functions/authenticator/verifier"
-	collection "github.com/myuon/portals-me/functions/collection/lib"
+	collection_api "github.com/myuon/portals-me/functions/collection/api"
 )
 
 func createUserCollection(
 	user User,
 	entityTable dynamo.Table,
-) error {
-	var colDBO collection.CollectionDBO
-	if err := entityTable.
-		Get("id", "collection##"+user.Name).
-		Range("sort", dynamo.Equal, "collection##detail").
-		One(&colDBO); err != nil {
-		if err != dynamo.ErrNotFound {
-			return err
-		}
-	}
-	if colDBO.ID != "" {
-		return nil
-	}
-
-	col := collection.Collection{
-		ID:          user.Name,
-		Owner:       user.ID,
-		Title:       user.Name,
-		Description: "",
-		Cover: map[string]string{
-			"color": "red lighten-3",
-			"sort":  "solid",
+) (string, error) {
+	return collection_api.DoCreate(
+		collection_api.CreateInput{
+			Title:       user.Name,
+			Description: user.DisplayName + "のコレクション",
+			Cover: map[string]string{
+				"color": "red lighten-3",
+				"sort":  "solid",
+			},
 		},
-		Media:          []string{},
-		CommentMembers: []string{user.ID},
-		CommentCount:   0,
-		CreatedAt:      time.Now().Unix(),
-	}
-	return entityTable.Put(col.ToDBO()).Run()
+		user.ID,
+		entityTable,
+	)
 }
 
 type CreateInput struct {
@@ -70,6 +54,13 @@ func DoSignUp(
 		Picture:     input.Form.Picture,
 	}
 
+	collectionID, err := createUserCollection(user, entityTable)
+	if err != nil {
+		return "", "", errors.Wrap(err, "createUserCollection failed")
+	}
+
+	user.UserCollectionID = collectionID
+
 	if err := entityTable.
 		Put(user.ToDBO()).
 		If("attribute_not_exists(id)").
@@ -85,10 +76,6 @@ func DoSignUp(
 	token, err := signer.Sign(jsn)
 	if err != nil {
 		return "", "", errors.Wrap(err, "sign failed")
-	}
-
-	if err = createUserCollection(user, entityTable); err != nil {
-		return "", "", errors.Wrap(err, "createUserCollection failed")
 	}
 
 	body, err := json.Marshal(map[string]interface{}{
@@ -136,9 +123,19 @@ func DoSignIn(
 		"user":     string(jsn),
 	})
 
-	err = createUserCollection(user, entityTable)
-	if err != nil {
-		return "", err
+	if user.UserCollectionID == "" {
+		collectionID, err := createUserCollection(user, entityTable)
+		if err != nil {
+			return "", err
+		}
+
+		if err := entityTable.
+			Update("id", userDBO.ID).
+			Range("sort", "user##detail").
+			Set("user_collection_id", collectionID).
+			Run(); err != nil {
+			return "", err
+		}
 	}
 
 	return string(body), nil
