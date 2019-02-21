@@ -32,7 +32,7 @@ type UserDBO struct {
 	Name             string `json:"sort_value" dynamo:"sort_value"`
 	DisplayName      string `json:"display_name" dynamo:"display_name"`
 	Picture          string `json:"picture" dynamo:"picture"`
-	UserCollectionID string `json:"user_collection_id"`
+	UserCollectionID string `json:"user_collection_id" dynamo:"user_collection_id"`
 }
 
 func (user User) ToDBO() UserDBO {
