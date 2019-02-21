@@ -8,16 +8,16 @@ import (
 )
 
 type CollectionDBO struct {
-	ID             string            `json:"id"`
-	CommentMembers []string          `json:"comment_members"`
-	CommentCount   int               `json:"comment_count"`
-	Media          []string          `json:"media"`
-	Cover          map[string]string `json:"cover"`
-	Owner          string            `json:"sort_value"`
-	Title          string            `json:"title"`
-	CreatedAt      int64             `json:"created_at"`
-	Sort           string            `json:"sort"`
-	Description    string            `json:"description"`
+	ID             string            `json:"id" dynamo:"id"`
+	CommentMembers []string          `json:"comment_members" dynamo:"comment_members"`
+	CommentCount   int               `json:"comment_count" dynamo:"comment_count"`
+	Media          []string          `json:"media" dynamo:"media"`
+	Cover          map[string]string `json:"cover" dynamo:"cover"`
+	Owner          string            `json:"sort_value" dynamo:"sort_value"`
+	Title          string            `json:"title" dynamo:"title"`
+	CreatedAt      int64             `json:"created_at" dynamo:"created_at"`
+	Sort           string            `json:"sort" dynamo:"sort"`
+	Description    string            `json:"description" dynamo:"description"`
 }
 
 type Collection struct {
@@ -32,7 +32,7 @@ type Collection struct {
 	Description    string            `json:"description"`
 }
 
-func (collection Collection) toDBO() CollectionDBO {
+func (collection Collection) ToDBO() CollectionDBO {
 	return CollectionDBO{
 		ID:             "collection##" + collection.ID,
 		CommentMembers: collection.CommentMembers,
@@ -47,7 +47,7 @@ func (collection Collection) toDBO() CollectionDBO {
 	}
 }
 
-func (collection CollectionDBO) fromDBO() Collection {
+func (collection CollectionDBO) FromDBO() Collection {
 	return Collection{
 		ID:             strings.Split(collection.ID, "collection##")[1],
 		CommentMembers: collection.CommentMembers,
@@ -67,7 +67,7 @@ func ParseCollections(attrs []map[string]dynamodb.AttributeValue) []Collection {
 
 	var collections []Collection
 	for _, v := range collectionsDBO {
-		collections = append(collections, v.fromDBO())
+		collections = append(collections, v.FromDBO())
 	}
 
 	return collections
@@ -77,9 +77,9 @@ func ParseCollection(attr map[string]dynamodb.AttributeValue) Collection {
 	var collectionDBO CollectionDBO
 	dynamodbattribute.UnmarshalMap(attr, &collectionDBO)
 
-	return collectionDBO.fromDBO()
+	return collectionDBO.FromDBO()
 }
 
 func DumpCollection(collection Collection) (map[string]dynamodb.AttributeValue, error) {
-	return dynamodbattribute.MarshalMap(collection.toDBO())
+	return dynamodbattribute.MarshalMap(collection.ToDBO())
 }

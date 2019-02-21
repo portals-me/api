@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/GoogleIdTokenVerifier/GoogleIdTokenVerifier"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity/cognitoidentityiface"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cognitoidentity"
+	"github.com/aws/aws-sdk-go/service/cognitoidentity/cognitoidentityiface"
 	"github.com/gomodule/oauth1/oauth"
 )
 
@@ -103,14 +103,14 @@ type CustomProvider struct {
 }
 
 func (provider *CustomProvider) GetIdpID(logins Logins) (string, error) {
-	loginsMap := map[string]string{}
+	loginsMap := map[string]*string{}
 	if logins.Google != "" {
 		verified, err := GoogleVerifier{Token: logins.Google}.Verify()
 		if err != nil {
 			return "", err
 		}
 
-		loginsMap["accounts.google.com"] = verified
+		loginsMap["accounts.google.com"] = &verified
 	}
 	if logins.Twitter != "" {
 		verified, err := TwitterVerifier{Token: logins.Twitter}.Verify()
@@ -118,16 +118,17 @@ func (provider *CustomProvider) GetIdpID(logins Logins) (string, error) {
 			return "", err
 		}
 
-		loginsMap["portals.me"] = verified
+		loginsMap["portals.me"] = &verified
 	}
 
-	getIDReq, err := provider.CognitoIdentityInstance.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
+	req, resp := provider.CognitoIdentityInstance.GetOpenIdTokenForDeveloperIdentityRequest(&cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
 		IdentityPoolId: aws.String(provider.IdentityPoolID),
 		Logins:         loginsMap,
-	}).Send()
+	})
+	err := req.Send()
 	if err != nil {
 		return "", err
 	}
 
-	return *getIDReq.IdentityId, nil
+	return *resp.IdentityId, nil
 }
