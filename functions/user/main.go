@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/pkg/errors"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -38,11 +40,11 @@ func DoListFeed(
 	var user authenticator.UserDBO
 	err := entityTable.
 		Get("sort", "user##detail").
-		Range("sort_value", dynamo.Equal, name).
 		Index(os.Getenv("SortIndex")).
+		Range("sort_value", dynamo.Equal, name).
 		One(&user)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getUserByName failed")
 	}
 
 	var items []feed.FeedEvent
@@ -51,7 +53,7 @@ func DoListFeed(
 		Limit(10).
 		All(&items)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "getFeedsByUserID failed")
 	}
 
 	return items, nil

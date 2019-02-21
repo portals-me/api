@@ -3,26 +3,28 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
+	"github.com/pkg/errors"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/guregu/dynamo"
+
+	"github.com/aws/aws-sdk-go/service/s3"
 
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 
 	"github.com/aws/aws-lambda-go/events"
 
 	"github.com/aws/aws-lambda-go/lambda"
+
+	collection "github.com/myuon/portals-me/functions/collection/lib"
 )
 
 type Collection struct {
@@ -57,74 +59,63 @@ type Article struct {
 	Entity      map[string]string `json:"entity"`
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
-	OwnedBy     string            `json:"owned_by"`
+	Owner       string            `json:"owner"`
 	CreatedAt   int64             `json:"created_at"`
 }
 
 // for DynamoDB
-type ArticleDTO struct {
-	ID          string            `json:"id"`
-	Sort        string            `json:"sort"`
-	Entity      map[string]string `json:"entity"`
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	OwnedBy     string            `json:"sort_value"`
-	CreatedAt   int64             `json:"created_at"`
+type ArticleDBO struct {
+	ID          string            `json:"id" dynamo:"id"`
+	Sort        string            `json:"sort" dynamo:"sort"`
+	Entity      map[string]string `json:"entity" dynamo:"entity"`
+	Title       string            `json:"title" dynamo:"title"`
+	Description string            `json:"description" dynamo:"description"`
+	Owner       string            `json:"sort_value" dynamo:"sort_value"`
+	CreatedAt   int64             `json:"created_at" dynamo:"created_at"`
 }
 
-func (article Article) ToDTO(collectionID string) ArticleDTO {
-	return ArticleDTO{
+func (article Article) ToDBO(collectionID string) ArticleDBO {
+	return ArticleDBO{
 		ID:          "collection##" + collectionID,
 		Sort:        "article##" + article.ID,
 		Entity:      article.Entity,
 		Title:       article.Title,
 		Description: article.Description,
-		OwnedBy:     article.OwnedBy,
+		Owner:       article.Owner,
 		CreatedAt:   article.CreatedAt,
 	}
 }
 
-func (dto ArticleDTO) FromDTO() Article {
+func (dto ArticleDBO) FromDBO() Article {
 	return Article{
 		ID:          strings.Replace(dto.Sort, "article##", "", 1),
 		Entity:      dto.Entity,
 		Title:       dto.Title,
 		Description: dto.Description,
-		OwnedBy:     dto.OwnedBy,
+		Owner:       dto.Owner,
 		CreatedAt:   dto.CreatedAt,
 	}
 }
 
 func doList(
 	collectionID string,
-	ddb dynamodbiface.DynamoDBAPI,
+	entityTable dynamo.Table,
 ) (int, []Article, error) {
-	result, err := ddb.QueryRequest(&dynamodb.QueryInput{
-		TableName:              aws.String(os.Getenv("EntityTable")),
-		KeyConditionExpression: aws.String("id = :id and begins_with(sort, :sort)"),
-		ExpressionAttributeValues: map[string]dynamodb.AttributeValue{
-			":id": {
-				S: aws.String("collection##" + collectionID),
-			},
-			":sort": {
-				S: aws.String("article##"),
-			},
-		},
-	}).Send()
-
-	if err != nil {
+	var articleDBOs []ArticleDBO
+	if err := entityTable.
+		Get("id", "collection##"+collectionID).
+		Range("sort", dynamo.BeginsWith, "article##").
+		All(&articleDBOs); err != nil {
 		return 502, nil, err
 	}
 
-	if len(result.Items) == 0 {
+	if len(articleDBOs) == 0 {
 		return 200, []Article{}, nil
 	}
 
-	var articles []Article
-	var articleDTOs []ArticleDTO
-	dynamodbattribute.UnmarshalListOfMaps(result.Items, &articleDTOs)
-	for _, value := range articleDTOs {
-		articles = append(articles, value.FromDTO())
+	var articles = make([]Article, len(articleDBOs))
+	for index, value := range articleDBOs {
+		articles[index] = value.FromDBO()
 	}
 
 	return 200, articles, nil
@@ -132,12 +123,10 @@ func doList(
 
 func doCreate(
 	collectionID string,
-	user map[string]interface{},
+	userID string,
 	createInput map[string]interface{},
-	ddb dynamodbiface.DynamoDBAPI,
+	entityTable dynamo.Table,
 ) (int, string, error) {
-	articleID := uuid.NewV4().String()
-
 	// care for Entity struct
 	entityMap := map[string]string{}
 	entity := createInput["entity"].(map[string]interface{})
@@ -145,64 +134,52 @@ func doCreate(
 		entityMap[key] = value.(string)
 	}
 
-	article, err := dynamodbattribute.MarshalMap(Article{
-		ID:          articleID,
+	article := Article{
+		ID:          uuid.NewV4().String(),
 		Entity:      entityMap,
 		Title:       createInput["title"].(string),
 		Description: createInput["description"].(string),
 		CreatedAt:   time.Now().Unix(),
-		OwnedBy:     user["id"].(string),
-	}.ToDTO(collectionID))
-
-	if err != nil {
-		return 400, "", err
+		Owner:       userID,
 	}
 
-	result, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String("collection##" + collectionID)},
-			"sort": {S: aws.String("collection##detail")},
-		},
-	}).Send()
-	if len(result.Item) == 0 {
-		return 404, "", errors.New("Not Found")
-	}
-	if err != nil {
-		return 502, "", err
-	}
+	var colDBO collection.CollectionDBO
+	if err := entityTable.
+		Get("id", "collection##"+collectionID).
+		Range("sort", dynamo.Equal, "collection##detail").
+		One(&colDBO); err != nil {
+		if err == dynamo.ErrNotFound {
+			return 404, "", err
+		}
 
-	if user["id"].(string) != *result.Item["sort_value"].S {
+		return 502, "", errors.Wrap(err, "getCollection failed")
+	}
+	col := colDBO.FromDBO()
+
+	if userID != col.Owner {
 		return 403, "", errors.New("AccessDenied")
 	}
 
-	_, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      article,
-	}).Send()
-
-	if err != nil {
-		return 502, "", err
+	if err := entityTable.Put(article.ToDBO(collectionID)).Run(); err != nil {
+		return 502, "", errors.Wrapf(err, "putArticle failed, %+v", article.ToDBO(collectionID))
 	}
 
-	return 201, articleID, nil
+	return 201, article.ID, nil
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	user := event.RequestContext.Authorizer
 
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
+	sess := session.Must(session.NewSession())
 
-	ddb := dynamodb.New(cfg)
+	ddb := dynamo.NewFromIface(dynamodb.New(sess))
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
 	collectionID := event.PathParameters["collectionId"]
 
 	if event.HTTPMethod == "GET" {
 		if _, ok := event.PathParameters["articleId"]; ok {
 		} else {
-			statusCode, articles, err := doList(collectionID, ddb)
+			statusCode, articles, err := doList(collectionID, entityTable)
 
 			if err != nil {
 				return events.APIGatewayProxyResponse{
@@ -226,12 +203,13 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, errors.New("Empty filepath")
 			}
 
-			S3 := s3.New(cfg)
+			S3 := s3.New(sess)
 
-			signedURL, _ := S3.PutObjectRequest(&s3.PutObjectInput{
+			req, _ := S3.PutObjectRequest(&s3.PutObjectInput{
 				Bucket: aws.String("portals-me-storage-users"),
 				Key:    aws.String(user["id"].(string) + "/" + collectionID + "/" + event.Body),
-			}).Presign(15 * time.Minute)
+			})
+			signedURL, err := req.Presign(15 * time.Minute)
 
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
@@ -248,9 +226,9 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 			statusCode, articleID, err := doCreate(
 				collectionID,
-				user,
+				user["id"].(string),
 				createInput,
-				ddb,
+				entityTable,
 			)
 
 			if err != nil {

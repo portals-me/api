@@ -3,7 +3,7 @@
     <v-flex xs12 class="collection-title">
       <v-layout row wrap class="text-sm-left">
         <v-flex xs5>
-          <h2><v-icon>collections</v-icon> {{ collection.owner }} / {{ collection.title }}</h2>
+          <h2><v-icon>collections</v-icon> {{ collection.owner_name }} / {{ collection.title }}</h2>
           <pre>{{ collection.description }}</pre>
         </v-flex>
         <v-spacer />

@@ -3,28 +3,25 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"os"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
+	"github.com/guregu/dynamo"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cognitoidentity"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 
 	"github.com/aws/aws-lambda-go/events"
 	lambda_handler "github.com/aws/aws-lambda-go/lambda"
 
 	"github.com/gomodule/oauth1/oauth"
 
+	. "github.com/myuon/portals-me/functions/authenticator/api"
 	. "github.com/myuon/portals-me/functions/authenticator/lib"
 	. "github.com/myuon/portals-me/functions/authenticator/signer"
 	. "github.com/myuon/portals-me/functions/authenticator/verifier"
-	collection "github.com/myuon/portals-me/functions/collection/lib"
 )
 
 func generateRandomString(n int) string {
@@ -45,172 +42,13 @@ func GetAccessToken(cred *oauth.Credentials, oauthVerifier string) (*oauth.Crede
 	return at, err
 }
 
-type CreateInput struct {
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	Cover       map[string]string `json:"cover"`
-}
-
-func createUserCollection(
-	user User,
-	ddb dynamodbiface.DynamoDBAPI,
-) error {
-	result, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String("collection##" + user.Name)},
-			"sort": {S: aws.String("collection##detail")},
-		},
-	}).Send()
-
-	if err != nil {
-		return err
-	}
-
-	if result.Item != nil {
-		return nil
-	}
-
-	item, err := collection.DumpCollection(collection.Collection{
-		ID:          user.Name,
-		Owner:       user.ID,
-		Title:       user.Name,
-		Description: "",
-		Cover: map[string]string{
-			"color": "red lighten-3",
-			"sort":  "solid",
-		},
-		Media:          []string{},
-		CommentMembers: []string{user.ID},
-		CommentCount:   0,
-		CreatedAt:      time.Now().Unix(),
-	})
-	if err != nil {
-		return err
-	}
-
-	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Item:      item,
-	}).Send(); err != nil {
-		return err
-	}
-
-	return err
-}
-
-func DoSignUp(
-	input SignUpInput,
-	idp ICustomProvider,
-	ddb dynamodbiface.DynamoDBAPI,
-	signer ISigner,
-) (string, string, error) {
-	identityID, err := idp.GetIdpID(input.Logins)
-
-	user := User{
-		ID:          "user##" + identityID,
-		CreatedAt:   time.Now().Unix(),
-		Name:        input.Form.Name,
-		DisplayName: input.Form.DisplayName,
-		Picture:     input.Form.Picture,
-	}
-
-	item, err := DumpUser(user)
-	if err != nil {
-		return "", "", err
-	}
-
-	if _, err = ddb.PutItemRequest(&dynamodb.PutItemInput{
-		TableName:           aws.String(os.Getenv("EntityTable")),
-		Item:                item,
-		ConditionExpression: aws.String("attribute_not_exists(id)"),
-	}).Send(); err != nil {
-		return "", "", err
-	}
-
-	jsn, err := json.Marshal(user.ToJwtPayload())
-	if err != nil {
-		return "", "", err
-	}
-
-	token, err := signer.Sign(jsn)
-	if err != nil {
-		return "", "", err
-	}
-
-	if err = createUserCollection(user, ddb); err != nil {
-		return "", "", err
-	}
-
-	body, err := json.Marshal(map[string]interface{}{
-		"id_token": string(token),
-		"user":     string(jsn),
-	})
-
-	return string(body), identityID, nil
-}
-
-func DoSignIn(
-	logins Logins,
-	idp ICustomProvider,
-	ddb dynamodbiface.DynamoDBAPI,
-	signer ISigner,
-) (string, error) {
-	identityID, err := idp.GetIdpID(logins)
-	if err != nil {
-		return "", err
-	}
-
-	userID := "user##" + identityID
-
-	getItemReq, err := ddb.GetItemRequest(&dynamodb.GetItemInput{
-		TableName: aws.String(os.Getenv("EntityTable")),
-		Key: map[string]dynamodb.AttributeValue{
-			"id":   {S: aws.String(userID)},
-			"sort": {S: aws.String("user##detail")},
-		},
-	}).Send()
-	if err != nil {
-		return "", err
-	}
-
-	if getItemReq.Item["id"].S == nil {
-		return "", errors.New("UserNotExist: " + userID)
-	}
-
-	user := ParseUser(getItemReq.Item)
-
-	jsn, err := json.Marshal(user.ToJwtPayload())
-	if err != nil {
-		return "", err
-	}
-
-	token, err := signer.Sign(jsn)
-	if err != nil {
-		return "", err
-	}
-
-	body, err := json.Marshal(map[string]interface{}{
-		"id_token": string(token),
-		"user":     string(jsn),
-	})
-
-	err = createUserCollection(user, ddb)
-	if err != nil {
-		return "", err
-	}
-
-	return string(body), nil
-}
-
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
+	sess := session.Must(session.NewSession())
 
-	ddb := dynamodb.New(cfg)
-	idp := cognitoidentity.New(cfg)
+	ddb := dynamo.NewFromIface(dynamodb.New(sess))
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
+
+	idp := cognitoidentity.New(sess)
 
 	customProvider := &CustomProvider{
 		IdentityPoolID:          os.Getenv("IdentityPoolId"),
@@ -228,7 +66,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			body, identityID, err := DoSignUp(input, customProvider, ddb, signer)
+			body, identityID, err := DoSignUp(input, customProvider, entityTable, signer)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
@@ -250,7 +88,11 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			body, err := DoSignIn(logins, customProvider, ddb, signer)
+			output, err := DoSignIn(logins, customProvider, entityTable, signer)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+			out, err := json.Marshal(output)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
@@ -260,7 +102,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				Headers: map[string]string{
 					"Access-Control-Allow-Origin": "*",
 				},
-				Body: string(body),
+				Body: string(out),
 			}, nil
 		}
 	} else if event.Resource == "/auth/twitter" {

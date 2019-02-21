@@ -11,7 +11,7 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/gomodule/oauth1 v0.0.0-20181215000758-9a59ed3b0a84
 	github.com/guregu/dynamo v1.1.0
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/objx v0.1.1 // indirect
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd // indirect
