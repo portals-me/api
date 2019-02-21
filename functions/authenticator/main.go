@@ -19,7 +19,6 @@ import (
 	"github.com/gomodule/oauth1/oauth"
 
 	. "github.com/myuon/portals-me/functions/authenticator/api"
-	. "github.com/myuon/portals-me/functions/authenticator/lib"
 	. "github.com/myuon/portals-me/functions/authenticator/signer"
 	. "github.com/myuon/portals-me/functions/authenticator/verifier"
 )

@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cognitoidentity/cognitoidentityiface"
+	"github.com/gofrs/uuid"
 	"github.com/guregu/dynamo"
 
 	. "github.com/myuon/portals-me/functions/authenticator/api"
@@ -150,5 +151,66 @@ func TestCanSignInWithoutUserCollectionTwice(t *testing.T) {
 
 	if _, err := DoSignIn(logins, idp, entityTable, signer); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestShouldCreateUserCollectionOnlyOnce(t *testing.T) {
+	ddb := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
+	})
+	entityTable := ddb.Table(os.Getenv("EntityTable"))
+
+	idp := &fakeCustomProvider{
+		customID: uuid.Must(uuid.NewV4()).String(),
+	}
+	signer := &fakeSigner{}
+
+	_, _, err := DoSignUp(
+		SignUpInput{
+			Form: AccountForm{
+				Name:        "test-name",
+				DisplayName: "test-display-name",
+				Picture:     "test-picture",
+			},
+			Logins: Logins{
+				Twitter: "id-token",
+			},
+		},
+		idp,
+		entityTable,
+		signer,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output1, err := DoSignIn(
+		Logins{
+			Twitter: "id-token",
+		},
+		idp,
+		entityTable,
+		signer,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output2, err := DoSignIn(
+		Logins{
+			Twitter: "id-token",
+		},
+		idp,
+		entityTable,
+		signer,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !(output1.User.UserCollectionID != "" &&
+		output1.User.UserCollectionID == output2.User.UserCollectionID) {
+		t.Fatalf("Argument does not match: %+v %+v", output1, output2)
 	}
 }
