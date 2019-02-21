@@ -66,7 +66,12 @@ export default {
     }
   },
   async mounted () {
-    this.user = JSON.parse(localStorage.getItem('user'));
+    try {
+      this.user = JSON.parse(localStorage.getItem('user'));
+    } catch (e) {
+      console.error(e);
+      this.user = {};
+    }
 
     const needAuth = (str) => str.match(
       /^\/collections\/(.*)/

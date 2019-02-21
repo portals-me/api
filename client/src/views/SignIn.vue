@@ -118,7 +118,7 @@ export default {
     },
     async toDashboard ({ id_token, user }) {
       localStorage.setItem('id_token', id_token);
-      localStorage.setItem('user', user);
+      localStorage.setItem('user', JSON.stringify(user));
       this.$router.push('/dashboard');
     },
     async signUpWithGoogle () {
