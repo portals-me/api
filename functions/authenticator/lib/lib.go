@@ -3,18 +3,7 @@ package authenticator
 import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
-
-	. "github.com/myuon/portals-me/functions/authenticator/verifier"
 )
-
-type SignUpInput struct {
-	Form struct {
-		Name        string `json:"name"`
-		DisplayName string `json:"display_name"`
-		Picture     string `json:"picture"`
-	} `json:"form"`
-	Logins Logins `json:"logins"`
-}
 
 type User struct {
 	ID               string `json:"id"`
@@ -32,7 +21,7 @@ type UserDBO struct {
 	Name             string `json:"sort_value" dynamo:"sort_value"`
 	DisplayName      string `json:"display_name" dynamo:"display_name"`
 	Picture          string `json:"picture" dynamo:"picture"`
-	UserCollectionID string `json:"user_collection_id"`
+	UserCollectionID string `json:"user_collection_id" dynamo:"user_collection_id"`
 }
 
 func (user User) ToDBO() UserDBO {

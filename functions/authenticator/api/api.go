@@ -32,10 +32,15 @@ func createUserCollection(
 	)
 }
 
-type CreateInput struct {
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	Cover       map[string]string `json:"cover"`
+type AccountForm struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	Picture     string `json:"picture"`
+}
+
+type SignUpInput struct {
+	Form   AccountForm `json:"form"`
+	Logins Logins      `json:"logins"`
 }
 
 func DoSignUp(
