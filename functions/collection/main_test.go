@@ -14,7 +14,7 @@ import (
 	. "github.com/myuon/portals-me/functions/collection/api"
 )
 
-func TestCanCreateAndDelete(t *testing.T) {
+func TestCanCreateUpdateAndDelete(t *testing.T) {
 	ddb := dynamo.New(session.New(), &aws.Config{
 		Region:   aws.String("ap-northeast-1"),
 		Endpoint: aws.String("http://localhost:8000"),
@@ -57,6 +57,22 @@ func TestCanCreateAndDelete(t *testing.T) {
 	if !(collectionID == collection.ID &&
 		testInput.Title == collection.Title &&
 		testInput.Description == collection.Description) {
+		t.Fatalf("Invalid collection returned: %+v", collection)
+	}
+
+	collection.Title = "test-title-2"
+	if err := DoUpdate(collection.Collection, entityTable); err != nil {
+		t.Fatal(err)
+	}
+
+	collection, err = DoGet(
+		collectionID,
+		entityTable,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !(collection.Title == "test-title-2") {
 		t.Fatalf("Invalid collection returned: %+v", collection)
 	}
 

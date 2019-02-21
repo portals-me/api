@@ -101,6 +101,20 @@ func DoCreate(
 	return collectionID, nil
 }
 
+func DoUpdate(
+	collection Collection,
+	entityTable dynamo.Table,
+) error {
+	if err := entityTable.
+		Put(collection.ToDBO()).
+		If("$ = ?", "sort_value", collection.Owner).
+		Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func DoDelete(
 	collectionID string,
 	userID string,
