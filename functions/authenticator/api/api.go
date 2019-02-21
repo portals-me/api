@@ -86,47 +86,45 @@ func DoSignUp(
 	return string(body), identityID, nil
 }
 
+type SignInOutput struct {
+	IDToken string `json:"id_token"`
+	User    User   `json:"user"`
+}
+
 func DoSignIn(
 	logins Logins,
 	idp ICustomProvider,
 	entityTable dynamo.Table,
 	signer ISigner,
-) (string, error) {
+) (SignInOutput, error) {
 	identityID, err := idp.GetIdpID(logins)
 	if err != nil {
-		return "", err
+		return SignInOutput{}, err
 	}
-
-	userID := "user##" + identityID
 
 	var userDBO UserDBO
 	if err := entityTable.
-		Get("id", userID).
+		Get("id", "user##"+identityID).
 		Range("sort", dynamo.Equal, "user##detail").
 		One(&userDBO); err != nil {
-		return "", err
+		return SignInOutput{}, err
 	}
 	user := userDBO.FromDBO()
 
 	jsn, err := json.Marshal(user.ToJwtPayload())
 	if err != nil {
-		return "", err
+		return SignInOutput{}, err
 	}
 
 	token, err := signer.Sign(jsn)
 	if err != nil {
-		return "", err
+		return SignInOutput{}, err
 	}
-
-	body, err := json.Marshal(map[string]interface{}{
-		"id_token": string(token),
-		"user":     string(jsn),
-	})
 
 	if user.UserCollectionID == "" {
 		collectionID, err := createUserCollection(user, entityTable)
 		if err != nil {
-			return "", err
+			return SignInOutput{}, err
 		}
 
 		if err := entityTable.
@@ -134,9 +132,14 @@ func DoSignIn(
 			Range("sort", "user##detail").
 			Set("user_collection_id", collectionID).
 			Run(); err != nil {
-			return "", err
+			return SignInOutput{}, err
 		}
+
+		user.UserCollectionID = collectionID
 	}
 
-	return string(body), nil
+	return SignInOutput{
+		IDToken: string(token),
+		User:    user,
+	}, nil
 }
