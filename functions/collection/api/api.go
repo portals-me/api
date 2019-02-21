@@ -21,7 +21,7 @@ func DoList(
 	if err := entityTable.
 		Get("sort", "collection##detail").
 		Index(os.Getenv("SortIndex")).
-		Filter("$ = ?", "sort_value", userID).
+		Range("sort_value", dynamo.Equal, userID).
 		All(&colDBOs); err != nil {
 		return nil, err
 	}

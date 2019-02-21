@@ -137,7 +137,7 @@ export default {
       this.signUpStep ++;
     },
     async signUpWithTwitter () {
-      const twitterAuthURL = await axios.post('${process.env.VUE_APP_API_ENDPOINT}/auth/twitter');
+      const twitterAuthURL = await axios.post(`${process.env.VUE_APP_API_ENDPOINT}/auth/twitter`);
       location.href = twitterAuthURL.data;
     },
     async signUpWithTwitterAfter (token) {
