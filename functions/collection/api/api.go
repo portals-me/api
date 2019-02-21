@@ -34,16 +34,21 @@ func DoList(
 	return cols, nil
 }
 
+type GetOutput struct {
+	Collection
+	OwnerName string `json:"owner_name"`
+}
+
 func DoGet(
 	collectionID string,
 	entityTable dynamo.Table,
-) (Collection, error) {
+) (GetOutput, error) {
 	var colDBO CollectionDBO
 	if err := entityTable.
 		Get("id", "collection##"+collectionID).
 		Range("sort", dynamo.Equal, "collection##detail").
 		One(&colDBO); err != nil {
-		return Collection{}, err
+		return GetOutput{}, err
 	}
 
 	col := colDBO.FromDBO()
@@ -53,15 +58,15 @@ func DoGet(
 		Get("id", col.Owner).
 		Range("sort", dynamo.Equal, "user##detail").
 		One(&userDBO); err != nil {
-		return Collection{}, err
+		return GetOutput{}, err
 	}
 
 	user := userDBO.FromDBO()
 
-	// First-aid
-	col.Owner = user.Name
-
-	return col, nil
+	return GetOutput{
+		Collection: col,
+		OwnerName:  user.Name,
+	}, nil
 }
 
 type CreateInput struct {
