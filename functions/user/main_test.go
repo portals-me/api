@@ -29,7 +29,7 @@ func TestListFeed(t *testing.T) {
 
 	err := feedTable.Put(testEvent).Run()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	err = entityTable.Put(authenticator.UserDBO{
@@ -38,12 +38,12 @@ func TestListFeed(t *testing.T) {
 		Name: "hoge",
 	}).Run()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	items, err := DoListFeed("hoge", entityTable, feedTable)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if len(items) < 1 {
