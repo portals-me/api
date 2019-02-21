@@ -88,7 +88,11 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			body, err := DoSignIn(logins, customProvider, entityTable, signer)
+			output, err := DoSignIn(logins, customProvider, entityTable, signer)
+			if err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+			out, err := json.Marshal(output)
 			if err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
@@ -98,7 +102,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				Headers: map[string]string{
 					"Access-Control-Allow-Origin": "*",
 				},
-				Body: string(body),
+				Body: string(out),
 			}, nil
 		}
 	} else if event.Resource == "/auth/twitter" {

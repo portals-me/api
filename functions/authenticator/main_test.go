@@ -91,14 +91,14 @@ func TestCanSignUpWithGoogle(t *testing.T) {
 
 	var colDBO collection.CollectionDBO
 	if err := entityTable.
-		Get("id", "collection##"+user.Name).
+		Get("id", "collection##"+user.UserCollectionID).
 		Range("sort", dynamo.Equal, "collection##detail").
 		One(&colDBO); err != nil {
 		t.Fatal(err)
 	}
 	col := colDBO.FromDBO()
 
-	if !(col.ID == testUser.Name) {
+	if !(col.Title == testUser.Name) {
 		t.Errorf("Argument does not match: %+v", col)
 	}
 }
@@ -114,7 +114,6 @@ func TestCanSignInWithoutUserCollectionTwice(t *testing.T) {
 		ID:   "user##user-id",
 		Name: "user-name",
 	}
-
 	if err := entityTable.Put(testUser.ToDBO()).Run(); err != nil {
 		t.Fatal(err)
 	}
@@ -127,13 +126,17 @@ func TestCanSignInWithoutUserCollectionTwice(t *testing.T) {
 		Twitter: "id_token",
 	}
 
-	if _, err := DoSignIn(logins, idp, entityTable, signer); err != nil {
+	output, err := DoSignIn(logins, idp, entityTable, signer)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if output.User.UserCollectionID == "" {
+		t.Fatalf("Argument does not match: %+v", output.User)
 	}
 
 	var colDBO collection.CollectionDBO
 	if err := entityTable.
-		Get("id", "collection##"+testUser.Name).
+		Get("id", "collection##"+output.User.UserCollectionID).
 		Range("sort", dynamo.Equal, "collection##detail").
 		One(&colDBO); err != nil {
 		t.Fatal(err)
@@ -141,8 +144,7 @@ func TestCanSignInWithoutUserCollectionTwice(t *testing.T) {
 
 	col := colDBO.FromDBO()
 
-	if !(col.ID == testUser.Name &&
-		col.Title == testUser.Name) {
+	if !(col.Title == testUser.Name) {
 		t.Fatalf("Argument does not match: %+v", col)
 	}
 
