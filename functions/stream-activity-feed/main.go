@@ -115,13 +115,19 @@ func handler(ctx context.Context, event events.SQSEvent) error {
 	var records []events.DynamoDBEventRecord
 
 	for _, record := range event.Records {
-		var eventRecord events.DynamoDBEventRecord
-		err := json.Unmarshal([]byte(record.Body), eventRecord)
+		var snsEntity events.SNSEntity
+		err := json.Unmarshal([]byte(record.Body), &snsEntity)
 		if err != nil {
 			return err
 		}
 
-		records = append(records, eventRecord)
+		var dbEvent events.DynamoDBEventRecord
+		err = json.Unmarshal([]byte(snsEntity.Message), &dbEvent)
+		if err != nil {
+			return err
+		}
+
+		records = append(records, dbEvent)
 	}
 
 	processEvent(
