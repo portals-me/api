@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/guregu/dynamo"
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
-	feed "github.com/myuon/portals-me/functions/entity-stream/lib"
+	feed "github.com/myuon/portals-me/functions/stream-activity-feed/lib"
 )
 
 func TestListFeed(t *testing.T) {
