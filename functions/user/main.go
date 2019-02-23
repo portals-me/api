@@ -76,6 +76,32 @@ func DoGetUser(
 	return user.FromDBO(), nil
 }
 
+type UserFollowRecord struct {
+	ID    string `dynamo:"id"`
+	Sort  string `dynamo:"sort"`
+	Value string `dynamo:"sort_value"`
+}
+
+func DoFollowUser(
+	source string,
+	target string,
+	entityTable dynamo.Table,
+) error {
+	if source == target {
+		return errors.New("Cannot follow oneself")
+	}
+
+	if err := entityTable.Put(UserFollowRecord{
+		ID:    target,
+		Sort:  "user##follow-" + source,
+		Value: target,
+	}).Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	userName := event.PathParameters["userId"]
 
@@ -119,6 +145,19 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				Body:       string(out),
 				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 				StatusCode: 200,
+			}, nil
+		}
+	} else if event.HTTPMethod == "POST" {
+		if event.Resource == "/users/{userId}/follow" {
+			user := event.RequestContext.Authorizer
+
+			if err := DoFollowUser(user["id"].(string), userName, entityTable); err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			return events.APIGatewayProxyResponse{
+				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+				StatusCode: 204,
 			}, nil
 		}
 	}
