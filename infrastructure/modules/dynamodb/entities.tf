@@ -36,6 +36,26 @@ resource "aws_dynamodb_table" "entities" {
   stream_view_type = "NEW_IMAGE"
 }
 
+resource "aws_sns_topic" "entity-stream-fanout" {
+  depends_on = ["aws_dynamodb_table.entities"]
+  count = "${var.stream-count}"
+  name = "${var.service}-${var.stage}-entity-stream-hook"
+}
+
+resource "aws_sqs_queue" "entity-stream-activity-feed-queue" {
+  depends_on = [ "aws_dynamodb_table.entities" ]
+  count = "${var.stream-count}"
+  name = "${var.service}-${var.stage}-entity-stream-feed-queue"
+}
+
+resource "aws_sns_topic_subscription" "entity-stream-activity-feed-target" {
+  depends_on = [ "aws_sns_topic.entity-stream-fanout", "aws_sqs_queue.entity-stream-activity-feed-queue" ]
+  count = "${var.stream-count}"
+  topic_arn = "${aws_sns_topic.entity-stream-fanout.arn}"
+  protocol = "sqs"
+  endpoint = "${aws_sqs_queue.entity-stream-activity-feed-queue.arn}"
+}
+
 resource "aws_lambda_event_source_mapping" "entities-stream" {
   depends_on = ["aws_dynamodb_table.entities"]
   count = "${var.stream-count}"
