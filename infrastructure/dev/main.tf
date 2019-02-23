@@ -36,4 +36,5 @@ module "dynamodb" {
   service = "${var.service}"
 
   entity-stream_arn = "${var.apex_function_entity-stream}"
+  stream-activity-feed_arn = "${var.apex_function_stream-activity-feed}"
 }

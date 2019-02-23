@@ -3,6 +3,7 @@ variable "stream-count" {
   default = 1
 }
 
+variable "stream-activity-feed_arn" {}
 
 resource "aws_dynamodb_table" "entities" {
   name = "${var.service}-${var.stage}-entities"
@@ -89,4 +90,13 @@ resource "aws_lambda_event_source_mapping" "entities-stream" {
   enabled = true
   function_name = "${var.entity-stream_arn}"
   starting_position = "TRIM_HORIZON"
+}
+
+resource "aws_lambda_event_source_mapping" "stream-activity-feed-source" {
+  depends_on = ["aws_dynamodb_table.entities", "aws_sqs_queue.entity-stream-activity-feed-queue"]
+  count = "${var.stream-count}"
+  event_source_arn = "${aws_sqs_queue.entity-stream-activity-feed-queue.arn}"
+  batch_size = 10
+  enabled = true
+  function_name = "${var.stream-activity-feed_arn}"
 }
