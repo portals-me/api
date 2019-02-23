@@ -14,7 +14,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
-	feed "github.com/myuon/portals-me/functions/entity-stream/lib"
+	feed "github.com/myuon/portals-me/functions/stream-activity-feed/lib"
 )
 
 func getUser(s map[string]interface{}) (authenticator.User, error) {

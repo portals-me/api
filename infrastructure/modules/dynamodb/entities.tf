@@ -48,6 +48,31 @@ resource "aws_sqs_queue" "entity-stream-activity-feed-queue" {
   name = "${var.service}-${var.stage}-entity-stream-feed-queue"
 }
 
+resource "aws_sqs_queue_policy" "entity-stream-activity-feed-queue-policy" {
+  count = "${var.stream-count}"
+  queue_url = "${aws_sqs_queue.entity-stream-activity-feed-queue.id}"
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "sqspolicy",
+  "Statement": [
+    {
+      "Sid": "First",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "sqs:SendMessage",
+      "Resource": "${aws_sqs_queue.entity-stream-activity-feed-queue.arn}",
+      "Condition": {
+        "ArnEquals": {
+          "aws:SourceArn": "${aws_sns_topic.entity-stream-fanout.arn}"
+        }
+      }
+    }
+  ]
+}
+POLICY
+}
+
 resource "aws_sns_topic_subscription" "entity-stream-activity-feed-target" {
   depends_on = [ "aws_sns_topic.entity-stream-fanout", "aws_sqs_queue.entity-stream-activity-feed-queue" ]
   count = "${var.stream-count}"

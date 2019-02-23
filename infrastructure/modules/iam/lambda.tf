@@ -31,6 +31,7 @@ data "aws_iam_policy_document" "default-policy-doc" {
       "logs:PutLogEvents",
       "xray:PutTraceSegments",
       "xray:PutTelemetryRecords",
+      "sns:Publish",
     ]
 
     resources = [
