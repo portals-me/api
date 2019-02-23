@@ -30,54 +30,17 @@ func processEvent(
 	for _, record := range records {
 		fmt.Printf("%+v\n", record)
 
-		if record.EventName == "INSERT" &&
-			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
-			record.Change.Keys["sort"].String() == "collection##detail" {
+		event, err := feed.FeedEventFromDynamoEvent(record)
+		if err != nil {
+			return err
+		}
 
-			description := ""
-			if !record.Change.NewImage["description"].IsNull() {
-				description = record.Change.NewImage["description"].String()
-			}
-
-			feed := feed.FeedEvent{
-				UserID:    record.Change.NewImage["sort_value"].String(),
-				Timestamp: record.Change.ApproximateCreationDateTime.Unix(),
-				EventName: "INSERT_COLLECTION",
-				ItemID:    record.Change.Keys["id"].String(),
-				Entity: map[string]interface{}{
-					"title":       record.Change.NewImage["title"].String(),
-					"description": description,
-				},
-			}
-
-			insertItems = append(insertItems, feed)
-		} else if record.EventName == "INSERT" &&
-			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
-			strings.HasPrefix(record.Change.Keys["sort"].String(), "article##") {
-
-			description := ""
-			if !record.Change.NewImage["description"].IsNull() {
-				description = record.Change.NewImage["description"].String()
-			}
-
-			feed := feed.FeedEvent{
-				UserID:    record.Change.NewImage["sort_value"].String(),
-				Timestamp: record.Change.ApproximateCreationDateTime.Unix(),
-				EventName: "INSERT_ARTICLE",
-				ItemID:    record.Change.Keys["id"].String() + "/" + record.Change.Keys["sort"].String(),
-				Entity: map[string]interface{}{
-					"title":       record.Change.NewImage["title"].String(),
-					"description": description,
-				},
-			}
-
-			insertItems = append(insertItems, feed)
-		} else if record.EventName == "REMOVE" &&
-			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
-			record.Change.Keys["sort"].String() == "collection##detail" {
+		if strings.HasPrefix(event.EventName, "INSERT") {
+			insertItems = append(insertItems, event)
+		} else if strings.HasPrefix(event.EventName, "DELETE") {
 			var events []feed.FeedEvent
 			err := table.
-				Get("item_id", record.Change.Keys["id"].String()).
+				Get("item_id", event.ItemID).
 				Index("ItemID").
 				All(&events)
 			if err != nil {
