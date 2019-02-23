@@ -3,7 +3,10 @@ variable "stream-count" {
   default = 1
 }
 
-variable "stream-activity-feed_arn" {}
+variable "stream-activity-feed_arn" {
+  # quick fix for local env undefined
+  default = ""
+}
 
 resource "aws_dynamodb_table" "entities" {
   name = "${var.service}-${var.stage}-entities"

@@ -92,7 +92,7 @@ func DoFollowUser(
 	}
 
 	if err := entityTable.Put(UserFollowRecord{
-		ID:    target,
+		ID:    "user##" + target,
 		Sort:  "user##follow-" + source,
 		Value: target,
 	}).Run(); err != nil {

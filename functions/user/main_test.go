@@ -58,3 +58,41 @@ func TestListFeed(t *testing.T) {
 		t.Fatalf("Argument does not match: %+v vs %+v", event, testEvent)
 	}
 }
+
+func TestCanFollow(t *testing.T) {
+	db := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
+	})
+	entityTable := db.Table(os.Getenv("EntityTable"))
+
+	user1 := authenticator.User{
+		ID:   "1",
+		Name: "test-user-1",
+	}
+	user2 := authenticator.User{
+		ID:   "2",
+		Name: "test-user-2",
+	}
+
+	if err := entityTable.Put(user1.ToDBO()).Run(); err != nil {
+		t.Fatal(err)
+	}
+	if err := entityTable.Put(user2.ToDBO()).Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	err := DoFollowUser(
+		"1",
+		"2",
+		entityTable,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var record UserFollowRecord
+	if err := entityTable.Get("id", "user##2").Range("sort", dynamo.Equal, "user##follow-1").One(&record); err != nil {
+		t.Fatal(err)
+	}
+}
