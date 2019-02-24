@@ -17,3 +17,4 @@ variable "apex_function_authenticator" {}
 variable "apex_function_entity-stream" {}
 variable "apex_function_stream-activity-feed" {}
 variable "apex_function_stream-timeline-feed" {}
+variable "apex_function_timeline" {}

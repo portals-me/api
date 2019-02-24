@@ -17,24 +17,13 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 
 	feed "github.com/myuon/portals-me/functions/stream-activity-feed/lib"
+	. "github.com/myuon/portals-me/functions/stream-timeline-feed/lib"
 	user "github.com/myuon/portals-me/functions/user/lib"
 )
 
 var SQS sqsiface.SQSAPI
 var entityTable dynamo.Table
 var timelineTable dynamo.Table
-
-type TimelineItem struct {
-	ID string `json:"id" dynamo:"id"`
-	feed.FeedEvent
-}
-
-func BuildTimelineItem(ownerID string, item feed.FeedEvent) TimelineItem {
-	return TimelineItem{
-		ID:        ownerID,
-		FeedEvent: item,
-	}
-}
 
 func processEvent(
 	event events.DynamoDBEventRecord,
