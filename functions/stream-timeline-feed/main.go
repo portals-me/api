@@ -57,7 +57,7 @@ func processEvent(
 
 		items := make([]interface{}, len(followers))
 		for index, follower := range followers {
-			target := "user##" + strings.Split(follower.Sort, "user##follow-")[1]
+			target := strings.Split(follower.Sort, "user##follow-")[1]
 			items[index] = BuildTimelineItem(target, feedEvent)
 		}
 

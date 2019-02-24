@@ -2,17 +2,24 @@
   <v-container>
     <v-layout justify-center>
       <v-flex xs8>
-        <v-flex xs12 v-if="user">
-          <v-avatar
-            size="120"
-            color="grey lighten-4"
-          >
-            <img :src="user.picture" alt="avatar">
-          </v-avatar>
+        <v-avatar
+          size="120"
+          color="grey lighten-4"
+        >
+          <img :src="user.picture" alt="avatar">
+        </v-avatar>
 
-          <h2>{{ user.display_name }}</h2>
-          <p>@{{ user.name }}</p>
-        </v-flex>
+        <h2>{{ user.display_name }}</h2>
+        <p>@{{ user.name }}</p>
+
+        <v-btn
+          outline
+          color="indigo"
+          style="margin-left: 0;"
+          @click="follow"
+        >
+          このユーザーをフォロー
+        </v-btn>
 
         <v-flex xs12>
           <v-list>
@@ -65,6 +72,11 @@ import sdk from '@/app/sdk';
 export default class User extends Vue {
   user: any = null;
   feed: Array<any> = [];
+
+  async follow () {
+    const userName = this.$route.params.userId;
+    await sdk.user.follow(userName);
+  }
 
   async mounted () {
     await Promise.all([
