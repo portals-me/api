@@ -32,6 +32,11 @@ const genSDK = (url, getToken, axios) => ({
       return await axios.get(`${url}/collections/${collectionId}/comments`, { headers: { Authorization: `Bearer ${getToken()}` } });
     },
   },
+  timeline: {
+    get: async () => {
+      return await axios.get(`${url}/timeline`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    },
+  },
   collection: {
     create: async (form) => {
       return await axios.post(
