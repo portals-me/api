@@ -37,4 +37,5 @@ module "dynamodb" {
 
   entity-stream_arn = "${var.apex_function_entity-stream}"
   stream-activity-feed_arn = "${var.apex_function_stream-activity-feed}"
+  stream-timeline-feed_arn = "${var.apex_function_stream-timeline-feed}"
 }
