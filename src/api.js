@@ -12,6 +12,9 @@ const genSDK = (url, getToken, axios) => ({
     get: async (userName) => {
       return await axios.get(`${url}/users/${userName}`, { headers: { Authorization: `Bearer ${getToken()}` } });
     },
+    follow: async (userName) => {
+      return await axios.post(`${url}/users/${userName}/follow`, {}, { headers: { Authorization: `Bearer ${getToken()}` } });
+    },
     feed: {
       list: async (userName) => {
         return await axios.get(`${url}/users/${userName}/feed`, { headers: { Authorization: `Bearer ${getToken()}` } });

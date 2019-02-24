@@ -79,17 +79,27 @@ func DoGetUser(
 
 func DoFollowUser(
 	source string,
-	target string,
+	targetName string,
 	entityTable dynamo.Table,
 ) error {
-	if source == target {
+	var targetDBO authenticator.UserDBO
+	if err := entityTable.
+		Get("sort", "user##detail").
+		Range("sort_value", dynamo.Equal, targetName).
+		Index(os.Getenv("SortIndex")).
+		One(&targetDBO); err != nil {
+		return err
+	}
+	target := targetDBO.FromDBO()
+
+	if source == target.ID {
 		return errors.New("Cannot follow oneself")
 	}
 
 	if err := entityTable.Put(UserFollowRecord{
-		ID:    "user##" + target,
+		ID:    target.ID,
 		Sort:  "user##follow-" + source,
-		Value: target,
+		Value: target.ID,
 	}).Run(); err != nil {
 		return err
 	}
