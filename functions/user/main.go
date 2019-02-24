@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
 	feed "github.com/myuon/portals-me/functions/stream-activity-feed/lib"
+	. "github.com/myuon/portals-me/functions/user/lib"
 )
 
 func getUser(s map[string]interface{}) (authenticator.User, error) {
@@ -74,12 +75,6 @@ func DoGetUser(
 	}
 
 	return user.FromDBO(), nil
-}
-
-type UserFollowRecord struct {
-	ID    string `dynamo:"id"`
-	Sort  string `dynamo:"sort"`
-	Value string `dynamo:"sort_value"`
 }
 
 func DoFollowUser(
