@@ -31,4 +31,5 @@ runTest:
 	export EntityTable=portals-me-test-entities; \
 	export SortIndex=DataTable; \
 	export FeedTable=portals-me-test-feeds; \
+	export TimelineTable=portals-me-test-timeline; \
 	go test ./functions/...
