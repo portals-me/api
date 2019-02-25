@@ -15,3 +15,4 @@ variable "apex_function_collection" {}
 variable "apex_function_article" {}
 variable "apex_function_authenticator" {}
 variable "apex_function_entity-stream" {}
+variable "apex_function_timeline" {}
