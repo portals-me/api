@@ -28,6 +28,7 @@ module "apigateway" {
   collection_arn = "${var.apex_function_collection}"
   article_arn = "${var.apex_function_article}"
   authenticator_arn = "${var.apex_function_authenticator}"
+  timeline_arn = "${var.apex_function_timeline}"
 }
 
 module "dynamodb" {
@@ -36,4 +37,6 @@ module "dynamodb" {
   service = "${var.service}"
 
   entity-stream_arn = "${var.apex_function_entity-stream}"
+  stream-activity-feed_arn = "${var.apex_function_stream-activity-feed}"
+  stream-timeline-feed_arn = "${var.apex_function_stream-timeline-feed}"
 }
