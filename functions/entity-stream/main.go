@@ -2,102 +2,32 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"os"
-	"strings"
+
+	"github.com/pkg/errors"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-
-	"github.com/guregu/dynamo"
-
-	feed "github.com/myuon/portals-me/functions/entity-stream/lib"
 )
 
-var db *dynamo.DB
-var table dynamo.Table
+var SNS snsiface.SNSAPI
 
 func handler(ctx context.Context, event events.DynamoDBEvent) error {
-	insertItems := []interface{}{}
-	deleteItems := []dynamo.Keyed{}
-
 	for _, record := range event.Records {
-		fmt.Printf("%+v\n", record)
+		jsn, _ := json.Marshal(record)
 
-		if record.EventName == "INSERT" &&
-			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
-			record.Change.Keys["sort"].String() == "collection##detail" {
-
-			description := ""
-			if !record.Change.NewImage["description"].IsNull() {
-				description = record.Change.NewImage["description"].String()
-			}
-
-			feed := feed.FeedEvent{
-				UserID:    record.Change.NewImage["sort_value"].String(),
-				Timestamp: record.Change.ApproximateCreationDateTime.Unix(),
-				EventName: "INSERT_COLLECTION",
-				ItemID:    record.Change.Keys["id"].String(),
-				Entity: map[string]interface{}{
-					"title":       record.Change.NewImage["title"].String(),
-					"description": description,
-				},
-			}
-
-			insertItems = append(insertItems, feed)
-		} else if record.EventName == "INSERT" &&
-			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
-			strings.HasPrefix(record.Change.Keys["sort"].String(), "article##") {
-
-			description := ""
-			if !record.Change.NewImage["description"].IsNull() {
-				description = record.Change.NewImage["description"].String()
-			}
-
-			feed := feed.FeedEvent{
-				UserID:    record.Change.NewImage["sort_value"].String(),
-				Timestamp: record.Change.ApproximateCreationDateTime.Unix(),
-				EventName: "INSERT_ARTICLE",
-				ItemID:    record.Change.Keys["id"].String() + "/" + record.Change.Keys["sort"].String(),
-				Entity: map[string]interface{}{
-					"title":       record.Change.NewImage["title"].String(),
-					"description": description,
-				},
-			}
-
-			insertItems = append(insertItems, feed)
-		} else if record.EventName == "REMOVE" &&
-			strings.HasPrefix(record.Change.Keys["id"].String(), "collection##") &&
-			record.Change.Keys["sort"].String() == "collection##detail" {
-			var events []feed.FeedEvent
-			err := table.
-				Get("item_id", record.Change.Keys["id"].String()).
-				Index("ItemID").
-				All(&events)
-			if err != nil {
-				return err
-			}
-
-			for _, event := range events {
-				deleteItems = append(deleteItems, dynamo.Keys{event.UserID, event.Timestamp})
-			}
-		}
-	}
-
-	if len(insertItems) > 0 {
-		_, err := table.Batch().Write().Put(insertItems...).Run()
+		_, err := SNS.Publish(&sns.PublishInput{
+			Message:  aws.String(string(jsn)),
+			TopicArn: aws.String(os.Getenv("EntityStreamFanoutTopicArn")),
+		})
 		if err != nil {
-			return err
-		}
-	}
-
-	if len(deleteItems) > 0 {
-		fmt.Printf("%+v\n", deleteItems)
-		_, err := table.Batch("user_id", "timestamp").Write().Delete(deleteItems...).Run()
-		if err != nil {
-			return err
+			return errors.Wrapf(err, "SNS publich failed: %+v", record)
 		}
 	}
 
@@ -105,8 +35,7 @@ func handler(ctx context.Context, event events.DynamoDBEvent) error {
 }
 
 func main() {
-	db = dynamo.New(session.New(), &aws.Config{})
-	table = db.Table(os.Getenv("FeedTable"))
+	SNS = sns.New(session.New(), &aws.Config{})
 
 	lambda.Start(handler)
 }

@@ -14,7 +14,8 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
-	feed "github.com/myuon/portals-me/functions/entity-stream/lib"
+	feed "github.com/myuon/portals-me/functions/stream-activity-feed/lib"
+	. "github.com/myuon/portals-me/functions/user/lib"
 )
 
 func getUser(s map[string]interface{}) (authenticator.User, error) {
@@ -76,6 +77,36 @@ func DoGetUser(
 	return user.FromDBO(), nil
 }
 
+func DoFollowUser(
+	source string,
+	targetName string,
+	entityTable dynamo.Table,
+) error {
+	var targetDBO authenticator.UserDBO
+	if err := entityTable.
+		Get("sort", "user##detail").
+		Range("sort_value", dynamo.Equal, targetName).
+		Index(os.Getenv("SortIndex")).
+		One(&targetDBO); err != nil {
+		return err
+	}
+	target := targetDBO.FromDBO()
+
+	if source == target.ID {
+		return errors.New("Cannot follow oneself")
+	}
+
+	if err := entityTable.Put(UserFollowRecord{
+		ID:    target.ID,
+		Sort:  "user##follow-" + source,
+		Value: target.ID,
+	}).Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	userName := event.PathParameters["userId"]
 
@@ -119,6 +150,19 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				Body:       string(out),
 				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 				StatusCode: 200,
+			}, nil
+		}
+	} else if event.HTTPMethod == "POST" {
+		if event.Resource == "/users/{userId}/follow" {
+			user := event.RequestContext.Authorizer
+
+			if err := DoFollowUser(user["id"].(string), userName, entityTable); err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			return events.APIGatewayProxyResponse{
+				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+				StatusCode: 204,
 			}, nil
 		}
 	}

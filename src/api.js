@@ -12,6 +12,9 @@ const genSDK = (url, getToken, axios) => ({
     get: async (userName) => {
       return await axios.get(`${url}/users/${userName}`, { headers: { Authorization: `Bearer ${getToken()}` } });
     },
+    follow: async (userName) => {
+      return await axios.post(`${url}/users/${userName}/follow`, {}, { headers: { Authorization: `Bearer ${getToken()}` } });
+    },
     feed: {
       list: async (userName) => {
         return await axios.get(`${url}/users/${userName}/feed`, { headers: { Authorization: `Bearer ${getToken()}` } });
@@ -27,6 +30,11 @@ const genSDK = (url, getToken, axios) => ({
     },
     list: async (collectionId) => {
       return await axios.get(`${url}/collections/${collectionId}/comments`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    },
+  },
+  timeline: {
+    get: async () => {
+      return await axios.get(`${url}/timeline`, { headers: { Authorization: `Bearer ${getToken()}` } });
     },
   },
   collection: {
