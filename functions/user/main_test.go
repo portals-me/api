@@ -10,6 +10,7 @@ import (
 	"github.com/guregu/dynamo"
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
 	feed "github.com/myuon/portals-me/functions/stream-activity-feed/lib"
+	. "github.com/myuon/portals-me/functions/user/lib"
 )
 
 func TestListFeed(t *testing.T) {
@@ -67,32 +68,38 @@ func TestCanFollow(t *testing.T) {
 	entityTable := db.Table(os.Getenv("EntityTable"))
 
 	user1 := authenticator.User{
-		ID:   "1",
+		ID:   "user##1",
 		Name: "test-user-1",
 	}
 	user2 := authenticator.User{
-		ID:   "2",
+		ID:   "user##2",
 		Name: "test-user-2",
 	}
 
-	if err := entityTable.Put(user1.ToDBO()).Run(); err != nil {
+	if err := entityTable.
+		Put(user1.ToDBO()).
+		Run(); err != nil {
 		t.Fatal(err)
 	}
-	if err := entityTable.Put(user2.ToDBO()).Run(); err != nil {
+	if err := entityTable.
+		Put(user2.ToDBO()).
+		Run(); err != nil {
 		t.Fatal(err)
 	}
 
-	err := DoFollowUser(
-		"1",
-		"2",
+	if err := DoFollowUser(
+		user1.ID,
+		user2.Name,
 		entityTable,
-	)
-	if err != nil {
+	); err != nil {
 		t.Fatal(err)
 	}
 
 	var record UserFollowRecord
-	if err := entityTable.Get("id", "user##2").Range("sort", dynamo.Equal, "user##follow-1").One(&record); err != nil {
+	if err := entityTable.
+		Get("id", "user##2").
+		Range("sort", dynamo.Equal, "user##follow-user##1").
+		One(&record); err != nil {
 		t.Fatal(err)
 	}
 }
