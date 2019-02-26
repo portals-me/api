@@ -12,11 +12,30 @@
         <h2>{{ user.display_name }}</h2>
         <p>@{{ user.name }}</p>
 
+        <v-dialog
+          v-model="editDialog"
+          width="500"
+          v-if="user.id == me.id"
+        >
+          <v-btn
+            outline
+            color="indigo"
+            style="margin-left: 0;"
+            slot="activator"
+          >
+            プロフィールを編集
+          </v-btn>
+
+          <v-card>
+          </v-card>
+        </v-dialog>
+
         <v-btn
           outline
           color="indigo"
           style="margin-left: 0;"
           @click="follow"
+          v-if="user.id != me.id"
         >
           このユーザーをフォロー
         </v-btn>
@@ -72,6 +91,8 @@ import sdk from '@/app/sdk';
 export default class User extends Vue {
   user: any = null;
   feed: Array<any> = [];
+  me: object = {};
+  editDialog = false;
 
   async follow () {
     const userName = this.$route.params.userId;
@@ -91,6 +112,11 @@ export default class User extends Vue {
         this.feed = result.data;
       })(),
     ]);
+
+    try {
+      this.me = JSON.parse(localStorage.getItem('user') as string);
+    } catch (e) {
+    }
   }
 }
 </script>
