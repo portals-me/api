@@ -27,6 +27,12 @@
           </v-btn>
 
           <v-card>
+            <v-card-title>
+              <edit-user-basic-profile
+                :formData="{ name: user.name, display_name: user.display_name, picture: user.picture }"
+                @submit="updateUserProfile"
+              />
+            </v-card-title>
           </v-card>
         </v-dialog>
 
@@ -85,8 +91,12 @@ import Vue,{ ComponentOptions } from 'vue';
 import { Component } from 'vue-property-decorator';
 import VueRouter from 'vue-router';
 import sdk from '@/app/sdk';
+import EditUserBasicProfile from '@/components/EditUserBasicProfile.vue';
 
 @Component({
+  components: {
+    EditUserBasicProfile,
+  }
 })
 export default class User extends Vue {
   user: any = null;
@@ -97,6 +107,10 @@ export default class User extends Vue {
   async follow () {
     const userName = this.$route.params.userId;
     await sdk.user.follow(userName);
+  }
+
+  async updateUserProfile (form) {
+    console.log(form);
   }
 
   async mounted () {
