@@ -77,6 +77,22 @@ func DoGetUser(
 	return user.FromDBO(), nil
 }
 
+func nameExists(
+	name string,
+	entityTable dynamo.Table,
+) (bool, error) {
+	var userDBO authenticator.UserDBO
+	if err := entityTable.
+		Get("sort", "user##detail").
+		Index(os.Getenv("SortIndex")).
+		Range("sort_value", dynamo.Equal, name).
+		One(&userDBO); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func DoUpdateUser(
 	userID string,
 	user authenticator.User,
@@ -92,7 +108,11 @@ func DoUpdateUser(
 	userRecord := userRecordDBO.FromDBO()
 
 	if user.Name != "" {
-		// name check...
+		ex, err := nameExists(user.Name, entityTable)
+		if ex == true && err == nil {
+			return errors.New("Specified user_name already exists")
+		}
+
 		userRecord.Name = user.Name
 	}
 	if user.DisplayName != "" {
