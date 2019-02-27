@@ -77,6 +77,38 @@ func DoGetUser(
 	return user.FromDBO(), nil
 }
 
+func DoUpdateUser(
+	userID string,
+	user authenticator.User,
+	entityTable dynamo.Table,
+) error {
+	var userRecordDBO authenticator.UserDBO
+	if err := entityTable.
+		Get("id", userID).
+		Range("sort", dynamo.Equal, "user##detail").
+		One(&userRecordDBO); err != nil {
+		return errors.Wrap(err, "getUserByID failed")
+	}
+	userRecord := userRecordDBO.FromDBO()
+
+	if user.Name != "" {
+		// name check...
+		userRecord.Name = user.Name
+	}
+	if user.DisplayName != "" {
+		userRecord.DisplayName = user.DisplayName
+	}
+	if user.Picture != "" {
+		userRecord.Picture = user.Picture
+	}
+
+	if err := entityTable.Put(userRecord.ToDBO()).Run(); err != nil {
+		return errors.Wrap(err, "putUser failed")
+	}
+
+	return nil
+}
+
 func DoFollowUser(
 	source string,
 	targetName string,
@@ -157,6 +189,24 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 			user := event.RequestContext.Authorizer
 
 			if err := DoFollowUser(user["id"].(string), userName, entityTable); err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			return events.APIGatewayProxyResponse{
+				Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+				StatusCode: 204,
+			}, nil
+		}
+	} else if event.HTTPMethod == "PATCH" {
+		if event.Resource == "/users/{userId}" {
+			authorizedUser := event.RequestContext.Authorizer
+
+			var user authenticator.User
+			if err := json.Unmarshal([]byte(event.Body), &user); err != nil {
+				return events.APIGatewayProxyResponse{}, err
+			}
+
+			if err := DoUpdateUser(authorizedUser["id"].(string), user, entityTable); err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
