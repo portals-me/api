@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/gofrs/uuid"
 	"github.com/guregu/dynamo"
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
 	feed "github.com/myuon/portals-me/functions/stream-activity-feed/lib"
@@ -101,5 +102,64 @@ func TestCanFollow(t *testing.T) {
 		Range("sort", dynamo.Equal, "user##follow-user##1").
 		One(&record); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCanUpdate(t *testing.T) {
+	db := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
+	})
+	entityTable := db.Table(os.Getenv("EntityTable"))
+
+	testUser := authenticator.User{
+		ID:          "user##" + uuid.Must(uuid.NewV4()).String(),
+		Name:        "test",
+		DisplayName: "test-display-name",
+	}
+	if err := entityTable.
+		Put(testUser.ToDBO()).
+		Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	newName := uuid.Must(uuid.NewV4()).String()
+	if err := DoUpdateUser(
+		testUser.ID,
+		authenticator.User{
+			Name: newName,
+		},
+		entityTable,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	updatedUser, err := DoGetUser(newName, entityTable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !(updatedUser.ID == testUser.ID && updatedUser.DisplayName == testUser.DisplayName) {
+		t.Fatalf("Unexpected Argument: %+v", updatedUser)
+	}
+
+	if err := DoUpdateUser(
+		testUser.ID,
+		authenticator.User{
+			DisplayName: "piyo",
+			Picture:     "piyo",
+		},
+		entityTable,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	updatedUser, err = DoGetUser(newName, entityTable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !(updatedUser.ID == testUser.ID &&
+		updatedUser.DisplayName == "piyo" &&
+		updatedUser.Picture == "piyo") {
+		t.Fatalf("Unexpected Argument: %+v", updatedUser)
 	}
 }
