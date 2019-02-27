@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -161,5 +162,44 @@ func TestCanUpdate(t *testing.T) {
 		updatedUser.DisplayName == "piyo" &&
 		updatedUser.Picture == "piyo") {
 		t.Fatalf("Unexpected Argument: %+v", updatedUser)
+	}
+}
+
+func TestCannotUpdateWithNonuniqueName(t *testing.T) {
+	db := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
+	})
+	entityTable := db.Table(os.Getenv("EntityTable"))
+
+	testUser1 := authenticator.User{
+		ID:          "user##" + uuid.Must(uuid.NewV4()).String(),
+		Name:        "test1",
+		DisplayName: "test-display-name-1",
+	}
+	if err := entityTable.
+		Put(testUser1.ToDBO()).
+		Run(); err != nil {
+		t.Fatal(err)
+	}
+	testUser2 := authenticator.User{
+		ID:          "user##" + uuid.Must(uuid.NewV4()).String(),
+		Name:        "test2",
+		DisplayName: "test-display-name-2",
+	}
+	if err := entityTable.
+		Put(testUser2.ToDBO()).
+		Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := DoUpdateUser(
+		testUser1.ID,
+		authenticator.User{
+			Name: "test2",
+		},
+		entityTable,
+	); !strings.Contains(err.Error(), "user_name already exists") {
+		t.Fatal(err)
 	}
 }
