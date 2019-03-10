@@ -55,6 +55,7 @@ resource "aws_sqs_queue" "entity-stream-activity-feed-queue" {
   depends_on = [ "aws_dynamodb_table.entities" ]
   count = "${var.stream-count}"
   name = "${var.service}-${var.stage}-entity-stream-feed-queue"
+  receive_wait_time_seconds = 20
 }
 
 resource "aws_sqs_queue_policy" "entity-stream-activity-feed-queue-policy" {
@@ -94,6 +95,7 @@ resource "aws_sqs_queue" "entity-stream-timeline-feed-queue" {
   depends_on = [ "aws_dynamodb_table.entities" ]
   count = "${var.stream-count}"
   name = "${var.service}-${var.stage}-entity-timeline-feed-queue"
+  receive_wait_time_seconds = 20
 }
 
 resource "aws_sqs_queue_policy" "entity-stream-timeline-feed-queue-policy" {
