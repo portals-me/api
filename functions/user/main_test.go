@@ -2,11 +2,13 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/gofrs/uuid"
 	"github.com/guregu/dynamo"
 	authenticator "github.com/myuon/portals-me/functions/authenticator/lib"
 	feed "github.com/myuon/portals-me/functions/stream-activity-feed/lib"
@@ -100,6 +102,104 @@ func TestCanFollow(t *testing.T) {
 		Get("id", "user##2").
 		Range("sort", dynamo.Equal, "user##follow-user##1").
 		One(&record); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCanUpdate(t *testing.T) {
+	db := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
+	})
+	entityTable := db.Table(os.Getenv("EntityTable"))
+
+	testUser := authenticator.User{
+		ID:          "user##" + uuid.Must(uuid.NewV4()).String(),
+		Name:        "test",
+		DisplayName: "test-display-name",
+	}
+	if err := entityTable.
+		Put(testUser.ToDBO()).
+		Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	newName := uuid.Must(uuid.NewV4()).String()
+	if err := DoUpdateUser(
+		testUser.ID,
+		UpdateInput{
+			Name: newName,
+		},
+		entityTable,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	updatedUser, err := DoGetUser(newName, entityTable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !(updatedUser.ID == testUser.ID && updatedUser.DisplayName == testUser.DisplayName) {
+		t.Fatalf("Unexpected Argument: %+v", updatedUser)
+	}
+
+	if err := DoUpdateUser(
+		testUser.ID,
+		UpdateInput{
+			DisplayName: "piyo",
+			Picture:     "piyo",
+		},
+		entityTable,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	updatedUser, err = DoGetUser(newName, entityTable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !(updatedUser.ID == testUser.ID &&
+		updatedUser.DisplayName == "piyo" &&
+		updatedUser.Picture == "piyo") {
+		t.Fatalf("Unexpected Argument: %+v", updatedUser)
+	}
+}
+
+func TestCannotUpdateWithNonuniqueName(t *testing.T) {
+	db := dynamo.New(session.New(), &aws.Config{
+		Region:   aws.String("ap-northeast-1"),
+		Endpoint: aws.String("http://localhost:8000"),
+	})
+	entityTable := db.Table(os.Getenv("EntityTable"))
+
+	testUser1 := authenticator.User{
+		ID:          "user##" + uuid.Must(uuid.NewV4()).String(),
+		Name:        "test1",
+		DisplayName: "test-display-name-1",
+	}
+	if err := entityTable.
+		Put(testUser1.ToDBO()).
+		Run(); err != nil {
+		t.Fatal(err)
+	}
+	testUser2 := authenticator.User{
+		ID:          "user##" + uuid.Must(uuid.NewV4()).String(),
+		Name:        "test2",
+		DisplayName: "test-display-name-2",
+	}
+	if err := entityTable.
+		Put(testUser2.ToDBO()).
+		Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := DoUpdateUser(
+		testUser1.ID,
+		UpdateInput{
+			Name: "test2",
+		},
+		entityTable,
+	); !strings.Contains(err.Error(), "already exists") {
 		t.Fatal(err)
 	}
 }

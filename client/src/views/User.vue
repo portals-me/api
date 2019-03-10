@@ -12,11 +12,36 @@
         <h2>{{ user.display_name }}</h2>
         <p>@{{ user.name }}</p>
 
+        <v-dialog
+          v-model="editDialog"
+          width="500"
+          v-if="user.id == me.id"
+        >
+          <v-btn
+            outline
+            color="indigo"
+            style="margin-left: 0;"
+            slot="activator"
+          >
+            プロフィールを編集
+          </v-btn>
+
+          <v-card>
+            <v-card-title>
+              <edit-user-basic-profile
+                :formData="{ name: user.name, display_name: user.display_name, picture: user.picture }"
+                @submit="updateUserProfile"
+              />
+            </v-card-title>
+          </v-card>
+        </v-dialog>
+
         <v-btn
           outline
           color="indigo"
           style="margin-left: 0;"
           @click="follow"
+          v-if="user.id != me.id"
         >
           このユーザーをフォロー
         </v-btn>
@@ -66,16 +91,26 @@ import Vue,{ ComponentOptions } from 'vue';
 import { Component } from 'vue-property-decorator';
 import VueRouter from 'vue-router';
 import sdk from '@/app/sdk';
+import EditUserBasicProfile from '@/components/EditUserBasicProfile.vue';
 
 @Component({
+  components: {
+    EditUserBasicProfile,
+  }
 })
 export default class User extends Vue {
   user: any = null;
   feed: Array<any> = [];
+  me: object = {};
+  editDialog = false;
 
   async follow () {
     const userName = this.$route.params.userId;
     await sdk.user.follow(userName);
+  }
+
+  async updateUserProfile (form: any) {
+    await sdk.user.update(this.user.id.split('user##ap-northeast-1:')[1], form);
   }
 
   async mounted () {
@@ -91,6 +126,11 @@ export default class User extends Vue {
         this.feed = result.data;
       })(),
     ]);
+
+    try {
+      this.me = JSON.parse(localStorage.getItem('user') as string);
+    } catch (e) {
+    }
   }
 }
 </script>
