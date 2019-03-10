@@ -15,7 +15,21 @@
     <v-avatar color="orange" size="32px">
       <v-img :src="form.picture" />
     </v-avatar>
-    <v-btn depressed>アイコンをアップロード</v-btn>
+    <v-btn
+      depressed
+      @click="uploadIconPicture"
+    >アイコンをアップロード</v-btn>
+
+    <input
+      type="file"
+      accept="image/*"
+      @change="selectFiles"
+    />
+    <div class="preview" v-if="imageData">
+      <img
+        :src="imageData"
+      >
+    </div>
 
     <br />
 
@@ -26,6 +40,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import axios from 'axios'
 import sdk from '@/app/sdk'
 
 export default Vue.extend({
@@ -40,6 +55,7 @@ export default Vue.extend({
         picture: this.formData.picture,
       },
       user_id_icon: 'check',
+      imageData: null,
     };
   },
   methods: {
@@ -56,7 +72,20 @@ export default Vue.extend({
         .catch(_ => {
           this.user_id_icon = 'check';
         });
-    }
+    },
+    async selectFiles(input: any) {
+      const url = URL.createObjectURL(input.target.files[0]);
+      this.imageData = url;
+    },
+    async uploadIconPicture() {
+      const presignedURL = (await sdk.article.generate_presigned_url('user', this.imageData.file.name)).data;
+      await axios.put(presignedURL, this.imageData.file, {
+        headers: { 'Content-Type': this.imageData.file.type },
+      });
+
+      const user = JSON.parse(localStorage.getItem('user') as any);
+      this.form.picture = `https://s3-ap-northeast-1.amazonaws.com/portals-me-storage-users/${encodeURIComponent(user.id)}/user/${this.imageData.file.name}`;
+    },
   },
 })
 </script>

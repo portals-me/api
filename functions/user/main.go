@@ -93,37 +93,47 @@ func nameExists(
 	return true, nil
 }
 
+type UpdateInput struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	Picture     string `json:"picture"`
+}
+
 func DoUpdateUser(
 	userID string,
-	user authenticator.User,
+	input UpdateInput,
 	entityTable dynamo.Table,
 ) error {
-	var userRecordDBO authenticator.UserDBO
+	if !(input.Name != "" &&
+		input.DisplayName != "" &&
+		input.Picture != "") {
+		return errors.New("invalid argument")
+	}
+
+	var userDBO authenticator.UserDBO
 	if err := entityTable.
 		Get("id", userID).
 		Range("sort", dynamo.Equal, "user##detail").
-		One(&userRecordDBO); err != nil {
+		One(&userDBO); err != nil {
 		return errors.Wrap(err, "getUserByID failed")
 	}
-	userRecord := userRecordDBO.FromDBO()
+	user := userDBO.FromDBO()
 
-	if user.Name != "" {
-		ex, err := nameExists(user.Name, entityTable)
-		if ex == true && err == nil {
-			return errors.New("Specified user_name already exists")
+	// user name existance check
+	if user.Name != input.Name {
+		if ex, err := nameExists(input.Name, entityTable); ex == true && err == nil {
+			return errors.New("user_name " + input.Name + " already exists")
 		}
-
-		userRecord.Name = user.Name
-	}
-	if user.DisplayName != "" {
-		userRecord.DisplayName = user.DisplayName
-	}
-	if user.Picture != "" {
-		userRecord.Picture = user.Picture
 	}
 
-	if err := entityTable.Put(userRecord.ToDBO()).Run(); err != nil {
-		return errors.Wrap(err, "putUser failed")
+	var userResultDBO authenticator.UserDBO
+	if err := entityTable.Update("id", userID).
+		Range("sort", "user##detail").
+		Set("name", input.Name).
+		Set("display_name", input.DisplayName).
+		Set("picture", input.Picture).
+		Value(&userResultDBO); err != nil {
+		return err
 	}
 
 	return nil
@@ -217,16 +227,20 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 				StatusCode: 204,
 			}, nil
 		}
-	} else if event.HTTPMethod == "PATCH" {
+	} else if event.HTTPMethod == "PUT" {
 		if event.Resource == "/users/{userId}" {
 			authorizedUser := event.RequestContext.Authorizer
 
-			var user authenticator.User
-			if err := json.Unmarshal([]byte(event.Body), &user); err != nil {
+			var input UpdateInput
+			if err := json.Unmarshal([]byte(event.Body), &input); err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 
-			if err := DoUpdateUser(authorizedUser["id"].(string), user, entityTable); err != nil {
+			if authorizedUser["id"].(string) != "user##ap-northeast-1:"+userName {
+				return events.APIGatewayProxyResponse{}, errors.New("Access Denied")
+			}
+
+			if err := DoUpdateUser(authorizedUser["id"].(string), input, entityTable); err != nil {
 				return events.APIGatewayProxyResponse{}, err
 			}
 

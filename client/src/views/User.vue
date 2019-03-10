@@ -110,7 +110,7 @@ export default class User extends Vue {
   }
 
   async updateUserProfile (form: any) {
-    console.log(form);
+    await sdk.user.update(this.user.id.split('user##ap-northeast-1:')[1], form);
   }
 
   async mounted () {

@@ -16,6 +16,9 @@ export default {
     get: async (userName: string) => {
       return await axios.get(`${url}/users/${userName}`, { headers: { Authorization: `Bearer ${getToken()}` } });
     },
+    update: async (userId: string, form: any) => {
+      return await axios.put(`${url}/users/${userId}`, form, { headers: { Authorization: `Bearer ${getToken()}` } });
+    },
     follow: async (userName: string) => {
       return await axios.post(`${url}/users/${userName}/follow`, {}, { headers: { Authorization: `Bearer ${getToken()}` } });
     },
