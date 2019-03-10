@@ -44,6 +44,16 @@ func TestListFeed(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// check the existence for eventual consistency
+	var user authenticator.UserDBO
+	if err := entityTable.
+		Get("id", "test-user").
+		Consistent(true).
+		Range("sort", dynamo.Equal, "user##detail").
+		One(&user); err != nil {
+		t.Fatal(err)
+	}
+
 	items, err := DoListFeed("hoge", entityTable, feedTable)
 	if err != nil {
 		t.Fatal(err)
