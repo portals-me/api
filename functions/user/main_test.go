@@ -127,7 +127,7 @@ func TestCanUpdate(t *testing.T) {
 	newName := uuid.Must(uuid.NewV4()).String()
 	if err := DoUpdateUser(
 		testUser.ID,
-		authenticator.User{
+		UpdateInput{
 			Name: newName,
 		},
 		entityTable,
@@ -145,7 +145,7 @@ func TestCanUpdate(t *testing.T) {
 
 	if err := DoUpdateUser(
 		testUser.ID,
-		authenticator.User{
+		UpdateInput{
 			DisplayName: "piyo",
 			Picture:     "piyo",
 		},
@@ -195,7 +195,7 @@ func TestCannotUpdateWithNonuniqueName(t *testing.T) {
 
 	if err := DoUpdateUser(
 		testUser1.ID,
-		authenticator.User{
+		UpdateInput{
 			Name: "test2",
 		},
 		entityTable,

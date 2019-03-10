@@ -81,16 +81,17 @@ func nameExists(
 	name string,
 	entityTable dynamo.Table,
 ) (bool, error) {
-	var userDBO authenticator.UserDBO
-	if err := entityTable.
+	count, err := entityTable.
 		Get("sort", "user##detail").
 		Index(os.Getenv("SortIndex")).
 		Range("sort_value", dynamo.Equal, name).
-		One(&userDBO); err != nil {
+		Count()
+
+	if err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return count > 0, nil
 }
 
 type UpdateInput struct {
@@ -104,12 +105,6 @@ func DoUpdateUser(
 	input UpdateInput,
 	entityTable dynamo.Table,
 ) error {
-	if !(input.Name != "" &&
-		input.DisplayName != "" &&
-		input.Picture != "") {
-		return errors.New("invalid argument")
-	}
-
 	var userDBO authenticator.UserDBO
 	if err := entityTable.
 		Get("id", userID).
@@ -120,19 +115,26 @@ func DoUpdateUser(
 	user := userDBO.FromDBO()
 
 	// user name existance check
-	if user.Name != input.Name {
+	if input.Name != "" && user.Name != input.Name {
 		if ex, err := nameExists(input.Name, entityTable); ex == true && err == nil {
 			return errors.New("user_name " + input.Name + " already exists")
 		}
 	}
 
-	var userResultDBO authenticator.UserDBO
-	if err := entityTable.Update("id", userID).
-		Range("sort", "user##detail").
-		Set("name", input.Name).
-		Set("display_name", input.DisplayName).
-		Set("picture", input.Picture).
-		Value(&userResultDBO); err != nil {
+	// create an update query
+	// NB: DynamoDB local not support updateItem onto the sortkey of index
+	if input.Name != "" {
+		user.Name = input.Name
+	}
+	if input.DisplayName != "" {
+		user.DisplayName = input.DisplayName
+	}
+	if input.Picture != "" {
+		user.Picture = input.Picture
+	}
+
+	if err := entityTable.Put(user.ToDBO()).
+		Run(); err != nil {
 		return err
 	}
 
