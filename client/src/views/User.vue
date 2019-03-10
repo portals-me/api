@@ -109,7 +109,7 @@ export default class User extends Vue {
     await sdk.user.follow(userName);
   }
 
-  async updateUserProfile (form) {
+  async updateUserProfile (form: any) {
     console.log(form);
   }
 
