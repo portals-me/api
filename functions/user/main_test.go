@@ -199,7 +199,7 @@ func TestCannotUpdateWithNonuniqueName(t *testing.T) {
 			Name: "test2",
 		},
 		entityTable,
-	); !strings.Contains(err.Error(), "user_name already exists") {
+	); !strings.Contains(err.Error(), "already exists") {
 		t.Fatal(err)
 	}
 }
