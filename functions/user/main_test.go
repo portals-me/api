@@ -45,13 +45,18 @@ func TestListFeed(t *testing.T) {
 	}
 
 	// check the existence for eventual consistency
-	var user authenticator.UserDBO
+	var userDBO authenticator.UserDBO
 	if err := entityTable.
 		Get("id", "test-user").
 		Consistent(true).
 		Range("sort", dynamo.Equal, "user##detail").
-		One(&user); err != nil {
+		One(&userDBO); err != nil {
 		t.Fatal(err)
+	}
+	user := userDBO.FromDBO()
+
+	if user.Name != "hoge" {
+		t.Fatalf("%+v", user)
 	}
 
 	items, err := DoListFeed("hoge", entityTable, feedTable)
