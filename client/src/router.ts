@@ -9,6 +9,7 @@ import Landing from '@/views/Landing.vue';
 import Home from '@/views/Home.vue'
 import Collection from '@/views/Collection.vue';
 import SignIn from '@/views/SignIn.vue';
+import SignUp from '@/views/SignUp.vue';
 import User from '@/views/User.vue';
 
 Vue.use(Router)
@@ -29,7 +30,7 @@ export default new Router({
       path: '/signup',
       name: 'signup',
       components: {
-        default: SignIn,
+        default: SignUp,
         topbar: UnsignedTopBar,
       },
     },
@@ -37,7 +38,7 @@ export default new Router({
       path: '/signup/twitter-callback',
       name: 'signup-twitter-callback',
       components: {
-        default: SignIn,
+        default: SignUp,
         topbar: UnsignedTopBar,
       },
     },
