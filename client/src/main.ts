@@ -5,12 +5,13 @@ import router from './router'
 import App from './App.vue'
 import store from '@/store'
 const vueConfig = require('vue-config');
+const GAuth = require('vue-google-oauth2').default;
 
-const isDev = process.env.NODE_ENV === 'development';
-
+let keys;
 let key = process.env.VUE_APP_TWITTER_KEY;
 try {
-  key = require('../../token/auth.json').twitter;
+  keys = require('../../token/auth.json');
+  key = keys.twitter;
 } catch (e) {
   console.log(e);
 }
@@ -19,7 +20,7 @@ key = key.split('.');
 Vue.use(Vuetify);
 Vue.use(vueConfig, {
   API: process.env.API_ENDPOINT,
-  isDev,
+  isDev: process.env.NODE_ENV === 'development',
   providers: {
     auth: {
       twitter: {
@@ -29,6 +30,10 @@ Vue.use(vueConfig, {
     }
   },
 });
+
+Vue.use(GAuth, {
+  clientId: keys.google || process.env.VUE_APP_GOOGLE_KEY,
+})
 
 new Vue({
   router,
