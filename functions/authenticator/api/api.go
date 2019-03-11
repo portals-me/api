@@ -104,7 +104,7 @@ func DoSignIn(
 ) (SignInOutput, error) {
 	identityID, err := idp.GetIdpID(logins)
 	if err != nil {
-		return SignInOutput{}, err
+		return SignInOutput{}, errors.Wrap(err, "getIdpID failed")
 	}
 
 	var userDBO UserDBO
@@ -112,24 +112,24 @@ func DoSignIn(
 		Get("id", "user##"+identityID).
 		Range("sort", dynamo.Equal, "user##detail").
 		One(&userDBO); err != nil {
-		return SignInOutput{}, err
+		return SignInOutput{}, errors.Wrap(err, "getUserByIdpID failed")
 	}
 	user := userDBO.FromDBO()
 
 	jsn, err := json.Marshal(user.ToJwtPayload())
 	if err != nil {
-		return SignInOutput{}, err
+		return SignInOutput{}, errors.Wrap(err, "json.Marshal failed")
 	}
 
 	token, err := signer.Sign(jsn)
 	if err != nil {
-		return SignInOutput{}, err
+		return SignInOutput{}, errors.Wrap(err, "signer.Sign failed")
 	}
 
 	if user.UserCollectionID == "" {
 		collectionID, err := createUserCollection(user, entityTable)
 		if err != nil {
-			return SignInOutput{}, err
+			return SignInOutput{}, errors.Wrap(err, "createUserCollection failed")
 		}
 
 		if err := entityTable.
@@ -137,7 +137,7 @@ func DoSignIn(
 			Range("sort", "user##detail").
 			Set("user_collection_id", collectionID).
 			Run(); err != nil {
-			return SignInOutput{}, err
+			return SignInOutput{}, errors.Wrap(err, "updateUserCollectionID failed")
 		}
 
 		user.UserCollectionID = collectionID
