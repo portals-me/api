@@ -32,7 +32,7 @@ Vue.use(vueConfig, {
 });
 
 Vue.use(GAuth, {
-  clientId: keys.google || process.env.VUE_APP_GOOGLE_KEY,
+  clientId: (keys && keys.google) || process.env.VUE_APP_GOOGLE_KEY,
 })
 
 new Vue({
