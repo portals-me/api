@@ -1,9 +1,9 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 
-import SideBar from '@/components/SideBar.vue';
-import UnsignedTopBar from '@/components/UnsignedTopBar.vue';
-import TopBar from '@/components/TopBar.vue';
+import SideBar from '@/components/TheSideBar.vue';
+import UnsignedTopBar from '@/components/TheUnsignedTopBar.vue';
+import TopBar from '@/components/TheTopBar.vue';
 
 import Landing from '@/views/Landing.vue';
 import Home from '@/views/Home.vue'
