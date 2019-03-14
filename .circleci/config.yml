@@ -57,6 +57,49 @@ jobs:
       - run: apt update && apt install -y python3 python3-pip
       - run: pip3 install awscli
       - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production && echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production && yarn && yarn deploy
+  build-stg:
+    docker:
+      - image: node
+    steps:
+      - checkout
+      - run: node env.js stg > env.json
+      - run: mkdir -p /tmp/workspace
+      - run: cp env.json /tmp/workspace/
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - env.json
+  deploy-apex-stg:
+    docker: 
+      - image: golang:1.11.5-stretch
+    steps: 
+      - checkout
+      - attach_workspace:
+          at: /tmp/workspace
+      - run: cp /tmp/workspace/env.json ./
+      - run: apt-get install -y curl
+      - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
+      - run: go mod download
+      - run: apex version
+      - run: apex deploy --env-file env.json --env stg
+  deploy-terraform-stg:
+    docker:
+      - image: hashicorp/terraform:light
+    steps:
+      - checkout
+      - run: apk update
+      - run: apk add curl
+      - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
+      - run: apex infra -e stg init
+      - run: apex infra -e stg apply -auto-approve
+  deploy-client-stg:
+    docker:
+      - image: node
+    steps:
+      - checkout
+      - run: apt update && apt install -y python3 python3-pip
+      - run: pip3 install awscli
+      - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production && echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production && yarn && yarn build && aws s3 sync dist s3://portals-me-stg/ --acl public-read
 
 workflows:
   version: 2
@@ -67,10 +110,37 @@ workflows:
           filters:
             branches:
               only: master
+      - deploy-apex-stg:
+          requires:
+            - test
+            - build
+          filters:
+            branches:
+              only: master
+      - deploy-terraform-stg:
+          requires:
+            - test
+            - deploy-apex-stg
+          filters:
+            branches:
+              only: master
+      - deploy-client-stg:
+          requires:
+            - test
+          filters:
+            branches:
+              only: master
+      - approval:
+          type: approval
+          requires:
+            - deploy-apex-stg
+            - deploy-terraform-stg
+            - deploy-client-stg
       - deploy-apex:
           requires:
             - test
             - build
+            - approval
           filters:
             branches:
               only: master
@@ -78,12 +148,14 @@ workflows:
           requires:
             - test
             - deploy-apex
+            - approval
           filters:
             branches:
               only: master
       - deploy-client:
           requires:
             - test
+            - approval
           filters:
             branches:
               only: master

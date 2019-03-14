@@ -1,10 +1,10 @@
-variable "aws_region" {}
+data "aws_region" "current" {}
 variable "authorizer_arn" {}
 
 resource "aws_api_gateway_authorizer" "lambda_authorizer" {
   name = "${var.service}-${var.stage}-lambda_authorizer"
   rest_api_id = "${aws_api_gateway_rest_api.restapi.id}"
-  authorizer_uri = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${var.authorizer_arn}/invocations"
+  authorizer_uri = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${var.authorizer_arn}/invocations"
   authorizer_credentials = "${aws_iam_role.invocation_role.arn}"
 }
 
