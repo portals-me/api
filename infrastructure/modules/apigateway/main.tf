@@ -12,6 +12,7 @@ resource "aws_api_gateway_deployment" "restapi" {
     "module.users",
     "module.collections",
     "module.auth",
+    "module.timeline",
   ]
 
   rest_api_id = "${aws_api_gateway_rest_api.restapi.id}"
