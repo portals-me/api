@@ -99,13 +99,7 @@ jobs:
       - checkout
       - run: apt update && apt install -y python3 python3-pip
       - run: pip3 install awscli
-      - run: |
-        cd client &&
-        echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production &&
-        echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production &&
-        yarn &&
-        yarn build &&
-        aws s3 sync dist s3://portals-me-stg/ --acl public-read
+      - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production && echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production && yarn && yarn build && aws s3 sync dist s3://portals-me-stg/ --acl public-read
 
 workflows:
   version: 2
