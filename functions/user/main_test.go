@@ -23,8 +23,9 @@ func TestListFeed(t *testing.T) {
 	entityTable := db.Table(os.Getenv("EntityTable"))
 	feedTable := db.Table(os.Getenv("FeedTable"))
 
+	userID := uuid.Must(uuid.NewV4()).String()
 	testEvent := feed.FeedEvent{
-		UserID:    "test-user",
+		UserID:    userID,
 		Timestamp: time.Now().Unix(),
 		EventName: "INSERT_COLLECTION",
 		ItemID:    "test-item-id",
@@ -36,7 +37,7 @@ func TestListFeed(t *testing.T) {
 	}
 
 	err = entityTable.Put(authenticator.UserDBO{
-		ID:   "test-user",
+		ID:   userID,
 		Sort: "user##detail",
 		Name: "hoge",
 	}).Run()
@@ -47,7 +48,7 @@ func TestListFeed(t *testing.T) {
 	// check the existence for eventual consistency
 	var userDBO authenticator.UserDBO
 	if err := entityTable.
-		Get("id", "test-user").
+		Get("id", userID).
 		Consistent(true).
 		Range("sort", dynamo.Equal, "user##detail").
 		One(&userDBO); err != nil {
