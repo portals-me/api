@@ -8,11 +8,12 @@ resource "aws_api_gateway_rest_api" "restapi" {
 
 resource "aws_api_gateway_deployment" "restapi" {
   depends_on = [
+    "aws_api_gateway_rest_api.restapi",
     "module.hello",
-    "module.users",
     "module.collections",
     "module.auth",
     "module.timeline",
+    "module.users",
   ]
 
   rest_api_id = "${aws_api_gateway_rest_api.restapi.id}"

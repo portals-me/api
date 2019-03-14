@@ -9,6 +9,7 @@
     "test:unit": "vue-cli-service test:unit"
   },
   "dependencies": {
+    "amazon-cognito-identity-js": "^3.0.9",
     "aws-sdk": "^2.376.0",
     "axios": "^0.18.0",
     "fetch-jsonp": "^1.1.3",
