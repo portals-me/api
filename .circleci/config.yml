@@ -114,14 +114,16 @@ workflows:
   build-deploy:
     jobs:
       - test
-      - build:
+      - build-stg:
+          requires:
+            - test
           filters:
             branches:
               only: master
       - deploy-apex-stg:
           requires:
             - test
-            - build
+            - build-stg
           filters:
             branches:
               only: master
@@ -147,6 +149,9 @@ workflows:
           type: approval
           requires:
             - notify-approval
+      - build:
+          requires:
+            - approval
       - deploy-apex:
           requires:
             - test
