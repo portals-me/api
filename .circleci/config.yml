@@ -57,6 +57,12 @@ jobs:
       - run: apt update && apt install -y python3 python3-pip
       - run: pip3 install awscli
       - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production && echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production && yarn && yarn deploy
+  approval:
+    steps:
+      - run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\": \"Please approve workflow from <https://circleci.com/workflow-run/${CIRCLE_WORKFLOW_ID}|here>.\"}" \
+            $SLACK_WEBHOOK_URL
   build-stg:
     docker:
       - image: node
