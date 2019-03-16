@@ -122,7 +122,6 @@ workflows:
           requires:
             - deploy-apex-stg
             - deploy-terraform-stg
-            - deploy-client-stg
       - approval:
           type: approval
           requires:
