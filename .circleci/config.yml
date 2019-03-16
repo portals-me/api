@@ -57,7 +57,7 @@ jobs:
       - run: apt update && apt install -y python3 python3-pip
       - run: pip3 install awscli
       - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production && echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production && yarn && yarn deploy
-  approval:
+  notify-approval:
     steps:
       - run: |
           curl -X POST -H 'Content-type: application/json' \
@@ -136,17 +136,20 @@ workflows:
           filters:
             branches:
               only: master
-      - approval:
-          type: approval
+      - notify-approval:
           requires:
             - deploy-apex-stg
             - deploy-terraform-stg
             - deploy-client-stg
+      - approval:
+          type: approval
+          requires:
+            - notify-approval
       - deploy-apex:
           requires:
             - test
             - build
-            - approval
+            - notify-approval
           filters:
             branches:
               only: master
@@ -154,14 +157,14 @@ workflows:
           requires:
             - test
             - deploy-apex
-            - approval
+            - notify-approval
           filters:
             branches:
               only: master
       - deploy-client:
           requires:
             - test
-            - approval
+            - notify-approval
           filters:
             branches:
               only: master
