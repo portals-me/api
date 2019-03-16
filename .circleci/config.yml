@@ -58,6 +58,8 @@ jobs:
       - run: pip3 install awscli
       - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production && echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production && yarn && yarn deploy
   notify-approval:
+    docker:
+      - image: node
     steps:
       - run: |
           curl -X POST -H 'Content-type: application/json' \
