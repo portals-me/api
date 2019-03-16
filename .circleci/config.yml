@@ -151,7 +151,7 @@ workflows:
           requires:
             - test
             - build
-            - notify-approval
+            - approval
           filters:
             branches:
               only: master
@@ -159,14 +159,14 @@ workflows:
           requires:
             - test
             - deploy-apex
-            - notify-approval
+            - approval
           filters:
             branches:
               only: master
       - deploy-client:
           requires:
             - test
-            - notify-approval
+            - approval
           filters:
             branches:
               only: master
