@@ -49,14 +49,6 @@ jobs:
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
       - run: apex infra -e prod init
       - run: apex infra -e prod apply -auto-approve
-  deploy-client:
-    docker:
-      - image: node
-    steps:
-      - checkout
-      - run: apt update && apt install -y python3 python3-pip
-      - run: pip3 install awscli
-      - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production && echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production && yarn && yarn deploy
   notify-approval:
     docker:
       - image: node
@@ -100,14 +92,6 @@ jobs:
       - run: curl https://raw.githubusercontent.com/apex/apex/master/install.sh | sh
       - run: apex infra -e stg init
       - run: apex infra -e stg apply -auto-approve
-  deploy-client-stg:
-    docker:
-      - image: node
-    steps:
-      - checkout
-      - run: apt update && apt install -y python3 python3-pip
-      - run: pip3 install awscli
-      - run: cd client && echo "VUE_APP_TWITTER_KEY=$TWITTER_KEY" >> .env.production && echo "VUE_APP_GOOGLE_KEY=$GOOGLE_KEY" >> .env.production && yarn && yarn build && aws s3 sync dist s3://portals-me-stg/ --acl public-read
 
 workflows:
   version: 2
@@ -131,12 +115,6 @@ workflows:
           requires:
             - test
             - deploy-apex-stg
-          filters:
-            branches:
-              only: master
-      - deploy-client-stg:
-          requires:
-            - test
           filters:
             branches:
               only: master
@@ -164,13 +142,6 @@ workflows:
           requires:
             - test
             - deploy-apex
-            - approval
-          filters:
-            branches:
-              only: master
-      - deploy-client:
-          requires:
-            - test
             - approval
           filters:
             branches:
