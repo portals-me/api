@@ -5,20 +5,41 @@ schema {
 }
 
 type Query {
-    getCollection(id: ID): Collection
-    listCollectionsByOwner(owner: String): [Collection]
+    getCollection(
+        id: ID
+    ): Collection
+    listCollectionsByOwner(
+        owner: String
+    ): [Collection]
 }
 
 type Mutation {
     addCollection(
-        id: ID!,
-        owner: String!,
-        title: String,
-    ): Collection!
+        owner: String!
+        name: String!
+        title: String
+        description: String
+    ): ID!
+    updateCollection(
+        id: ID!
+        title: String
+        description: String
+    ): ID
+    updateCollectionName(
+        id: ID!
+        name: String!
+    ): ID
+    deleteCollection(
+        id: ID!
+    ): ID
 }
 
 type Collection {
-    id: ID!,
-    owner: String!,
-    title: String,
+    id: ID!
+    owner: String!
+    name: String!
+    title: String
+    description: String
+    created_at: AWSTimestamp!
+    updated_at: AWSTimestamp!
 }

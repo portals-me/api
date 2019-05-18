@@ -100,12 +100,74 @@ const AddCollectionResolver = new aws.appsync.Resolver(`appsync-add-collection`,
     "version": "2017-02-28",
     "operation": "PutItem",
     "key": {
-      "id": { "S": "\${context.arguments.id}" },
+      "id": { "S": "\${util.autoId()}" },
       "sort-id": { "S": "detail" }
     },
     "attributeValues": {
       "owner": { "S": "\${context.arguments.owner}" },
-      "title": { "S": "\${context.arguments.title}" }
+      "name": { "S": "\${context.arguments.name}" },
+      "title": { "S": "\${context.arguments.title}" },
+      "description": { "S": "\${context.arguments.description}" },
+      "created_at": { "N": $util.time.nowEpochSeconds() },
+      "updated_at": { "N": $util.time.nowEpochSeconds() }
+    }
+  }`,
+  responseTemplate: `$utils.toJson($context.result)`,
+  type: 'Mutation',
+});
+
+const UpdateCollectionResolver = new aws.appsync.Resolver(`appsync-update-collection`, {
+  apiId: GraphQLApi.id,
+  dataSource: CollectionTableDataSource.name,
+  field: 'updateCollection',
+  requestTemplate: `{
+    "version": "2017-02-28",
+    "operation": "PutItem",
+    "key": {
+      "id": { "S": "\${context.arguments.name}" },
+      "sort-id": { "S": "detail" }
+    },
+    "attributeValues": {
+      "owner": { "S": "\${context.arguments.owner}" },
+      "title": { "S": "\${context.arguments.title}" },
+      "description": { "S": "\${context.arguments.description}" },
+      "updated_at": { "N": $util.time.nowEpochSeconds() }
+    }
+  }`,
+  responseTemplate: `$utils.toJson($context.result)`,
+  type: 'Mutation',
+});
+
+const UpdateCollectionNameResolver = new aws.appsync.Resolver(`appsync-update-collection-name`, {
+  apiId: GraphQLApi.id,
+  dataSource: CollectionTableDataSource.name,
+  field: 'updateCollectionName',
+  requestTemplate: `{
+    "version": "2017-02-28",
+    "operation": "PutItem",
+    "key": {
+      "id": { "S": "\${context.arguments.id}" },
+      "sort-id": { "S": "detail" }
+    },
+    "attributeValues": {
+      "name": { "S": "\${context.arguments.name}" },
+      "updated_at": { "N": $util.time.nowEpochSeconds() }
+    }
+  }`,
+  responseTemplate: `$utils.toJson($context.result)`,
+  type: 'Mutation',
+});
+
+const DeleteCollectionResolver = new aws.appsync.Resolver(`appsync-delete-collection-name`, {
+  apiId: GraphQLApi.id,
+  dataSource: CollectionTableDataSource.name,
+  field: 'deleteCollection',
+  requestTemplate: `{
+    "version": "2017-02-28",
+    "operation": "DeleteItem",
+    "key": {
+      "id": { "S": "\${context.arguments.id}" },
+      "sort-id": { "S": "detail" }
     }
   }`,
   responseTemplate: `$utils.toJson($context.result)`,
