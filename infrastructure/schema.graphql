@@ -1,0 +1,24 @@
+
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+type Query {
+    getCollection(id: ID): Collection
+    listCollectionsByOwner(owner: String): [Collection]
+}
+
+type Mutation {
+    addCollection(
+        id: ID!,
+        owner: String!,
+        title: String,
+    ): Collection!
+}
+
+type Collection {
+    id: ID!,
+    owner: String!,
+    title: String,
+}
