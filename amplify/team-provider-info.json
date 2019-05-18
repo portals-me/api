@@ -1,0 +1,14 @@
+{
+    "test": {
+        "awscloudformation": {
+            "AuthRoleName": "portals-me-test-20190519005537-authRole",
+            "UnauthRoleArn": "arn:aws:iam::941528793676:role/portals-me-test-20190519005537-unauthRole",
+            "AuthRoleArn": "arn:aws:iam::941528793676:role/portals-me-test-20190519005537-authRole",
+            "Region": "ap-northeast-1",
+            "DeploymentBucketName": "portals-me-test-20190519005537-deployment",
+            "UnauthRoleName": "portals-me-test-20190519005537-unauthRole",
+            "StackName": "portals-me-test-20190519005537",
+            "StackId": "arn:aws:cloudformation:ap-northeast-1:941528793676:stack/portals-me-test-20190519005537/60d25880-7985-11e9-af17-0e842c318628"
+        }
+    }
+}
