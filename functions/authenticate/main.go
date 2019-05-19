@@ -14,6 +14,8 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 
 	"github.com/guregu/dynamo"
+
+	. "github.com/myuon/portals-me/functions/authenticate/lib"
 )
 
 var authTableName = os.Getenv("authTable")
@@ -21,13 +23,13 @@ var jwtPrivateKey = os.Getenv("jwtPrivate")
 
 type Record struct {
 	ID        string `dynamo:"id"`
-	sort      string `dynamo:"sort"`
-	checkData string `dynamo:"checkData"`
+	Sort      string `dynamo:"sort"`
+	CheckData string `dynamo:"check_data"`
 }
 
 type Input struct {
-	authType string      `json:"auth_type"`
-	data     interface{} `json:"data"`
+	AuthType string      `json:"auth_type"`
+	Data     interface{} `json:"data"`
 }
 
 type JwtPayload struct {
@@ -40,28 +42,29 @@ type AuthMethod interface {
 }
 
 type Password struct {
-	userName string `json:"user_name"`
-	password string `json:"password"`
+	UserName string `json:"user_name"`
+	Password string `json:"password"`
 }
 
 func (password Password) createJwt(table dynamo.Table) (string, error) {
+	p, _ := HashPassword(password.Password)
+	fmt.Println(p)
+
 	var record Record
 	if err := table.
-		Get("sort", "name-pass##"+password.userName).
+		Get("sort", "name-pass##"+password.UserName).
 		Index("auth").
 		One(&record); err != nil {
-		return "", errors.Wrap(err, "UserName not found")
+		return "", errors.New("UserName not found: " + password.UserName)
 	}
 
-	hash, _ := HashPassword(password.password)
-	fmt.Println(hash)
-	if err := VerifyPassword(password.password, record.checkData); err != nil {
+	if err := VerifyPassword(record.CheckData, password.Password); err != nil {
 		return "", errors.Wrap(err, "Invalid Password")
 	}
 
 	payload, err := json.Marshal(JwtPayload{
 		ID:       record.ID,
-		UserName: password.userName,
+		UserName: password.UserName,
 	})
 	if err != nil {
 		panic(err)
@@ -84,10 +87,10 @@ func createAuthMethod(body string) (AuthMethod, error) {
 		return nil, errors.Wrap(err, "Unmarshal failed")
 	}
 
-	if input.authType == "password" {
+	if input.AuthType == "password" {
 		var password Password
 
-		data, _ := json.Marshal(input.data)
+		data, _ := json.Marshal(input.Data)
 		if err := json.Unmarshal([]byte(data), &password); err != nil {
 			return nil, errors.Wrap(err, "Unmarshal password failed")
 		}
@@ -95,7 +98,7 @@ func createAuthMethod(body string) (AuthMethod, error) {
 		return password, nil
 	}
 
-	return nil, errors.New("Unsupported auth_type: " + input.authType)
+	return nil, errors.New("Unsupported auth_type: " + input.AuthType)
 }
 
 /*	POST /authenticate
@@ -104,15 +107,17 @@ func createAuthMethod(body string) (AuthMethod, error) {
 	returns String (jwt)
 */
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	sess := session.Must(session.NewSession())
-
-	db := dynamo.NewFromIface(dynamodb.New(sess))
-	authTable := db.Table(authTableName)
+	fmt.Println(request.Body)
 
 	method, err := createAuthMethod(request.Body)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
+
+	sess := session.Must(session.NewSession())
+
+	db := dynamo.NewFromIface(dynamodb.New(sess))
+	authTable := db.Table(authTableName)
 
 	jwt, err := method.createJwt(authTable)
 	if err != nil {

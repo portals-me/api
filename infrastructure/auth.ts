@@ -53,12 +53,12 @@ new aws.iam.RolePolicyAttachment('auth-lambda-role-lambdafull', {
 const handlerAuth = new aws.lambda.Function('handler-auth', {
   runtime: aws.lambda.Go1dxRuntime,
   code: new pulumi.asset.FileArchive((async () => {
-    await chpExec('GOOS=linux GOARCH=amd64 go -o dist/functions/authenticate/main functions/authenticate/main.go');
-    await chpExec('zip dist/functions/authenticate/main.zip dist/functions/authenticate/main');
+    await chpExec('GOOS=linux GOARCH=amd64 go build -o ../dist/functions/authenticate/main ../functions/authenticate/main.go');
+    await chpExec('zip -j ../dist/functions/authenticate/main.zip ../dist/functions/authenticate/main');
 
-    return 'dist/functions/authenticate/main.zip';
+    return '../dist/functions/authenticate/main.zip';
   })()),
-  timeout: 3,
+  timeout: 10,
   memorySize: 128,
   handler: 'main',
   role: lambdaRole.arn,
