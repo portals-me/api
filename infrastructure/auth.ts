@@ -3,6 +3,9 @@ import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as fs from 'fs';
 import * as chp from 'child_process';
+import * as util from 'util';
+
+const chpExec = util.promisify(chp.exec);
 
 const config = {
   service: new pulumi.Config().name,
@@ -23,6 +26,12 @@ const accountTable = new aws.dynamodb.Table('account-table', {
   hashKey: 'id',
   rangeKey: 'sort',
   billingMode: 'PAY_PER_REQUEST',
+  globalSecondaryIndexes: [{
+    name: 'auth',
+    hashKey: 'sort',
+    rangeKey: 'id',
+    projectionType: 'ALL',
+  }],
 });
 
 const lambdaRole = new aws.iam.Role('auth-lambda-role', {
@@ -41,10 +50,14 @@ new aws.iam.RolePolicyAttachment('auth-lambda-role-lambdafull', {
   policyArn: aws.iam.AWSLambdaFullAccess,
 });
 
-chp.exec('GOOS=linux GOARCH=amd64 go build -o dist/functions/authenticate/main functions/authenticate/main.go && zip dist/functions/authenticate/main.zip dist/functions/authenticate/main');
 const handlerAuth = new aws.lambda.Function('handler-auth', {
   runtime: aws.lambda.Go1dxRuntime,
-  code: new pulumi.asset.FileArchive('dist/functions/authenticate/main.zip'),
+  code: new pulumi.asset.FileArchive((async () => {
+    await chpExec('GOOS=linux GOARCH=amd64 go -o dist/functions/authenticate/main functions/authenticate/main.go');
+    await chpExec('zip dist/functions/authenticate/main.zip dist/functions/authenticate/main');
+
+    return 'dist/functions/authenticate/main.zip';
+  })()),
   timeout: 3,
   memorySize: 128,
   handler: 'main',
@@ -52,6 +65,8 @@ const handlerAuth = new aws.lambda.Function('handler-auth', {
   environment: {
     variables: {
       timestamp: new Date().toLocaleString(),
+      authTable: accountTable.name,
+      jwtPrivate: fs.readFileSync('../token/jwtES256.key').toString(),
     }
   },
   name: `${config.service}-${config.stage}-auth`
