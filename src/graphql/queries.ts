@@ -1,7 +1,7 @@
 // tslint:disable
 // this is an auto generated file. This will be overwritten
 
-export const getCollection = `query GetCollection($id: ID) {
+export const getCollection = `query GetCollection($id: ID!) {
   getCollection(id: $id) {
     id
     owner
@@ -13,7 +13,7 @@ export const getCollection = `query GetCollection($id: ID) {
   }
 }
 `;
-export const listCollectionsByOwner = `query ListCollectionsByOwner($owner: String) {
+export const listCollectionsByOwner = `query ListCollectionsByOwner($owner: String!) {
   listCollectionsByOwner(owner: $owner) {
     id
     owner

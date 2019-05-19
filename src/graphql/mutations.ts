@@ -12,7 +12,15 @@ export const addCollection = `mutation AddCollection(
     name: $name
     title: $title
     description: $description
-  )
+  ) {
+    id
+    owner
+    name
+    title
+    description
+    created_at
+    updated_at
+  }
 }
 `;
 export const updateCollection = `mutation UpdateCollection($id: ID!, $title: String, $description: String) {
@@ -24,6 +32,14 @@ export const updateCollectionName = `mutation UpdateCollectionName($id: ID!, $na
 }
 `;
 export const deleteCollection = `mutation DeleteCollection($id: ID!) {
-  deleteCollection(id: $id)
+  deleteCollection(id: $id) {
+    id
+    owner
+    name
+    title
+    description
+    created_at
+    updated_at
+  }
 }
 `;

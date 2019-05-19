@@ -9,7 +9,16 @@ export type AddCollectionMutationVariables = {
 };
 
 export type AddCollectionMutation = {
-  addCollection: string,
+  addCollection:  {
+    __typename: "Collection",
+    id: string,
+    owner: string,
+    name: string,
+    title: string | null,
+    description: string | null,
+    created_at: string,
+    updated_at: string,
+  },
 };
 
 export type UpdateCollectionMutationVariables = {
@@ -19,7 +28,7 @@ export type UpdateCollectionMutationVariables = {
 };
 
 export type UpdateCollectionMutation = {
-  updateCollection: string | null,
+  updateCollection: string,
 };
 
 export type UpdateCollectionNameMutationVariables = {
@@ -28,7 +37,7 @@ export type UpdateCollectionNameMutationVariables = {
 };
 
 export type UpdateCollectionNameMutation = {
-  updateCollectionName: string | null,
+  updateCollectionName: string,
 };
 
 export type DeleteCollectionMutationVariables = {
@@ -36,11 +45,20 @@ export type DeleteCollectionMutationVariables = {
 };
 
 export type DeleteCollectionMutation = {
-  deleteCollection: string | null,
+  deleteCollection:  {
+    __typename: "Collection",
+    id: string,
+    owner: string,
+    name: string,
+    title: string | null,
+    description: string | null,
+    created_at: string,
+    updated_at: string,
+  },
 };
 
 export type GetCollectionQueryVariables = {
-  id?: string | null,
+  id: string,
 };
 
 export type GetCollectionQuery = {
@@ -57,7 +75,7 @@ export type GetCollectionQuery = {
 };
 
 export type ListCollectionsByOwnerQueryVariables = {
-  owner?: string | null,
+  owner: string,
 };
 
 export type ListCollectionsByOwnerQuery = {
