@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as fs from 'fs';
+import './auth';
 
 const config = {
   service: new pulumi.Config().name,
