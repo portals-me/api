@@ -55,7 +55,7 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
-"@pulumi/aws@^0.18.1", "@pulumi/aws@latest":
+"@pulumi/aws@^0.18.1", "@pulumi/aws@^0.18.3":
   version "0.18.3"
   resolved "https://registry.yarnpkg.com/@pulumi/aws/-/aws-0.18.3.tgz#03cb83a1f131565935d6b3f9f185b9335a26c6ac"
   integrity sha512-1j89hTDZycuvCREEC9/ACjE7Vcbf4xhVzhb5rbJANAFW0YN5ZA5vfQXE/KCXi52L8HyyO7wO12nSjm6J7T9vjA==
@@ -67,7 +67,7 @@
     read-package-tree "^5.2.1"
     resolve "^1.7.1"
 
-"@pulumi/awsx@latest":
+"@pulumi/awsx@^0.18.4":
   version "0.18.4"
   resolved "https://registry.yarnpkg.com/@pulumi/awsx/-/awsx-0.18.4.tgz#1e3c61bdd5d031835ebfd5300df5f7f76594000a"
   integrity sha512-e+nbglbtCnZXbmHnnpkSiA79SdzxQeLAbV/k+YAY9dc3zdx9xdZr0jwZgskjJKC6MivgjIP6rYCFQUxc/wfr+g==
@@ -86,7 +86,7 @@
     "@pulumi/pulumi" "^v0.17.0"
     semver "^5.4.0"
 
-"@pulumi/pulumi@^0.17.6", "@pulumi/pulumi@^0.17.8", "@pulumi/pulumi@^v0.17.0", "@pulumi/pulumi@latest":
+"@pulumi/pulumi@^0.17.12", "@pulumi/pulumi@^0.17.6", "@pulumi/pulumi@^0.17.8", "@pulumi/pulumi@^v0.17.0":
   version "0.17.12"
   resolved "https://registry.yarnpkg.com/@pulumi/pulumi/-/pulumi-0.17.12.tgz#f4e2c3f26e44cbeaa81ba8a87f00f6433e9b7ef4"
   integrity sha512-JPf0FwJboAdOP8upy26w0zhpDFPBKIMcw/6jRpgXHZKp9FZjRa4Yzn+nOKeUMUsUTqIbGHKpYNDFJTdTItCCaA==
@@ -118,7 +118,7 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.14.7.tgz#1854f0a9aa8d2cd6818d607b3d091346c6730362"
   integrity sha512-on4MmIDgHXiuJDELPk1NFaKVUxxCFr37tm8E9yN6rAiF5Pzp/9bBfBHkoexqRiY+hk/Z04EJU9kKEb59YqJ82A==
 
-"@types/node@latest":
+"@types/node@^12.0.2":
   version "12.0.2"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.0.2.tgz#3452a24edf9fea138b48fad4a0a028a683da1e40"
   integrity sha512-5tabW/i+9mhrfEOUcLDu2xBPsHJ+X5Orqy9FKpale3SjDA17j5AEpYq5vfy3oAeAHGcvANRCO3NV3d2D6q3NiA==
