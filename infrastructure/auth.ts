@@ -11,6 +11,12 @@ const config = {
   service: new pulumi.Config().name,
   stage: pulumi.getStack(),
 };
+const parameter = {
+  jwtPrivate: aws.ssm.getParameter({
+    name: `${config.service}-${config.stage}-jwt-private`,
+    withDecryption: true,
+  }).then(result => result.value)
+};
 
 const accountTable = new aws.dynamodb.Table('account-table', {
   attributes: [
@@ -66,7 +72,7 @@ const handlerAuth = new aws.lambda.Function('handler-auth', {
     variables: {
       timestamp: new Date().toLocaleString(),
       authTable: accountTable.name,
-      jwtPrivate: fs.readFileSync('../token/jwtES256.key').toString(),
+      jwtPrivate: parameter.jwtPrivate,
     }
   },
   name: `${config.service}-${config.stage}-auth`
