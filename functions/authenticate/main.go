@@ -48,9 +48,6 @@ type Password struct {
 }
 
 func (password Password) createJwt(table dynamo.Table) (string, error) {
-	p, _ := HashPassword(password.Password)
-	fmt.Println(p)
-
 	var record Record
 	if err := table.
 		Get("sort", "name-pass##"+password.UserName).
