@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -101,15 +102,26 @@ func createAuthMethod(body string) (AuthMethod, error) {
 	return nil, errors.New("Unsupported auth_type: " + input.AuthType)
 }
 
+func tryDecodeBase64(s string) string {
+	decoded, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return s
+	}
+
+	return string(decoded)
+}
+
 /*	POST /authenticate
 
 	expects Input
 	returns String (jwt)
 */
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Println(request.Body)
+	// try base64 decoding
+	body := tryDecodeBase64(request.Body)
+	fmt.Println(body)
 
-	method, err := createAuthMethod(request.Body)
+	method, err := createAuthMethod(body)
 	if err != nil {
 		return events.APIGatewayProxyResponse{Body: err.Error(), StatusCode: 400}, nil
 	}
