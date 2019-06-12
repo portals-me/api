@@ -2,13 +2,15 @@ service: portals-me-cfn
 
 plugins:
   - serverless-go-build
+  - serverless-appsync-plugin
 
 provider:
   name: aws
-  runtime: go1.x
+  region: ap-northeast-1
   stage: ${opt:stage, 'dev'}
   memorySize: 128
   timeout: 10
+  runtime: go1.x
 
 package:
   individually: true
@@ -17,3 +19,38 @@ functions:
   authorizer:
     handler: ../functions/authenticate/main.go
     name: ${self:service}-${self:provider.stage}-authorizer
+
+custom:
+  appSync:
+    name: ${self:service}-api
+    authenticationType: API_KEY
+    schema: schema.graphql
+    dataSources:
+      - type: AMAZON_DYNAMODB
+        name: collectionTableDataSource
+        config:
+          tableName:
+            Ref: collectionTable
+          iamRoleStatements:
+            - Effect: Allow
+              Action:
+                - 'dynamodb:GetItem'
+              Resource: '*'
+
+resources:
+  Resources:
+    collectionTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:service}-${self:provider.stage}-collection
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: sort-id
+            KeyType: RANGE
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: sort-id
+            AttributeType: S
