@@ -1,0 +1,19 @@
+service: portals-me-cfn
+
+plugins:
+  - serverless-go-build
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: ${opt:stage, 'dev'}
+  memorySize: 128
+  timeout: 10
+
+package:
+  individually: true
+
+functions:
+  authorizer:
+    handler: ../functions/authenticate/main.go
+    name: ${self:service}-${self:provider.stage}-authorizer

@@ -28,3 +28,5 @@ aws-exports.js
 awsconfiguration.json
 
 src/graphql/schema.json
+infrastructure/functions
+

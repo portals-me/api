@@ -1,7 +1,8 @@
 {
     "name": "aws-typescript",
     "devDependencies": {
-        "@types/node": "^12.0.2"
+        "@types/node": "^12.0.2",
+        "serverless-go-build": "^0.0.6"
     },
     "dependencies": {
         "@pulumi/aws": "^0.18.3",
