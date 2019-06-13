@@ -1,0 +1,16 @@
+{
+  "version": "2017-02-28",
+  "operation": "PutItem",
+  "key": {
+    "id": { "S": "${util.autoId()}" },
+    "sort-id": { "S": "detail" }
+  },
+  "attributeValues": {
+    "owner": { "S": "${context.arguments.owner}" },
+    "name": { "S": "${context.arguments.name}" },
+    "title": { "S": "${context.arguments.title}" },
+    "description": { "S": "${context.arguments.description}" },
+    "created_at": { "N": $util.time.nowEpochSeconds() },
+    "updated_at": { "N": $util.time.nowEpochSeconds() }
+  }
+}

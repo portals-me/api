@@ -1,0 +1,12 @@
+{
+  "version": "2017-02-28",
+  "operation": "PutItem",
+  "key": {
+    "id": { "S": "${context.arguments.id}" },
+    "sort-id": { "S": "detail" }
+  },
+  "attributeValues": {
+    "name": { "S": "${context.arguments.name}" },
+    "updated_at": { "N": $util.time.nowEpochSeconds() }
+  }
+}

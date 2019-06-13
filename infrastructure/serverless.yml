@@ -27,7 +27,7 @@ custom:
     schema: schema.graphql
     dataSources:
       - type: AMAZON_DYNAMODB
-        name: collectionTableDataSource
+        name: collection
         config:
           tableName:
             Ref: collectionTable
@@ -36,6 +36,33 @@ custom:
               Action:
                 - 'dynamodb:GetItem'
               Resource: '*'
+    mappingTemplatesLocation: './vtl'
+    mappingTemplates:
+      - dataSource: collection
+        type: Query
+        field: getCollection
+        request: GetCollection.vtl
+        response: JsonResponse.vtl
+      - dataSource: collection
+        type: Mutation
+        field: addCollection
+        request: AddCollection.vtl
+        response: JsonResponse.vtl
+      - dataSource: collection
+        type: Mutation
+        field: updateCollection
+        request: UpdateCollection.vtl
+        response: JsonResponse.vtl
+      - dataSource: collection
+        type: Mutation
+        field: updateCollectionName
+        request: UpdateCollection.vtl
+        response: JsonResponse.vtl
+      - dataSource: collection
+        type: Mutation
+        field: deleteCollection
+        request: DeleteCollection.vtl
+        response: JsonResponse.vtl
 
 resources:
   Resources:
