@@ -34,7 +34,7 @@ custom:
           iamRoleStatements:
             - Effect: Allow
               Action:
-                - 'dynamodb:GetItem'
+                - 'dynamodb:*'
               Resource: '*'
     mappingTemplatesLocation: './vtl'
     mappingTemplates:

@@ -16,6 +16,9 @@ backend.plan
 go/
 go.sum
 
+src/graphql/schema.json
+infrastructure/functions
+
 #amplify
 amplify/\#current-cloud-backend
 amplify/.config/local-*
@@ -26,7 +29,3 @@ dist/
 node_modules/
 aws-exports.js
 awsconfiguration.json
-
-src/graphql/schema.json
-infrastructure/functions
-

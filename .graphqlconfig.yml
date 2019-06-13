@@ -1,5 +1,5 @@
 projects:
-  api-0cac86a:
+  portals-me-cfn-api:
     schemaPath: src/graphql/schema.json
     includes:
       - src/graphql/**/*.ts

@@ -50,7 +50,7 @@ describe('Collection', () => {
         } as API.DeleteCollectionMutationVariables,
       });
       expect(result.data).toEqual(expect.anything());
-      expect(result.data.deleteCollection).toBe(collection.id);
+      expect(result.data.deleteCollection.id).toBe(collection.id);
     });
   });
 });
