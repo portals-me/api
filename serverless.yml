@@ -17,7 +17,7 @@ package:
 
 functions:
   authorizer:
-    handler: ../functions/authenticate/main.go
+    handler: functions/authorizer/main.go
     name: ${self:service}-${self:provider.stage}-authorizer
 
 custom:
@@ -26,6 +26,14 @@ custom:
     authenticationType: API_KEY
     schema: schema.graphql
     dataSources:
+      - type: AWS_LAMBDA
+        name: authorizer
+        config:
+          functionName: authorizer
+          iamRoleStatements:
+            - Effect: Allow
+              Action: 'lambda:invokeFunction'
+              Resource: '*'
       - type: AMAZON_DYNAMODB
         name: collection
         config:
@@ -48,6 +56,9 @@ custom:
         field: addCollection
         request: AddCollection.vtl
         response: JsonResponse.vtl
+        kind: PIPELINE
+        functions:
+          - authorizer
       - dataSource: collection
         type: Mutation
         field: updateCollection
@@ -63,6 +74,14 @@ custom:
         field: deleteCollection
         request: DeleteCollection.vtl
         response: JsonResponse.vtl
+    functionConfigurations:
+      - dataSource: authorizer
+        name: authorizer
+        request: AuthorizerRequest.vtl
+        response: AuthorizerResponse.vtl
+    logConfig:
+      loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
+      level: ALL
 
 resources:
   Resources:

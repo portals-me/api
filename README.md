@@ -1,4 +1,4 @@
-# portals-me
+# portals-me/api
 
 [![CircleCI](https://circleci.com/gh/myuon/portals-me.svg?style=svg)](https://circleci.com/gh/myuon/portals-me)
 
