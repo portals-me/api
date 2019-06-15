@@ -41,7 +41,7 @@ const client = new AWSAppSyncClient(AppSyncConfig, {
 describe('Collection', () => {
   describe('Collection lifecycle', () => {
     const argument = {
-      owner: 'foobar',
+      owner: '00000000-0000-0000-0000-000000000000',
       name: 'test-foobar',
       title: 'This is a title',
       description: 'Description'
@@ -75,4 +75,15 @@ describe('Collection', () => {
       expect(result.data.deleteCollection.id).toBe(collection.id);
     });
   });
+
+  it('should not add a collection for non-authorized user', async () => {
+    const promise = client.mutate({
+      mutation: gql(mutations.addCollection),
+      variables: {
+        owner: 'foo',
+        name: 'test',
+      } as API.AddCollectionMutationVariables,
+    });
+    expect(promise).rejects.toThrow('Not Authorized');
+  })
 });
