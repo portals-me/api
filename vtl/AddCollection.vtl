@@ -5,12 +5,12 @@
     "id": { "S": "${util.autoId()}" },
     "sort-id": { "S": "detail" }
   },
-  "attributeValues": {
-    "owner": { "S": "${context.arguments.owner}" },
-    "name": { "S": "${context.arguments.name}" },
-    "title": { "S": "${context.arguments.title}" },
-    "description": { "S": "${context.arguments.description}" },
-    "created_at": { "N": $util.time.nowEpochSeconds() },
-    "updated_at": { "N": $util.time.nowEpochSeconds() }
-  }
+
+  #set ( $args = $util.dynamodb.toMapValues($context.arguments) )
+  #set ( $args.created_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
+  #set ( $args.updated_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
+  #if (!$args.title)
+    #set ( $args.title = $util.dynamodb.toString("No title") )
+  #end
+  "attributeValues": $util.toJson($args)
 }
