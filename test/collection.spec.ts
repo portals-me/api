@@ -1,19 +1,41 @@
 import 'cross-fetch/polyfill';
 import gql from 'graphql-tag';
-import AWSAppSyncClient, { AUTH_TYPE } from 'aws-appsync';
+import AWSAppSyncClient, { AUTH_TYPE, createAppSyncLink, AWSAppSyncClientOptions } from 'aws-appsync';
 import * as queries from '../src/graphql/queries';
 import * as mutations from '../src/graphql/mutations';
 import * as API from '../src/API';
 import aws_config from '../src/aws-exports.js';
+import { ApolloLink } from 'apollo-link';
+import { setContext } from "apollo-link-context";
+import { createHttpLink } from "apollo-link-http";
 
-const client = new AWSAppSyncClient({
-  url: aws_config.aws_appsync_graphqlEndpoint,
-  region: aws_config.aws_appsync_region,
+const jwt = process.env.JWT_TOKEN;
+
+const AppSyncConfig = {
+  url: aws_config.aws_appsync_graphqlEndpoint as string,
+  region: aws_config.aws_appsync_region as string,
   auth: {
     type: AUTH_TYPE.API_KEY,
-    apiKey: aws_config.aws_appsync_apiKey,
+    apiKey: aws_config.aws_appsync_apiKey as string,
   },
   disableOffline: true,
+} as AWSAppSyncClientOptions;
+
+const client = new AWSAppSyncClient(AppSyncConfig, {
+  link: createAppSyncLink({
+    ...AppSyncConfig,
+    resultsFetcherLink: ApolloLink.from([
+      setContext((request, previousContext) => ({
+        headers: {
+          ...previousContext.headers,
+          Authorization: `Bearer ${jwt}`,
+        }
+      })),
+      createHttpLink({
+        uri: AppSyncConfig.url,
+      })
+    ])
+  } as any)
 });
 
 describe('Collection', () => {
