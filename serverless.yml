@@ -53,14 +53,14 @@ custom:
         field: getCollection
         request: GetCollection.vtl
         response: JsonResponse.vtl
-      - dataSource: collection
-        type: Mutation
+      - type: Mutation
         field: addCollection
         request: AddCollection.vtl
         response: JsonResponse.vtl
         kind: PIPELINE
         functions:
           - authorizer
+          - addCollection
       - dataSource: collection
         type: Mutation
         field: updateCollection
@@ -81,6 +81,10 @@ custom:
         name: authorizer
         request: AuthorizerRequest.vtl
         response: AuthorizerResponse.vtl
+      - dataSource: collection
+        name: addCollection
+        request: AddCollection.vtl
+        response: JsonResponse.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
       level: ERROR
