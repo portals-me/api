@@ -6,10 +6,19 @@
     "sort-id": { "S": "detail" }
   },
 
+  #set ( $account = $context.prev.result )
+
+  ## Check ownership
+  #if ( $account.id != $context.arguments.owner )
+    $util.unauthorized()
+  #end
+
   #set ( $args = $util.dynamodb.toMapValues($context.arguments) )
   #set ( $args.created_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
   #set ( $args.updated_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
-  #if (!$args.title)
+
+  ## Set title
+  #if ( !$args.title )
     #set ( $args.title = $util.dynamodb.toString("No title") )
   #end
   "attributeValues": $util.toJson($args)

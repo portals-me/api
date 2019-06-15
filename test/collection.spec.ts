@@ -12,11 +12,11 @@ import { createHttpLink } from "apollo-link-http";
 const jwt = process.env.JWT_TOKEN;
 
 const AppSyncConfig = {
-  url: aws_config.aws_appsync_graphqlEndpoint as string,
-  region: aws_config.aws_appsync_region as string,
+  url: aws_config.aws_appsync_graphqlEndpoint,
+  region: aws_config.aws_appsync_region,
   auth: {
     type: AUTH_TYPE.API_KEY,
-    apiKey: aws_config.aws_appsync_apiKey as string,
+    apiKey: aws_config.aws_appsync_apiKey,
   },
   disableOffline: true,
 } as AWSAppSyncClientOptions;

@@ -55,7 +55,7 @@ custom:
         response: JsonResponse.vtl
       - type: Mutation
         field: addCollection
-        request: AddCollection.vtl
+        request: ContextRequest.vtl
         response: JsonResponse.vtl
         kind: PIPELINE
         functions:
@@ -87,7 +87,7 @@ custom:
         response: JsonResponse.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
-      level: ERROR
+      level: ALL
 
 resources:
   Resources:
