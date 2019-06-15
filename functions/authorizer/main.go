@@ -9,17 +9,18 @@ import (
 	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	. "github.com/portals-me/account/functions/authenticate/account"
 	. "github.com/portals-me/account/functions/authenticate/lib"
 )
 
 var jwtPrivateKey = os.Getenv("jwtPrivate")
 
-func handler(ctx context.Context, event map[string]interface{}) ([]byte, error) {
+func handler(ctx context.Context, event map[string]interface{}) (Account, error) {
 	fmt.Printf("%+v\n", event)
 	// Why authorization lower-case?
 	token, ok := event["request"].(map[string]interface{})["headers"].(map[string]interface{})["authorization"].(string)
 	if ok != true {
-		return nil, errors.New("Invalid Authorization Token")
+		return Account{}, errors.New("Invalid Authorization Token")
 	}
 	raw := strings.TrimPrefix(token, "Bearer ")
 
@@ -28,16 +29,16 @@ func handler(ctx context.Context, event map[string]interface{}) ([]byte, error) 
 	}
 	verified, err := signer.Verify([]byte(raw))
 	if err != nil {
-		return nil, err
+		return Account{}, err
 	}
 
-	var payload JwtPayload
-	if err := json.Unmarshal(verified, &payload); err != nil {
-		return nil, err
+	var account Account
+	if err := json.Unmarshal(verified, &account); err != nil {
+		return Account{}, err
 	}
 
-	fmt.Printf("%+v\n", payload)
-	return verified, err
+	fmt.Printf("%+v\n", account)
+	return account, err
 }
 
 func main() {

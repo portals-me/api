@@ -83,7 +83,7 @@ custom:
         response: AuthorizerResponse.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
-      level: ALL
+      level: ERROR
 
 resources:
   Resources:
