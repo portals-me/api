@@ -19,6 +19,8 @@ functions:
   authorizer:
     handler: functions/authorizer/main.go
     name: ${self:service}-${self:provider.stage}-authorizer
+    environment:
+      jwtPrivate: ${ssm:portals-me-account-${self:provider.stage}-jwt-private~true}
 
 custom:
   appSync:
