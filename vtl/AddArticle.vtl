@@ -2,8 +2,8 @@
   "version": "2017-02-28",
   "operation": "PutItem",
   "key": {
-    "id": { "S": "${util.autoId()}" },
-    "sort-id": { "S": "detail" }
+    "id": { "S": "${context.arguments.collection}" },
+    "sort-id": { "S": "article##${util.autoId()}" }
   },
 
   #set ( $account = $context.prev.result )
@@ -20,16 +20,6 @@
   ## Set title
   #if ( !$args.title )
     #set ( $args.title = $util.dynamodb.toString("No title") )
-  #end
-
-  ## Set cover
-  #if ( !$args.cover )
-    #set ( $args.cover = $util.dynamodb.toDynamoDB({ "color": "teal darken-2", "sort": "solid" }) )
-  #end
-
-  ## Set media
-  #if ( !$args.media )
-    #set ( $args.media = $util.dynamodb.toDynamoDB([]) )
   #end
 
   "attributeValues": $util.toJson($args)

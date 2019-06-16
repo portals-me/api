@@ -1,0 +1,11 @@
+{
+  "version": "2017-02-28",
+  "operation": "Query",
+  "query": {
+    "expression": "id = :id and begins_with(sort_id, :sort_id)",
+    "expressionValues": {
+      ":id": { "S": "${context.arguments.collection}" }
+      ":sort_id": { "S": "article##" }
+    }
+  }
+}

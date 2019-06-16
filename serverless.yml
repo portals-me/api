@@ -55,7 +55,12 @@ custom:
         response: JsonResponse.vtl
       - type: Query
         field: listCollections
-        request: ListCollection.vtl
+        request: ListCollections.vtl
+        response: ListResponse.vtl
+        dataSource: collection
+      - type: Query
+        field: listArticles
+        request: ListArticles.vtl
         response: ListResponse.vtl
         dataSource: collection
       - type: Mutation
@@ -66,16 +71,14 @@ custom:
         functions:
           - authorizer
           - addCollection
-      - dataSource: collection
-        type: Mutation
-        field: updateCollection
-        request: UpdateCollection.vtl
+      - type: Mutation
+        field: addArticle
+        request: ContextRequest.vtl
         response: JsonResponse.vtl
-      - dataSource: collection
-        type: Mutation
-        field: updateCollectionName
-        request: UpdateCollection.vtl
-        response: JsonResponse.vtl
+        kind: PIPELINE
+        functions:
+          - authorizer
+          - addArticle
       - dataSource: collection
         type: Mutation
         field: deleteCollection
@@ -89,6 +92,10 @@ custom:
       - dataSource: collection
         name: addCollection
         request: AddCollection.vtl
+        response: JsonResponse.vtl
+      - dataSource: collection
+        name: addArticle
+        request: AddArticle.vtl
         response: JsonResponse.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
