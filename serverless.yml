@@ -53,6 +53,11 @@ custom:
         field: getCollection
         request: GetCollection.vtl
         response: JsonResponse.vtl
+      - type: Query
+        field: listCollections
+        request: ListCollection.vtl
+        response: ListResponse.vtl
+        dataSource: collection
       - type: Mutation
         field: addCollection
         request: ContextRequest.vtl
@@ -106,3 +111,16 @@ resources:
             AttributeType: S
           - AttributeName: sort-id
             AttributeType: S
+          - AttributeName: owner
+            AttributeType: S
+          - AttributeName: name
+            AttributeType: S
+        GlobalSecondaryIndexes:
+          - IndexName: owner
+            KeySchema:
+              - AttributeName: owner
+                KeyType: HASH
+              - AttributeName: name
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL

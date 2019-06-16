@@ -8,7 +8,7 @@ type Query {
     getCollection(
         id: ID!
     ): Collection
-    listCollectionsByOwner(
+    listCollections(
         owner: String!
     ): [Collection]
 }

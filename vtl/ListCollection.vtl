@@ -1,0 +1,14 @@
+{
+  "version": "2017-02-28",
+  "operation": "Query",
+  "index": "owner",
+  "query": {
+    "expression": "#owner = :owner",
+    "expressionNames": {
+      "#owner": "owner"
+    },
+    "expressionValues": {
+      ":owner": { "S": "${context.arguments.owner}" }
+    }
+  }
+}
