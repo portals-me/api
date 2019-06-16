@@ -64,6 +64,48 @@ describe('Collection', () => {
       expect(collection.created_at).toBe(collection.updated_at);
     });
 
+    it('should add an article and delete it', async () => {
+      const articleInput = {
+        collection: collection.id,
+        entity: {
+          format: 'oembed',
+          type: 'share',
+          url: 'http://example.com/share_something'
+        },
+        title: 'foooo',
+        description: 'This is the description!!!',
+        owner: '00000000-0000-0000-0000-000000000000',
+      } as API.AddArticleMutationVariables;
+
+      let article;
+
+      {
+        const result = await client.mutate({
+          mutation: gql(mutations.addArticle),
+          variables: articleInput,
+        });
+        expect(result.data).toEqual(expect.anything());
+        article = result.data.addArticle;
+
+        expect(article.id).not.toBeNull();
+        expect(article.entity).toEqual(expect.objectContaining(articleInput.entity));
+        expect(article.title).toEqual(articleInput.title);
+        expect(article.description).toEqual(articleInput.description);
+      }
+
+      {
+        const result = await client.mutate({
+          mutation: gql(mutations.deleteArticle),
+          variables: {
+            collection: collection.id,
+            id: article['sort-id'],
+          } as API.DeleteArticleMutationVariables
+        });
+        expect(result.data).toEqual(expect.anything());
+        expect(result.data.deleteArticle.id).toBe(article.id);
+      }
+    });
+
     it('should delete a collection', async () => {
       const result = await client.mutate({
         mutation: gql(mutations.deleteCollection),
@@ -85,5 +127,5 @@ describe('Collection', () => {
       } as API.AddCollectionMutationVariables,
     });
     expect(promise).rejects.toThrow('Not Authorized');
-  })
+  });
 });

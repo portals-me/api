@@ -79,6 +79,14 @@ custom:
         functions:
           - authorizer
           - addArticle
+      - type: Mutation
+        field: deleteArticle
+        request: ContextRequest.vtl
+        response: JsonResponse.vtl
+        kind: PIPELINE
+        functions:
+          - authorizer
+          - deleteArticle
       - dataSource: collection
         type: Mutation
         field: deleteCollection
@@ -96,6 +104,10 @@ custom:
       - dataSource: collection
         name: addArticle
         request: AddArticle.vtl
+        response: JsonResponse.vtl
+      - dataSource: collection
+        name: deleteArticle
+        request: DeleteArticle.vtl
         response: JsonResponse.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole

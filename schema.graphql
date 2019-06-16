@@ -44,20 +44,19 @@ type Mutation {
     ): Collection!
     deleteCollection(
         id: ID!
-    ): Collection!
+    ): Collection
 
     addArticle(
         collection: String!
         entity: EntityInput!
         title: String
         description: String
-        created_at: AWSTimestamp!
-        updated_at: AWSTimestamp!
+        owner: String!
     ): Article!
     deleteArticle(
         collection: String!
         id: ID!
-    ): Article!
+    ): Article
 }
 
 type Cover {

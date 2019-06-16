@@ -8,18 +8,45 @@ export const getCollection = `query GetCollection($id: ID!) {
     name
     title
     description
+    cover {
+      color
+      sort
+    }
+    media
     created_at
     updated_at
   }
 }
 `;
-export const listCollectionsByOwner = `query ListCollectionsByOwner($owner: String!) {
-  listCollectionsByOwner(owner: $owner) {
+export const listCollections = `query ListCollections($owner: String!) {
+  listCollections(owner: $owner) {
     id
     owner
     name
     title
     description
+    cover {
+      color
+      sort
+    }
+    media
+    created_at
+    updated_at
+  }
+}
+`;
+export const listArticles = `query ListArticles($collection: String!) {
+  listArticles(collection: $collection) {
+    collection
+    id
+    entity {
+      format
+      type
+      url
+    }
+    title
+    description
+    owner
     created_at
     updated_at
   }

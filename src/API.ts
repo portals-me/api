@@ -1,11 +1,24 @@
 /* tslint:disable */
 //  This file was automatically generated and should not be edited.
 
+export type CoverInput = {
+  color: string,
+  sort: string,
+};
+
+export type EntityInput = {
+  format: string,
+  type: string,
+  url: string,
+};
+
 export type AddCollectionMutationVariables = {
   owner: string,
   name: string,
   title?: string | null,
   description?: string | null,
+  cover?: CoverInput | null,
+  media?: Array< string > | null,
 };
 
 export type AddCollectionMutation = {
@@ -16,6 +29,12 @@ export type AddCollectionMutation = {
     name: string,
     title: string | null,
     description: string | null,
+    cover:  {
+      __typename: "Cover",
+      color: string,
+      sort: string,
+    } | null,
+    media: Array< string > | null,
     created_at: string,
     updated_at: string,
   },
@@ -28,16 +47,22 @@ export type UpdateCollectionMutationVariables = {
 };
 
 export type UpdateCollectionMutation = {
-  updateCollection: string,
-};
-
-export type UpdateCollectionNameMutationVariables = {
-  id: string,
-  name: string,
-};
-
-export type UpdateCollectionNameMutation = {
-  updateCollectionName: string,
+  updateCollection:  {
+    __typename: "Collection",
+    id: string,
+    owner: string,
+    name: string,
+    title: string | null,
+    description: string | null,
+    cover:  {
+      __typename: "Cover",
+      color: string,
+      sort: string,
+    } | null,
+    media: Array< string > | null,
+    created_at: string,
+    updated_at: string,
+  },
 };
 
 export type DeleteCollectionMutationVariables = {
@@ -52,6 +77,63 @@ export type DeleteCollectionMutation = {
     name: string,
     title: string | null,
     description: string | null,
+    cover:  {
+      __typename: "Cover",
+      color: string,
+      sort: string,
+    } | null,
+    media: Array< string > | null,
+    created_at: string,
+    updated_at: string,
+  },
+};
+
+export type AddArticleMutationVariables = {
+  collection: string,
+  entity: EntityInput,
+  title?: string | null,
+  description?: string | null,
+  owner: string,
+};
+
+export type AddArticleMutation = {
+  addArticle:  {
+    __typename: "Article",
+    collection: string,
+    id: string,
+    entity:  {
+      __typename: "Entity",
+      format: string,
+      type: string,
+      url: string,
+    },
+    title: string | null,
+    description: string | null,
+    owner: string,
+    created_at: string,
+    updated_at: string,
+  },
+};
+
+export type DeleteArticleMutationVariables = {
+  collection: string,
+  id: string,
+};
+
+export type DeleteArticleMutation = {
+  deleteArticle:  {
+    __typename: "Article",
+    collection: string,
+    id: string,
+    entity:  {
+      __typename: "Entity",
+      format: string,
+      type: string,
+      url: string,
+    },
+    title: string | null,
+    description: string | null,
+    owner: string,
     created_at: string,
     updated_at: string,
   },
@@ -69,24 +151,59 @@ export type GetCollectionQuery = {
     name: string,
     title: string | null,
     description: string | null,
+    cover:  {
+      __typename: "Cover",
+      color: string,
+      sort: string,
+    } | null,
+    media: Array< string > | null,
     created_at: string,
     updated_at: string,
   } | null,
 };
 
-export type ListCollectionsByOwnerQueryVariables = {
+export type ListCollectionsQueryVariables = {
   owner: string,
 };
 
-export type ListCollectionsByOwnerQuery = {
-  listCollectionsByOwner:  Array< {
+export type ListCollectionsQuery = {
+  listCollections:  Array< {
     __typename: "Collection",
     id: string,
     owner: string,
     name: string,
     title: string | null,
     description: string | null,
+    cover:  {
+      __typename: "Cover",
+      color: string,
+      sort: string,
+    } | null,
+    media: Array< string > | null,
     created_at: string,
     updated_at: string,
-  } | null > | null,
+  } > | null,
+};
+
+export type ListArticlesQueryVariables = {
+  collection: string,
+};
+
+export type ListArticlesQuery = {
+  listArticles:  Array< {
+    __typename: "Article",
+    collection: string,
+    id: string,
+    entity:  {
+      __typename: "Entity",
+      format: string,
+      type: string,
+      url: string,
+    },
+    title: string | null,
+    description: string | null,
+    owner: string,
+    created_at: string,
+    updated_at: string,
+  } > | null,
 };
