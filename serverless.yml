@@ -51,16 +51,16 @@ custom:
       - dataSource: collection
         type: Query
         field: getCollection
-        request: GetCollection.vtl
+        request: collection/GetCollection.vtl
         response: JsonResponse.vtl
       - type: Query
         field: listCollections
-        request: ListCollections.vtl
+        request: collection/ListCollections.vtl
         response: ListResponse.vtl
         dataSource: collection
       - type: Query
         field: listArticles
-        request: ListArticles.vtl
+        request: article/ListArticles.vtl
         response: ListResponse.vtl
         dataSource: collection
       - type: Mutation
@@ -90,7 +90,7 @@ custom:
       - dataSource: collection
         type: Mutation
         field: deleteCollection
-        request: DeleteCollection.vtl
+        request: collection/DeleteCollection.vtl
         response: JsonResponse.vtl
     functionConfigurations:
       - dataSource: authorizer
@@ -99,15 +99,15 @@ custom:
         response: AuthorizerResponse.vtl
       - dataSource: collection
         name: addCollection
-        request: AddCollection.vtl
+        request: collection/AddCollection.vtl
         response: JsonResponse.vtl
       - dataSource: collection
         name: addArticle
-        request: AddArticle.vtl
+        request: article/AddArticle.vtl
         response: JsonResponse.vtl
       - dataSource: collection
         name: deleteArticle
-        request: DeleteArticle.vtl
+        request: article/DeleteArticle.vtl
         response: JsonResponse.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
