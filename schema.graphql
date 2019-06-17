@@ -47,15 +47,15 @@ type Mutation {
     ): Collection
 
     addArticle(
-        collection: String!
+        collectionId: String!
         entity: EntityInput!
         title: String
         description: String
         owner: String!
     ): Article!
     deleteArticle(
-        collection: String!
-        id: ID!
+        collectionId: String!
+        id: String!
     ): Article
 }
 
@@ -83,8 +83,8 @@ type Entity {
 }
 
 type Article {
-    collection: String!
-    id: ID!
+    collectionId: String!
+    id: String!
     entity: Entity!
     title: String
     description: String

@@ -2,7 +2,7 @@
   "version": "2017-02-28",
   "operation": "PutItem",
   "key": {
-    "id": { "S": "${context.arguments.collection}" },
+    "id": { "S": "${context.arguments.collectionId}" },
     "sort-id": { "S": "article@@${util.autoId()}" }
   },
 
@@ -22,5 +22,5 @@
     #set ( $args.title = $util.dynamodb.toString("No title") )
   #end
 
-  "attributeValues": $util.toJson($args)
+  "attributeValues": $util.toJson($util.map.copyAndRemoveAllKeys($args, [ "collectionId" ]))
 }
