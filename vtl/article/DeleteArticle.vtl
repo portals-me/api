@@ -2,7 +2,7 @@
   "version": "2017-02-28",
   "operation": "DeleteItem",
   "key": {
-    "id": { "S": "${context.arguments.collection}" },
-    "sort_id": { "S": "${context.arguments.id}" }
+    "id": { "S": "${context.arguments.collectionId}" },
+    "sort_id": { "S": "article@@${context.arguments.id}" }
   }
 }

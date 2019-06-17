@@ -97,8 +97,8 @@ describe('Collection', () => {
         const result = await client.mutate({
           mutation: gql(mutations.deleteArticle),
           variables: {
-            collectionId: collection.id,
-            id: article['sort-id'],
+            collectionId: article.collectionId,
+            id: article.id,
           } as API.DeleteArticleMutationVariables
         });
         expect(result.data).toEqual(expect.anything());

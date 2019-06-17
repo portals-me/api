@@ -108,7 +108,7 @@ custom:
       - dataSource: collection
         name: deleteArticle
         request: article/DeleteArticle.vtl
-        response: JsonResponse.vtl
+        response: article/ArticleResponse.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
       level: ALL
