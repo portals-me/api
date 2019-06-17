@@ -3,7 +3,7 @@
   "operation": "PutItem",
   "key": {
     "id": { "S": "${context.arguments.name}" },
-    "sort-id": { "S": "detail" }
+    "sort_id": { "S": "detail" }
   },
   "attributeValues": {
     "owner": { "S": "${context.arguments.owner}" },

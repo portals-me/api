@@ -3,7 +3,7 @@
   "operation": "PutItem",
   "key": {
     "id": { "S": "${util.autoId()}" },
-    "sort-id": { "S": "detail" }
+    "sort_id": { "S": "detail" }
   },
 
   #set ( $account = $context.prev.result )

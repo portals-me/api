@@ -85,11 +85,11 @@ export type DeleteCollectionMutation = {
     media: Array< string > | null,
     created_at: string,
     updated_at: string,
-  },
+  } | null,
 };
 
 export type AddArticleMutationVariables = {
-  collection: string,
+  collectionId: string,
   entity: EntityInput,
   title?: string | null,
   description?: string | null,
@@ -99,7 +99,7 @@ export type AddArticleMutationVariables = {
 export type AddArticleMutation = {
   addArticle:  {
     __typename: "Article",
-    collection: string,
+    collectionId: string,
     id: string,
     entity:  {
       __typename: "Entity",
@@ -116,14 +116,14 @@ export type AddArticleMutation = {
 };
 
 export type DeleteArticleMutationVariables = {
-  collection: string,
+  collectionId: string,
   id: string,
 };
 
 export type DeleteArticleMutation = {
   deleteArticle:  {
     __typename: "Article",
-    collection: string,
+    collectionId: string,
     id: string,
     entity:  {
       __typename: "Entity",
@@ -136,7 +136,7 @@ export type DeleteArticleMutation = {
     owner: string,
     created_at: string,
     updated_at: string,
-  },
+  } | null,
 };
 
 export type GetCollectionQueryVariables = {
@@ -192,7 +192,7 @@ export type ListArticlesQueryVariables = {
 export type ListArticlesQuery = {
   listArticles:  Array< {
     __typename: "Article",
-    collection: string,
+    collectionId: string,
     id: string,
     entity:  {
       __typename: "Entity",

@@ -1,0 +1,5 @@
+#set ( $result = $util.map.copyAndRemoveAllKeys($context.result, [ "id", "sort_id" ]) )
+#set ( $result.collectionId = $context.result.id )
+#set ( $result.id = $context.result.sort_id )
+
+$utils.toJson($result)

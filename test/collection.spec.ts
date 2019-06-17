@@ -66,7 +66,7 @@ describe('Collection', () => {
 
     it('should add an article and delete it', async () => {
       const articleInput = {
-        collection: collection.id,
+        collectionId: collection.id,
         entity: {
           format: 'oembed',
           type: 'share',
@@ -97,7 +97,7 @@ describe('Collection', () => {
         const result = await client.mutate({
           mutation: gql(mutations.deleteArticle),
           variables: {
-            collection: collection.id,
+            collectionId: collection.id,
             id: article['sort-id'],
           } as API.DeleteArticleMutationVariables
         });

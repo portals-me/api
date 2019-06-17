@@ -67,20 +67,20 @@ export const deleteCollection = `mutation DeleteCollection($id: ID!) {
 }
 `;
 export const addArticle = `mutation AddArticle(
-  $collection: String!
+  $collectionId: String!
   $entity: EntityInput!
   $title: String
   $description: String
   $owner: String!
 ) {
   addArticle(
-    collection: $collection
+    collectionId: $collectionId
     entity: $entity
     title: $title
     description: $description
     owner: $owner
   ) {
-    collection
+    collectionId
     id
     entity {
       format
@@ -95,9 +95,9 @@ export const addArticle = `mutation AddArticle(
   }
 }
 `;
-export const deleteArticle = `mutation DeleteArticle($collection: String!, $id: ID!) {
-  deleteArticle(collection: $collection, id: $id) {
-    collection
+export const deleteArticle = `mutation DeleteArticle($collectionId: String!, $id: String!) {
+  deleteArticle(collectionId: $collectionId, id: $id) {
+    collectionId
     id
     entity {
       format
