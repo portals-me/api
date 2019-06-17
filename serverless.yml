@@ -61,7 +61,7 @@ custom:
       - type: Query
         field: listArticles
         request: article/ListArticles.vtl
-        response: ListResponse.vtl
+        response: article/ListArticlesResponse.vtl
         dataSource: collection
       - type: Mutation
         field: addCollection
