@@ -35,8 +35,8 @@ export const listCollections = `query ListCollections($owner: String!) {
   }
 }
 `;
-export const listArticles = `query ListArticles($collection: String!) {
-  listArticles(collection: $collection) {
+export const listArticles = `query ListArticles($collectionId: String!) {
+  listArticles(collectionId: $collectionId) {
     collectionId
     id
     entity {

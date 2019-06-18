@@ -5,7 +5,7 @@
   #set ( $result.collectionId = $context.result.id )
   #set ( $result.id = $context.result.sort_id.replace("article@@", "") )
 
-  #set ( $items.add( $result ) )
+  $util.qr( $items.add( $result ) )
 #end
 
 $utils.toJson($items)

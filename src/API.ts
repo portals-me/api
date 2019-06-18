@@ -186,7 +186,7 @@ export type ListCollectionsQuery = {
 };
 
 export type ListArticlesQueryVariables = {
-  collection: string,
+  collectionId: string,
 };
 
 export type ListArticlesQuery = {

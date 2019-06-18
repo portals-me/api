@@ -13,7 +13,7 @@ type Query {
     ): [Collection!]
 
     listArticles(
-        collection: String!
+        collectionId: String!
     ): [Article!]
 }
 
