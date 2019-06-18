@@ -4,8 +4,8 @@
   "query": {
     "expression": "id = :id and begins_with(sort_id, :sort_id)",
     "expressionValues": {
-      ":id": { "S": "${context.arguments.collection}" }
-      ":sort_id": { "S": "article##" }
+      ":id": { "S": "${context.arguments.collectionId}" }
+      ":sort_id": { "S": "article@@" }
     }
   }
 }
