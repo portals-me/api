@@ -13,7 +13,6 @@ export type EntityInput = {
 };
 
 export type AddCollectionMutationVariables = {
-  owner: string,
   name: string,
   title?: string | null,
   description?: string | null,
@@ -93,7 +92,6 @@ export type AddArticleMutationVariables = {
   entity: EntityInput,
   title?: string | null,
   description?: string | null,
-  owner: string,
 };
 
 export type AddArticleMutation = {
@@ -160,10 +158,6 @@ export type GetCollectionQuery = {
     created_at: string,
     updated_at: string,
   } | null,
-};
-
-export type ListCollectionsQueryVariables = {
-  owner: string,
 };
 
 export type ListCollectionsQuery = {

@@ -8,14 +8,10 @@
 
   #set ( $account = $context.prev.result )
 
-  ## Check ownership
-  #if ( $account.id != $context.arguments.owner )
-    $util.unauthorized()
-  #end
-
   #set ( $args = $util.dynamodb.toMapValues($context.arguments) )
   #set ( $args.created_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
   #set ( $args.updated_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
+  #set ( $args.owner = $util.dynamodb.toString($account.id) )
 
   ## Set title
   #if ( !$args.title )

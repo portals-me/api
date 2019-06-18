@@ -6,7 +6,6 @@
     "sort_id": { "S": "detail" }
   },
   "attributeValues": {
-    "owner": { "S": "${context.arguments.owner}" },
     "title": { "S": "${context.arguments.title}" },
     "description": { "S": "${context.arguments.description}" },
     "updated_at": { "N": $util.time.nowEpochSeconds() }

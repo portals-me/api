@@ -8,9 +8,7 @@ type Query {
     getCollection(
         id: ID!
     ): Collection
-    listCollections(
-        owner: String!
-    ): [Collection!]
+    listCollections: [Collection!]
 
     listArticles(
         collectionId: String!
@@ -30,7 +28,6 @@ input EntityInput {
 
 type Mutation {
     addCollection(
-        owner: String!
         name: String!
         title: String
         description: String
@@ -51,7 +48,6 @@ type Mutation {
         entity: EntityInput!
         title: String
         description: String
-        owner: String!
     ): Article!
     deleteArticle(
         collectionId: String!

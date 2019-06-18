@@ -40,24 +40,23 @@ const client = new AWSAppSyncClient(AppSyncConfig, {
 
 describe('Collection', () => {
   describe('Collection lifecycle', () => {
-    const argument = {
-      owner: '00000000-0000-0000-0000-000000000000',
+    const argument: API.AddCollectionMutationVariables = {
       name: 'test-foobar',
       title: 'This is a title',
       description: 'Description'
-    }
+    };
     let collection;
 
     it('should add a collection', async () => {
       const result = await client.mutate({
         mutation: gql(mutations.addCollection),
-        variables: argument as API.AddCollectionMutationVariables,
+        variables: argument,
       });
       expect(result.data).toEqual(expect.anything());
       collection = result.data.addCollection;
 
       expect(collection.id).not.toBeNull();
-      expect(collection.owner).toBe(argument.owner);
+      expect(collection.owner).not.toBeNull();
       expect(collection.name).toBe(argument.name);
       expect(collection.title).toBe(argument.title);
       expect(collection.description).toBe(argument.description);
@@ -65,7 +64,7 @@ describe('Collection', () => {
     });
 
     it('should add an article and delete it', async () => {
-      const articleInput = {
+      const articleInput: API.AddArticleMutationVariables = {
         collectionId: collection.id,
         entity: {
           format: 'oembed',
@@ -74,8 +73,7 @@ describe('Collection', () => {
         },
         title: 'foooo',
         description: 'This is the description!!!',
-        owner: '00000000-0000-0000-0000-000000000000',
-      } as API.AddArticleMutationVariables;
+      };
 
       let article;
 
@@ -94,12 +92,13 @@ describe('Collection', () => {
       }
 
       {
+        const variables: API.DeleteArticleMutationVariables = {
+          collectionId: article.collectionId,
+          id: article.id,
+        };
         const result = await client.mutate({
           mutation: gql(mutations.deleteArticle),
-          variables: {
-            collectionId: article.collectionId,
-            id: article.id,
-          } as API.DeleteArticleMutationVariables
+          variables,
         });
         expect(result.data).toEqual(expect.anything());
         expect(result.data.deleteArticle.id).toBe(article.id);
@@ -107,25 +106,28 @@ describe('Collection', () => {
     });
 
     it('should delete a collection', async () => {
+      const variables: API.DeleteCollectionMutationVariables = {
+        id: collection.id,
+      };
       const result = await client.mutate({
         mutation: gql(mutations.deleteCollection),
-        variables: {
-          id: collection.id
-        } as API.DeleteCollectionMutationVariables,
+        variables,
       });
       expect(result.data).toEqual(expect.anything());
       expect(result.data.deleteCollection.id).toBe(collection.id);
     });
   });
 
+  /*
   it('should not add a collection for non-authorized user', async () => {
+    const variables: API.AddCollectionMutationVariables = {
+      name: 'test',
+    };
     const promise = client.mutate({
       mutation: gql(mutations.addCollection),
-      variables: {
-        owner: 'foo',
-        name: 'test',
-      } as API.AddCollectionMutationVariables,
+      variables,
     });
     expect(promise).rejects.toThrow('Not Authorized');
   });
+  */
 });

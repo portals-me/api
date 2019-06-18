@@ -2,7 +2,6 @@
 // this is an auto generated file. This will be overwritten
 
 export const addCollection = `mutation AddCollection(
-  $owner: String!
   $name: String!
   $title: String
   $description: String
@@ -10,7 +9,6 @@ export const addCollection = `mutation AddCollection(
   $media: [String!]
 ) {
   addCollection(
-    owner: $owner
     name: $name
     title: $title
     description: $description
@@ -71,14 +69,12 @@ export const addArticle = `mutation AddArticle(
   $entity: EntityInput!
   $title: String
   $description: String
-  $owner: String!
 ) {
   addArticle(
     collectionId: $collectionId
     entity: $entity
     title: $title
     description: $description
-    owner: $owner
   ) {
     collectionId
     id
