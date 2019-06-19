@@ -2,8 +2,8 @@
 
 #foreach ( $item in $context.result.items )
   #set ( $result = $util.map.copyAndRemoveAllKeys($item, [ "id", "sort_id" ]) )
-  #set ( $result.collectionId = $context.result.id )
-  #set ( $result.id = $context.result.sort_id.replace("article@@", "") )
+  #set ( $result.collectionId = $item.id )
+  #set ( $result.id = $item.sort_id.replace("article@@", "") )
 
   $util.qr( $items.add( $result ) )
 #end
