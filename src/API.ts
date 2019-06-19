@@ -160,8 +160,8 @@ export type GetCollectionQuery = {
   } | null,
 };
 
-export type ListCollectionsQuery = {
-  listCollections:  Array< {
+export type YourCollectionsQuery = {
+  yourCollections:  Array< {
     __typename: "Collection",
     id: string,
     owner: string,

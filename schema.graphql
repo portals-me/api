@@ -8,7 +8,7 @@ type Query {
     getCollection(
         id: ID!
     ): Collection
-    listCollections: [Collection!]
+    yourCollections: [Collection!]
 
     listArticles(
         collectionId: String!

@@ -18,8 +18,8 @@ export const getCollection = `query GetCollection($id: ID!) {
   }
 }
 `;
-export const listCollections = `query ListCollections {
-  listCollections {
+export const yourCollections = `query YourCollections {
+  yourCollections {
     id
     owner
     name

@@ -54,10 +54,13 @@ custom:
         request: collection/GetCollection.vtl
         response: JsonResponse.vtl
       - type: Query
-        field: listCollections
-        request: collection/ListCollections.vtl
-        response: ListResponse.vtl
-        dataSource: collection
+        field: yourCollections
+        request: ContextRequest.vtl
+        response: PrevResult.vtl
+        kind: PIPELINE
+        functions:
+          - authorizer
+          - yourCollections
       - type: Query
         field: listArticles
         request: article/ListArticles.vtl
@@ -97,6 +100,10 @@ custom:
         name: authorizer
         request: AuthorizerRequest.vtl
         response: AuthorizerResponse.vtl
+      - dataSource: collection
+        name: yourCollections
+        request: collection/YourCollections.vtl
+        response: collection/YourCollectionsResponse.vtl
       - dataSource: collection
         name: addCollection
         request: collection/AddCollection.vtl
