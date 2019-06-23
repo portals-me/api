@@ -11,6 +11,11 @@ provider:
   memorySize: 128
   timeout: 10
   runtime: go1.x
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - 'dynamodb:*'
+      Resource: '*'
 
 package:
   individually: true
@@ -25,7 +30,7 @@ functions:
     handler: functions/put-account-table/main.go
     name: ${self:service}-${self:provider.stage}-put-account-table
     environment:
-      accountTableName: ${self:resources.Resources.collectionTable.Properties.TableName}
+      accountTableName: ${self:resources.Resources.accountReadReplicaTable.Properties.TableName}
     events:
       - sns:
           topicName: portals-me-account-${self:provider.stage}-account-table-event-topic
