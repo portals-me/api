@@ -21,6 +21,21 @@ functions:
     name: ${self:service}-${self:provider.stage}-authorizer
     environment:
       jwtPrivate: ${ssm:portals-me-account-${self:provider.stage}-jwt-private~true}
+  putAccountEvent:
+    handler: functions/put-account-table/main.go
+    name: ${self:service}-${self:provider.stage}-put-account-table
+    environment:
+      accountTableName: ${self:resources.Resources.collectionTable.Properties.TableName}
+    events:
+      - sns:
+          topicName: portals-me-account-${self:provider.stage}-account-table-event-topic
+          arn:
+            Fn::Join:
+              - ":"
+              - - "arn:aws:sns"
+                - Ref: "AWS::Region"
+                - Ref: "AWS::AccountId"
+                - portals-me-account-${self:provider.stage}-account-table-event-topic
 
 custom:
   appSync:
@@ -147,6 +162,28 @@ resources:
               - AttributeName: owner
                 KeyType: HASH
               - AttributeName: name
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+    accountReadReplicaTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:service}-${self:provider.stage}-account-replica
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: name
+            AttributeType: S
+        GlobalSecondaryIndexes:
+          - IndexName: name
+            KeySchema:
+              - AttributeName: name
+                KeyType: HASH
+              - AttributeName: id
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
