@@ -41,6 +41,11 @@ functions:
                 - Ref: "AWS::Region"
                 - Ref: "AWS::AccountId"
                 - portals-me-account-${self:provider.stage}-account-table-event-topic
+  replaceOwner:
+    handler: functions/replace-owner/main.go
+    name: ${self:service}-${self:provider.stage}-replace-owner
+    environment:
+      accountTableName: ${self:resources.Resources.accountReadReplicaTable.Properties.TableName}
 
 custom:
   appSync:
@@ -66,13 +71,26 @@ custom:
               Action:
                 - 'dynamodb:*'
               Resource: '*'
+      - type: AWS_LAMBDA
+        name: replaceOwner
+        config:
+          functionName: replaceOwner
+          iamRoleStatements:
+            - Effect: Allow
+              Action:
+                - 'lambda:invokeFunction'
+                - 'dynamodb:*'
+              Resource: '*'
     mappingTemplatesLocation: './vtl'
     mappingTemplates:
-      - dataSource: collection
-        type: Query
+      - type: Query
         field: getCollection
-        request: collection/GetCollection.vtl
-        response: JsonResponse.vtl
+        request: ContextRequest.vtl
+        response: PrevResult.vtl
+        kind: PIPELINE
+        functions:
+          - getCollection
+          - replaceOwner
       - type: Query
         field: yourCollections
         request: ContextRequest.vtl
@@ -120,6 +138,14 @@ custom:
         name: authorizer
         request: AuthorizerRequest.vtl
         response: AuthorizerResponse.vtl
+      - dataSource: replaceOwner
+        name: replaceOwner
+        request: ReplaceOwnerRequest.vtl
+        response: AuthorizerResponse.vtl
+      - dataSource: collection
+        name: getCollection
+        request: collection/GetCollection.vtl
+        response: JsonResponse.vtl
       - dataSource: collection
         name: yourCollections
         request: collection/YourCollections.vtl
