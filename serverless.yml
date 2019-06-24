@@ -178,8 +178,12 @@ resources:
         KeySchema:
           - AttributeName: id
             KeyType: HASH
+          - AttributeName: sort
+            KeyType: RANGE
         AttributeDefinitions:
           - AttributeName: id
+            AttributeType: S
+          - AttributeName: sort
             AttributeType: S
           - AttributeName: name
             AttributeType: S

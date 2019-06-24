@@ -74,17 +74,34 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 		if err := json.Unmarshal([]byte(message), &dbEvent); err != nil {
 			return err
 		}
-		item, err := AsDynamoDBAttributeValues(dbEvent.Change.NewImage)
-		if err != nil {
-			return err
-		}
 
-		fmt.Printf("%+v\n", item)
-		if _, err := svc.PutItem(&dynamodb.PutItemInput{
-			TableName: aws.String(accountTable),
-			Item:      item,
-		}); err != nil {
-			return err
+		if dbEvent.EventName == "MODIFY" || dbEvent.EventName == "INSERT" {
+			item, err := AsDynamoDBAttributeValues(dbEvent.Change.NewImage)
+			if err != nil {
+				return err
+			}
+
+			if _, err := svc.PutItem(&dynamodb.PutItemInput{
+				TableName: aws.String(accountTable),
+				Item:      item,
+			}); err != nil {
+				return err
+			}
+		} else if dbEvent.EventName == "REMOVE" {
+			item, err := AsDynamoDBAttributeValues(dbEvent.Change.Keys)
+			if err != nil {
+				return err
+			}
+
+			if _, err := svc.DeleteItem(&dynamodb.DeleteItemInput{
+				TableName: aws.String(accountTable),
+				Key:       item,
+			}); err != nil {
+				return err
+			}
+		} else {
+			fmt.Printf("%+v\n", dbEvent)
+			panic("Not supported EventName: " + dbEvent.EventName)
 		}
 	}
 
