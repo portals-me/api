@@ -13,6 +13,10 @@ type Query {
     listArticles(
         collectionId: String!
     ): [Article!]
+
+    getUserByName(
+        name: String!
+    ): User
 }
 
 input CoverInput {
@@ -53,6 +57,13 @@ type Mutation {
         collectionId: String!
         id: String!
     ): Article
+}
+
+type User {
+    id: ID!
+    name: String!
+    picture: String
+    display_name: String
 }
 
 type Cover {

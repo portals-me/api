@@ -71,6 +71,16 @@ custom:
               Action:
                 - 'dynamodb:*'
               Resource: '*'
+      - type: AMAZON_DYNAMODB
+        name: account
+        config:
+          tableName:
+            Ref: accountReadReplicaTable
+          iamRoleStatements:
+            - Effect: Allow
+              Action:
+                - 'dynamodb:*'
+              Resource: '*'
       - type: AWS_LAMBDA
         name: replaceOwner
         config:
@@ -104,6 +114,11 @@ custom:
         request: article/ListArticles.vtl
         response: article/ListArticlesResponse.vtl
         dataSource: collection
+      - type: Query
+        field: getUserByName
+        request: user/GetUserByName.vtl
+        response: user/GetUserByNameResponse.vtl
+        dataSource: account
       - type: Mutation
         field: addCollection
         request: ContextRequest.vtl
@@ -218,7 +233,5 @@ resources:
             KeySchema:
               - AttributeName: name
                 KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
             Projection:
               ProjectionType: ALL
