@@ -104,60 +104,10 @@ custom:
     mappingTemplatesLocation: "./vtl"
     mappingTemplates:
       - type: Query
-        field: getCollection
-        request: ContextRequest.vtl
-        response: PrevResult.vtl
-        kind: PIPELINE
-        functions:
-          - getCollection
-          - replaceOwner
-      - type: Query
-        field: yourCollections
-        request: ContextRequest.vtl
-        response: PrevResult.vtl
-        kind: PIPELINE
-        functions:
-          - authorizer
-          - yourCollections
-      - type: Query
-        field: listArticles
-        request: article/ListArticles.vtl
-        response: article/ListArticlesResponse.vtl
-        dataSource: collection
-      - type: Query
         field: getUserByName
         request: user/GetUserByName.vtl
         response: user/GetUserByNameResponse.vtl
         dataSource: account
-      - type: Mutation
-        field: addCollection
-        request: ContextRequest.vtl
-        response: JsonResponse.vtl
-        kind: PIPELINE
-        functions:
-          - authorizer
-          - addCollection
-      - type: Mutation
-        field: addArticle
-        request: ContextRequest.vtl
-        response: JsonResponse.vtl
-        kind: PIPELINE
-        functions:
-          - authorizer
-          - addArticle
-      - type: Mutation
-        field: deleteArticle
-        request: ContextRequest.vtl
-        response: JsonResponse.vtl
-        kind: PIPELINE
-        functions:
-          - authorizer
-          - deleteArticle
-      - dataSource: collection
-        type: Mutation
-        field: deleteCollection
-        request: collection/DeleteCollection.vtl
-        response: JsonResponse.vtl
       - field: getPostSummary
         type: Query
         dataSource: post
@@ -168,30 +118,6 @@ custom:
         name: authorizer
         request: AuthorizerRequest.vtl
         response: AuthorizerResponse.vtl
-      - dataSource: replaceOwner
-        name: replaceOwner
-        request: ReplaceOwnerRequest.vtl
-        response: AuthorizerResponse.vtl
-      - dataSource: collection
-        name: getCollection
-        request: collection/GetCollection.vtl
-        response: JsonResponse.vtl
-      - dataSource: collection
-        name: yourCollections
-        request: collection/YourCollections.vtl
-        response: collection/YourCollectionsResponse.vtl
-      - dataSource: collection
-        name: addCollection
-        request: collection/AddCollection.vtl
-        response: JsonResponse.vtl
-      - dataSource: collection
-        name: addArticle
-        request: article/AddArticle.vtl
-        response: article/ArticleResponse.vtl
-      - dataSource: collection
-        name: deleteArticle
-        request: article/DeleteArticle.vtl
-        response: article/ArticleResponse.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
       level: ALL
