@@ -17,6 +17,20 @@ type Query {
     getUserByName(
         name: String!
     ): User
+
+    getPostSummary(
+        id: ID!
+    ): PostSummary!
+}
+
+type PostSummary {
+    id: ID!
+    title: String
+    description: String
+    updatedAt: AWSTimestamp!
+    createdAt: AWSTimestamp!
+    entity: Entity!
+    owner: String!
 }
 
 input CoverInput {
