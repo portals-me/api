@@ -14,8 +14,8 @@ provider:
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - 'dynamodb:*'
-      Resource: '*'
+        - "dynamodb:*"
+      Resource: "*"
 
 package:
   individually: true
@@ -59,8 +59,8 @@ custom:
           functionName: authorizer
           iamRoleStatements:
             - Effect: Allow
-              Action: 'lambda:invokeFunction'
-              Resource: '*'
+              Action: "lambda:invokeFunction"
+              Resource: "*"
       - type: AMAZON_DYNAMODB
         name: collection
         config:
@@ -69,8 +69,8 @@ custom:
           iamRoleStatements:
             - Effect: Allow
               Action:
-                - 'dynamodb:*'
-              Resource: '*'
+                - "dynamodb:*"
+              Resource: "*"
       - type: AMAZON_DYNAMODB
         name: account
         config:
@@ -79,8 +79,8 @@ custom:
           iamRoleStatements:
             - Effect: Allow
               Action:
-                - 'dynamodb:*'
-              Resource: '*'
+                - "dynamodb:*"
+              Resource: "*"
       - type: AWS_LAMBDA
         name: replaceOwner
         config:
@@ -88,10 +88,10 @@ custom:
           iamRoleStatements:
             - Effect: Allow
               Action:
-                - 'lambda:invokeFunction'
-                - 'dynamodb:*'
-              Resource: '*'
-    mappingTemplatesLocation: './vtl'
+                - "lambda:invokeFunction"
+                - "dynamodb:*"
+              Resource: "*"
+    mappingTemplatesLocation: "./vtl"
     mappingTemplates:
       - type: Query
         field: getCollection
@@ -208,6 +208,44 @@ resources:
               - AttributeName: owner
                 KeyType: HASH
               - AttributeName: name
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+    postTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:service}-${self:provider.stage}-post
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: sort
+            KeyType: RANGE
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: sort
+            AttributeType: S
+          - AttributeName: updatedAt
+            AttributeType: N
+          - AttributeName: owner
+            AttributeType: S
+          - AttributeName: collectionId
+            AttributeType: S
+        GlobalSecondaryIndexes:
+          - IndexName: owner
+            KeySchema:
+              - AttributeName: owner
+                KeyType: HASH
+              - AttributeName: updatedAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: collection
+            KeySchema:
+              - AttributeName: owner
+                KeyType: HASH
+              - AttributeName: collectionId
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
