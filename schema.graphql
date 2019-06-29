@@ -15,10 +15,10 @@ type PostSummary {
     id: ID!
     title: String
     description: String
-    updatedAt: AWSTimestamp!
-    createdAt: AWSTimestamp!
+    updated_at: AWSTimestamp!
+    created_at: AWSTimestamp!
     owner: String!
-    entityType: String!
+    entity_type: String!
     entity: Entity!
 }
 

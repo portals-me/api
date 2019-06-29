@@ -116,7 +116,7 @@ custom:
       - field: addSharePost
         type: Mutation
         request: ContextRequest.vtl
-        response: JsonResponse.vtl
+        response: PrevResult.vtl
         kind: PIPELINE
         functions:
           - authorizer
