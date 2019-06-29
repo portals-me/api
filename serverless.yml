@@ -191,26 +191,16 @@ resources:
             AttributeType: S
           - AttributeName: sort
             AttributeType: S
-          - AttributeName: updatedAt
+          - AttributeName: updated_at
             AttributeType: N
           - AttributeName: owner
-            AttributeType: S
-          - AttributeName: collectionId
             AttributeType: S
         GlobalSecondaryIndexes:
           - IndexName: owner
             KeySchema:
               - AttributeName: owner
                 KeyType: HASH
-              - AttributeName: updatedAt
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-          - IndexName: collection
-            KeySchema:
-              - AttributeName: owner
-                KeyType: HASH
-              - AttributeName: collectionId
+              - AttributeName: updated_at
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
