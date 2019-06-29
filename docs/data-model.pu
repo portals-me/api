@@ -1,0 +1,51 @@
+@startuml
+class User {
+}
+class Organization {
+    - members
+}
+
+class Account {
+    + URL: /accounts/:id
+    - ID
+    - last_signed_in : Date
+    - created_at : Date
+}
+
+User --* Organization
+User --> Account
+Organization --> Account
+
+class Collection {
+    + URL: /collections/:id
+    - ID
+    - owner : AccountID
+}
+
+class Article {
+    - ID
+    - filed_in : CollectionID
+}
+
+class Comment {
+    - ID
+    - owner : AccountID
+}
+
+Account --* Collection
+Collection --* Article
+Collection --* Comment
+
+class Timeline {
+    - events
+    - watchs : List<ID>
+}
+class Event {
+    - eventType
+}
+
+Account --* Timeline
+Timeline --* Event
+Collection --|> Event
+
+@enduml

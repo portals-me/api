@@ -1,0 +1,230 @@
+service: portals-me-cfn
+
+plugins:
+  - serverless-go-build
+  - serverless-appsync-plugin
+
+provider:
+  name: aws
+  region: ap-northeast-1
+  stage: ${opt:stage, 'dev'}
+  memorySize: 128
+  timeout: 10
+  runtime: go1.x
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - "dynamodb:*"
+      Resource: "*"
+
+package:
+  individually: true
+
+functions:
+  authorizer:
+    handler: functions/authorizer/main.go
+    name: ${self:service}-${self:provider.stage}-authorizer
+    environment:
+      jwtPrivate: ${ssm:portals-me-account-${self:provider.stage}-jwt-private~true}
+  putAccountEvent:
+    handler: functions/put-account-table/main.go
+    name: ${self:service}-${self:provider.stage}-put-account-table
+    environment:
+      accountTableName: ${self:resources.Resources.accountReadReplicaTable.Properties.TableName}
+    events:
+      - sns:
+          topicName: portals-me-account-${self:provider.stage}-account-table-event-topic
+          arn:
+            Fn::Join:
+              - ":"
+              - - "arn:aws:sns"
+                - Ref: "AWS::Region"
+                - Ref: "AWS::AccountId"
+                - portals-me-account-${self:provider.stage}-account-table-event-topic
+  replaceOwner:
+    handler: functions/replace-owner/main.go
+    name: ${self:service}-${self:provider.stage}-replace-owner
+    environment:
+      accountTableName: ${self:resources.Resources.accountReadReplicaTable.Properties.TableName}
+
+custom:
+  appSync:
+    name: ${self:service}-api
+    authenticationType: API_KEY
+    schema: schema.graphql
+    dataSources:
+      - type: AWS_LAMBDA
+        name: authorizer
+        config:
+          functionName: authorizer
+          iamRoleStatements:
+            - Effect: Allow
+              Action: "lambda:invokeFunction"
+              Resource: "*"
+      - type: AMAZON_DYNAMODB
+        name: collection
+        config:
+          tableName:
+            Ref: collectionTable
+          iamRoleStatements:
+            - Effect: Allow
+              Action:
+                - "dynamodb:*"
+              Resource: "*"
+      - type: AMAZON_DYNAMODB
+        name: post
+        config:
+          tableName:
+            Ref: postTable
+          iamRoleStatements:
+            - Effect: Allow
+              Action:
+                - "dynamodb:*"
+              Resource: "*"
+      - type: AMAZON_DYNAMODB
+        name: account
+        config:
+          tableName:
+            Ref: accountReadReplicaTable
+          iamRoleStatements:
+            - Effect: Allow
+              Action:
+                - "dynamodb:*"
+              Resource: "*"
+      - type: AWS_LAMBDA
+        name: replaceOwner
+        config:
+          functionName: replaceOwner
+          iamRoleStatements:
+            - Effect: Allow
+              Action:
+                - "lambda:invokeFunction"
+                - "dynamodb:*"
+              Resource: "*"
+    mappingTemplatesLocation: "./vtl"
+    mappingTemplates:
+      - field: getUserByName
+        type: Query
+        dataSource: account
+        request: user/GetUserByName.vtl
+        response: user/GetUserByNameResponse.vtl
+      - field: getPostSummary
+        type: Query
+        dataSource: post
+        request: post/GetPostSummary.vtl
+        response: JsonResponse.vtl
+      - field: listPostSummary
+        type: Query
+        request: ContextRequest.vtl
+        response: PrevResult.vtl
+        kind: PIPELINE
+        functions:
+          - authorizer
+          - listPostSummary
+      - field: addSharePost
+        type: Mutation
+        request: ContextRequest.vtl
+        response: PrevResult.vtl
+        kind: PIPELINE
+        functions:
+          - authorizer
+          - addSharePost
+    functionConfigurations:
+      - dataSource: authorizer
+        name: authorizer
+        request: AuthorizerRequest.vtl
+        response: AuthorizerResponse.vtl
+      - dataSource: post
+        name: addSharePost
+        request: post/AddSharePost.vtl
+        response: post/PostSummary.vtl
+      - dataSource: post
+        name: listPostSummary
+        request: post/ListPostSummary.vtl
+        response: post/PostSummaryItems.vtl
+    logConfig:
+      loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
+      level: ALL
+
+resources:
+  Resources:
+    collectionTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:service}-${self:provider.stage}-collection
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: sort_id
+            KeyType: RANGE
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: sort_id
+            AttributeType: S
+          - AttributeName: owner
+            AttributeType: S
+          - AttributeName: name
+            AttributeType: S
+        GlobalSecondaryIndexes:
+          - IndexName: owner
+            KeySchema:
+              - AttributeName: owner
+                KeyType: HASH
+              - AttributeName: name
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+    postTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:service}-${self:provider.stage}-post
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: sort
+            KeyType: RANGE
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: sort
+            AttributeType: S
+          - AttributeName: updated_at
+            AttributeType: N
+          - AttributeName: owner
+            AttributeType: S
+        GlobalSecondaryIndexes:
+          - IndexName: owner
+            KeySchema:
+              - AttributeName: owner
+                KeyType: HASH
+              - AttributeName: updated_at
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+    accountReadReplicaTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:service}-${self:provider.stage}-account-replica
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: sort
+            KeyType: RANGE
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: sort
+            AttributeType: S
+          - AttributeName: name
+            AttributeType: S
+        GlobalSecondaryIndexes:
+          - IndexName: name
+            KeySchema:
+              - AttributeName: name
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL

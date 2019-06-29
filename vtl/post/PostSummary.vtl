@@ -1,0 +1,6 @@
+#set ( $result = $util.map.copyAndRemoveAllKeys($context.result, [ "sort" ]) )
+
+## For union type resolution
+$util.qr( $result.entity.put("__typename", $result.entity_type) )
+
+$utils.toJson($result)

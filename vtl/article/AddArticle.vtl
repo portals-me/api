@@ -1,0 +1,22 @@
+{
+  "version": "2017-02-28",
+  "operation": "PutItem",
+  "key": {
+    "id": { "S": "${context.arguments.collectionId}" },
+    "sort_id": { "S": "article@@${util.autoId()}" }
+  },
+
+  #set ( $account = $context.prev.result )
+
+  #set ( $args = $util.dynamodb.toMapValues($context.arguments) )
+  #set ( $args.created_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
+  #set ( $args.updated_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
+  #set ( $args.owner = $util.dynamodb.toString($account.id) )
+
+  ## Set title
+  #if ( !$args.title )
+    #set ( $args.title = $util.dynamodb.toString("No title") )
+  #end
+
+  "attributeValues": $util.toJson($util.map.copyAndRemoveAllKeys($args, [ "collectionId" ]))
+}

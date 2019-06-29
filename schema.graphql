@@ -1,0 +1,81 @@
+
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+type User {
+    id: ID!
+    name: String!
+    picture: String
+    display_name: String
+}
+
+type PostSummary {
+    id: ID!
+    title: String
+    description: String
+    updated_at: AWSTimestamp!
+    created_at: AWSTimestamp!
+    owner: String!
+    entity_type: String!
+    entity: Entity!
+}
+
+union Entity = Share | Images
+
+type Share {
+    format: String!
+    url: String!
+}
+
+type Images {
+    images: [Image!]!
+}
+
+type Image {
+    filetype: String!
+    s3path: String!
+}
+
+type Query {
+    getUserByName(
+        name: String!
+    ): User
+
+    getPostSummary(
+        id: ID!
+    ): PostSummary!
+
+    listPostSummary(
+        owner: String
+    ): [PostSummary!]!
+}
+
+type Mutation {
+    addSharePost(
+        title: String
+        description: String
+        entity: ShareInput!
+    ): PostSummary!
+
+    addImagePost(
+        title: String
+        description: String
+        entity: ImagesInput!
+    ): PostSummary!
+}
+
+input ShareInput {
+    format: String!
+    url: String!
+}
+
+input ImagesInput {
+    images: [ImageInput!]!
+}
+
+input ImageInput {
+    filetype: String!
+    s3path: String!
+}
