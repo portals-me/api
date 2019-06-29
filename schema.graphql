@@ -46,6 +46,10 @@ type Query {
     getPostSummary(
         id: ID!
     ): PostSummary!
+
+    listPostSummary(
+        owner: String
+    ): [PostSummary!]!
 }
 
 type Mutation {

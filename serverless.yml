@@ -113,6 +113,14 @@ custom:
         dataSource: post
         request: post/GetPostSummary.vtl
         response: JsonResponse.vtl
+      - field: listPostSummary
+        type: Query
+        request: ContextRequest.vtl
+        response: PrevResult.vtl
+        kind: PIPELINE
+        functions:
+          - authorizer
+          - listPostSummary
       - field: addSharePost
         type: Mutation
         request: ContextRequest.vtl
@@ -130,6 +138,10 @@ custom:
         name: addSharePost
         request: post/AddSharePost.vtl
         response: post/PostSummary.vtl
+      - dataSource: post
+        name: listPostSummary
+        request: post/ListPostSummary.vtl
+        response: post/PostSummaryItems.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
       level: ALL
