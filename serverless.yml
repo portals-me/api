@@ -103,21 +103,33 @@ custom:
               Resource: "*"
     mappingTemplatesLocation: "./vtl"
     mappingTemplates:
-      - type: Query
-        field: getUserByName
+      - field: getUserByName
+        type: Query
+        dataSource: account
         request: user/GetUserByName.vtl
         response: user/GetUserByNameResponse.vtl
-        dataSource: account
       - field: getPostSummary
         type: Query
         dataSource: post
         request: post/GetPostSummary.vtl
         response: JsonResponse.vtl
+      - field: addSharePost
+        type: Mutation
+        request: ContextRequest.vtl
+        response: JsonResponse.vtl
+        kind: PIPELINE
+        functions:
+          - authorizer
+          - addSharePost
     functionConfigurations:
       - dataSource: authorizer
         name: authorizer
         request: AuthorizerRequest.vtl
         response: AuthorizerResponse.vtl
+      - dataSource: post
+        name: addSharePost
+        request: post/AddSharePost.vtl
+        response: post/PostSummary.vtl
     logConfig:
       loggingRoleArn: arn:aws:iam::941528793676:role/AppSyncToCWLServiceRole
       level: ALL
