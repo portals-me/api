@@ -10,7 +10,13 @@
       "#owner": "owner"
     },
     "expressionValues": {
-      ":owner": { "S": "${account.id}" }
+      ":owner": { "S":
+        #if ( $context.arguments.owner )
+          "${context.arguments.owner}"
+        #else
+          "${account.id}"
+        #end
+      }
     }
   },
   "scanIndexForward": false

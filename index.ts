@@ -211,7 +211,8 @@ const authorizerFunctionResolver = new aws.appsync.Function(
       .toString(),
     responseMappingTemplate: fs
       .readFileSync("./vtl/AuthorizerResponse.vtl")
-      .toString()
+      .toString(),
+    name: "authorizer"
   }
 );
 
@@ -258,7 +259,8 @@ const listPostSummary = (() => {
       .toString(),
     responseMappingTemplate: fs
       .readFileSync("./vtl/post/PostSummaryItems.vtl")
-      .toString()
+      .toString(),
+    name: "listPostSummary"
   });
 
   return new aws.appsync.Resolver(
