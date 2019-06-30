@@ -17,9 +17,11 @@ type PostSummary {
     description: String
     updated_at: AWSTimestamp!
     created_at: AWSTimestamp!
-    owner: String!
     entity_type: String!
     entity: Entity!
+    owner: String!
+    owner_name: String
+    owner_display_name: String
 }
 
 union Entity = Share | Images

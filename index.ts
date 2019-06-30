@@ -215,6 +215,40 @@ const authorizerFunctionResolver = new aws.appsync.Function(
   }
 );
 
+const replaceOwner = createLambdaFunction("replace-owner", {
+  filepath: "replace-owner",
+  handlerName: `${config.service}-${config.stage}-replace-owner`,
+  role: lambdaRole,
+  lambdaOptions: {
+    environment: {
+      variables: {
+        accountTableName: accountReplicaTable.name
+      }
+    }
+  }
+});
+
+const replaceOwnerDS = createLambdaDataSource("replace-owner", {
+  api: graphqlApi,
+  function: replaceOwner,
+  dataSourceName: "replaceOwner"
+});
+
+const replaceOwnerFunction = new aws.appsync.Function(
+  "replace-owner-function",
+  {
+    apiId: graphqlApi.id,
+    dataSource: replaceOwnerDS.name,
+    requestMappingTemplate: fs
+      .readFileSync("./vtl/ReplaceOwnerRequest.vtl")
+      .toString(),
+    responseMappingTemplate: fs
+      .readFileSync("./vtl/ReplaceOwnerResponse.vtl")
+      .toString(),
+    name: "replaceOwner"
+  }
+);
+
 const listPostSummary = (() => {
   const listPostSummaryFunction = new aws.appsync.Function("listPostSummary", {
     apiId: graphqlApi.id,
@@ -239,12 +273,17 @@ const listPostSummary = (() => {
       pipelineConfig: {
         functions: [
           authorizerFunctionResolver.functionId,
-          listPostSummaryFunction.functionId
+          listPostSummaryFunction.functionId,
+          replaceOwnerFunction.functionId
         ]
       }
     },
     {
-      dependsOn: [authorizerFunctionResolver, listPostSummaryFunction]
+      dependsOn: [
+        authorizerFunctionResolver,
+        listPostSummaryFunction,
+        replaceOwnerFunction
+      ]
     }
   );
 })();
