@@ -1,4 +1,3 @@
-
 schema {
     query: Query
     mutation: Mutation
@@ -20,8 +19,7 @@ type PostSummary {
     entity_type: String!
     entity: Entity!
     owner: String!
-    owner_name: String
-    owner_display_name: String
+    owner_user: User
 }
 
 union Entity = Share | Images
