@@ -1,0 +1,41 @@
+version: 2.1
+
+orbs:
+  pulumi: pulumi/pulumi@1.0.0
+
+jobs:
+  build:
+    working_directory: ~/workspace
+    docker:
+      - image: myuon/portals-me-account-ci:latest
+    steps:
+      - checkout
+      - run: npm i -g yarn
+      - run: yarn
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  deploy:
+    working_directory: ~/workspace
+    docker:
+      - image: myuon/portals-me-account-ci:latest
+    steps:
+      - attach_workspace:
+          at: .
+      - run: pulumi stack select myuon/portals-me-api/stg
+      - run: pulumi config set aws:region ap-northeast-1
+      - run: pulumi up -y
+
+workflows:
+  version: 2
+  deploy:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - deploy:
+          requires:
+            - build
+          context: aws
