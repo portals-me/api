@@ -12,7 +12,7 @@
   #set ( $args.created_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
   #set ( $args.updated_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
   #set ( $args.owner = $util.dynamodb.toString($account.id) )
-  #set ( $args.entity_type = $util.dynamodb.toString("Image") )
+  #set ( $args.entity_type = $util.dynamodb.toString("Images") )
 
   "attributeValues": $util.toJson($args)
 }

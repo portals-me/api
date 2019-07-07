@@ -339,7 +339,8 @@ const addImagePost = (() => {
       .toString(),
     responseMappingTemplate: fs
       .readFileSync("./vtl/post/PostSummary.vtl")
-      .toString()
+      .toString(),
+    name: "addImagePost"
   });
 
   return new aws.appsync.Resolver(
