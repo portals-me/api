@@ -375,6 +375,20 @@ const userStorage = new aws.s3.Bucket("user-storage", {
     }
   ]
 });
+new aws.s3.BucketPolicy("user-storage-policy", {
+  bucket: userStorage.bucket,
+  policy: pulumi.interpolate`{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::${userStorage.bucket}/*"]
+    }
+  ]
+}`
+});
 
 const generateUploadURL = (() => {
   const generateUploadURLDataSource = createLambdaDataSource(
