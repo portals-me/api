@@ -328,6 +328,40 @@ const addSharePost = (() => {
   );
 })();
 
+const addImagePost = (() => {
+  const addImagePostFunction = new aws.appsync.Function("addImagePost", {
+    apiId: graphqlApi.id,
+    dataSource: postDS.name,
+    requestMappingTemplate: fs
+      .readFileSync("./vtl/post/AddImagePost.vtl")
+      .toString(),
+    responseMappingTemplate: fs
+      .readFileSync("./vtl/post/PostSummary.vtl")
+      .toString()
+  });
+
+  return new aws.appsync.Resolver(
+    "addImagePost",
+    {
+      apiId: graphqlApi.id,
+      field: "addImagePost",
+      type: "Mutation",
+      requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
+      responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
+      kind: "PIPELINE",
+      pipelineConfig: {
+        functions: [
+          authorizerFunctionResolver.functionId,
+          addImagePostFunction.functionId
+        ]
+      }
+    },
+    {
+      dependsOn: [authorizerFunctionResolver, addImagePostFunction]
+    }
+  );
+})();
+
 const userStorage = new aws.s3.Bucket("user-storage", {
   bucketPrefix: `${config.service}-${config.stage}-user-storage`
 });

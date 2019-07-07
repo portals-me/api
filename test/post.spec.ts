@@ -6,7 +6,6 @@ import * as API from "../src/API";
 import * as mutations from "../src/graphql/mutations";
 import FormData from "form-data";
 import fs from "fs";
-import util from "util";
 
 AWS.config.update({
   region: "ap-northeast-1"
@@ -96,11 +95,15 @@ afterAll(async () => {
 
 describe("Post", () => {
   describe("Image", () => {
+    const filename = "package.json";
+
     it("should upload a file", async () => {
       const [url] = (await axios.post(
-        `${apiEnv.appsync.url}`,
+        apiEnv.appsync.url,
         {
-          query: `mutation GenerateUploadURL { generateUploadURL(keys: ["package.json"]) }`
+          query: `mutation GenerateUploadURL { generateUploadURL(keys: [${JSON.stringify(
+            filename
+          )}]) }`
         },
         {
           headers: {
@@ -112,14 +115,42 @@ describe("Post", () => {
       expect(url).toBeTruthy();
 
       const form = new FormData();
-      form.append("package.json", fs.readFileSync("package.json"));
+      form.append(filename, fs.readFileSync(filename));
 
-      await axios.put(url, form, {
+      const result = await axios.put(url, form, {
         headers: {
           "Content-Length": form.getLengthSync(),
           ...form.getHeaders()
         }
       });
+      expect(result.status).toBe(200);
+    });
+
+    it("should create an image post", async () => {
+      const result = await axios.post(
+        apiEnv.appsync.url,
+        {
+          query: `mutation AddImagePost { addImagePost(
+          title: "test post"
+          description: "description"
+          entity: {
+            images: [
+              {
+                filetype: "text/json",
+                s3path: "${filename}"
+              }
+            ]
+          }
+        ) { id } }`
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminUserJWT}`,
+            "x-api-key": apiEnv.appsync.apiKey
+          }
+        }
+      );
+      expect(result.data.data.addImagePost.id).toBeTruthy();
     });
   });
 });
