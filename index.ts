@@ -363,7 +363,7 @@ const addImagePost = (() => {
 })();
 
 const userStorage = new aws.s3.Bucket("user-storage", {
-  bucketPrefix: `${config.service}-${config.stage}-user-storage`
+  bucketPrefix: `${config.service}-${config.stage}-user-storage`.substr(0, 35)
 });
 
 const generateUploadURL = (() => {

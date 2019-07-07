@@ -36,6 +36,7 @@ jobs:
             export BUILD_STATUS="$?" &&
             echo "*** Test Succeeded ***"
           } || {
+            export BUILD_STATUS=1 &&
             echo "*** Test Failed ***"
           }
 
