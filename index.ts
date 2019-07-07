@@ -16,7 +16,9 @@ const config = {
 const parameter = {
   jwtPrivate: aws.ssm
     .getParameter({
-      name: `${config.service}-${config.stage}-jwt-private`,
+      name: config.stage.startsWith("test")
+        ? `${config.service}-stg-jwt-private`
+        : `${config.service}-${config.stage}-jwt-private`,
       withDecryption: true
     })
     .then(result => result.value)
