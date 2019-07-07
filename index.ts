@@ -428,5 +428,7 @@ export const output = {
   appsync: {
     url: graphqlApi.uris["GRAPHQL"],
     apiKey: graphqlApiKey.key
-  }
+  },
+  userStorageBucket: userStorage.bucket,
+  postTableName: postTable.name
 };

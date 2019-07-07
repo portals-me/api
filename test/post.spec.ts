@@ -11,19 +11,22 @@ AWS.config.update({
   region: "ap-northeast-1"
 });
 
+const Dynamo = new AWS.DynamoDB.DocumentClient();
+const S3 = new AWS.S3();
+
 const apiEnv: {
   appsync: {
     url: string;
     apiKey: string;
   };
+  userStorageBucket: string;
+  postTableName: string;
 } = JSON.parse(process.env.API_ENV);
 
 const accountEnv: {
   restApi: string;
   tableName: string;
 } = JSON.parse(process.env.ACCOUNT_ENV);
-
-const Dynamo = new AWS.DynamoDB.DocumentClient();
 
 const createUser = async (user: {
   id: string;
@@ -97,6 +100,13 @@ describe("Post", () => {
   describe("Image", () => {
     const filename = "package.json";
 
+    afterAll(async () => {
+      await S3.deleteObject({
+        Bucket: apiEnv.userStorageBucket,
+        Key: `${adminUser.id}/${filename}`
+      }).promise();
+    });
+
     it("should upload a file", async () => {
       const [url] = (await axios.post(
         apiEnv.appsync.url,
@@ -151,6 +161,14 @@ describe("Post", () => {
         }
       );
       expect(result.data.data.addImagePost.id).toBeTruthy();
+
+      await Dynamo.delete({
+        TableName: apiEnv.postTableName,
+        Key: {
+          id: result.data.data.addImagePost.id,
+          sort: "summary"
+        }
+      }).promise();
     });
   });
 });
