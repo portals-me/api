@@ -16,7 +16,9 @@ const config = {
 const parameter = {
   jwtPrivate: aws.ssm
     .getParameter({
-      name: `${config.service}-${config.stage}-jwt-private`,
+      name: config.stage.startsWith("test")
+        ? `${config.service}-stg-jwt-private`
+        : `${config.service}-${config.stage}-jwt-private`,
       withDecryption: true
     })
     .then(result => result.value)
@@ -164,10 +166,14 @@ const graphqlApi = new aws.appsync.GraphQLApi("graphql-api", {
   }
 });
 
+// API Key expires in one year
 const graphqlApiKey = new aws.appsync.ApiKey(
   "graphql-api-key",
   {
-    apiId: graphqlApi.id
+    apiId: graphqlApi.id,
+    expires: new Date(
+      new Date().getTime() + 1000 * 60 * 60 * 24 * 365
+    ).toISOString()
   },
   {
     dependsOn: [graphqlApi]
@@ -324,8 +330,64 @@ const addSharePost = (() => {
   );
 })();
 
+const addImagePost = (() => {
+  const addImagePostFunction = new aws.appsync.Function("addImagePost", {
+    apiId: graphqlApi.id,
+    dataSource: postDS.name,
+    requestMappingTemplate: fs
+      .readFileSync("./vtl/post/AddImagePost.vtl")
+      .toString(),
+    responseMappingTemplate: fs
+      .readFileSync("./vtl/post/PostSummary.vtl")
+      .toString(),
+    name: "addImagePost"
+  });
+
+  return new aws.appsync.Resolver(
+    "addImagePost",
+    {
+      apiId: graphqlApi.id,
+      field: "addImagePost",
+      type: "Mutation",
+      requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
+      responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
+      kind: "PIPELINE",
+      pipelineConfig: {
+        functions: [
+          authorizerFunctionResolver.functionId,
+          addImagePostFunction.functionId
+        ]
+      }
+    },
+    {
+      dependsOn: [authorizerFunctionResolver, addImagePostFunction]
+    }
+  );
+})();
+
 const userStorage = new aws.s3.Bucket("user-storage", {
-  bucketPrefix: `${config.service}-${config.stage}-user-storage`
+  bucketPrefix: `${config.service}-${config.stage}-user-storage`.substr(0, 35),
+  corsRules: [
+    {
+      allowedHeaders: ["*"],
+      allowedMethods: ["GET", "PUT", "POST", "DELETE"],
+      allowedOrigins: ["*"]
+    }
+  ]
+});
+new aws.s3.BucketPolicy("user-storage-policy", {
+  bucket: userStorage.bucket,
+  policy: pulumi.interpolate`{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::${userStorage.bucket}/*"]
+    }
+  ]
+}`
 });
 
 const generateUploadURL = (() => {
@@ -385,3 +447,12 @@ const generateUploadURL = (() => {
     }
   );
 })();
+
+export const output = {
+  appsync: {
+    url: graphqlApi.uris["GRAPHQL"],
+    apiKey: graphqlApiKey.key
+  },
+  userStorageBucket: userStorage.bucket,
+  postTableName: postTable.name
+};

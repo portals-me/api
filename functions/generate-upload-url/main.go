@@ -26,7 +26,7 @@ func handler(ctx context.Context, event map[string]interface{}) ([]string, error
 	urls := make([]string, len(keys))
 
 	for index, key := range keys {
-		req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
+		req, _ := svc.PutObjectRequest(&s3.PutObjectInput{
 			Bucket: aws.String(storageBucket),
 			Key:    aws.String(userID + "/" + key.(string)),
 		})
