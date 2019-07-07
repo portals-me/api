@@ -55,10 +55,7 @@ workflows:
   version: 2
   deploy:
     jobs:
-      - build:
-          filters:
-            branches:
-              only: master
+      - build
       - test:
           requires:
             - build
@@ -67,4 +64,7 @@ workflows:
           requires:
             - build
             - test
+          filters:
+            branches:
+              only: master
           context: aws
