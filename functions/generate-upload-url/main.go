@@ -22,12 +22,13 @@ func handler(ctx context.Context, event map[string]interface{}) ([]string, error
 	svc := s3.New(sess)
 
 	keys := event["arguments"].(map[string]interface{})["keys"].([]interface{})
+	userID := event["prev"].(map[string]interface{})["result"].(map[string]interface{})["id"].(string)
 	urls := make([]string, len(keys))
 
 	for index, key := range keys {
 		req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
 			Bucket: aws.String(storageBucket),
-			Key:    aws.String(key.(string)),
+			Key:    aws.String(userID + "/" + key.(string)),
 		})
 		url, err := req.Presign(time.Hour * 1)
 
