@@ -4,6 +4,9 @@ import uuid from "uuid/v4";
 import axios from "axios";
 import * as API from "../src/API";
 import * as mutations from "../src/graphql/mutations";
+import FormData from "form-data";
+import fs from "fs";
+import util from "util";
 
 AWS.config.update({
   region: "ap-northeast-1"
@@ -93,11 +96,11 @@ afterAll(async () => {
 
 describe("Post", () => {
   describe("Image", () => {
-    it("should do smth", async () => {
-      const r = await axios.post(
+    it("should upload a file", async () => {
+      const [url] = (await axios.post(
         `${apiEnv.appsync.url}`,
         {
-          query: `mutation GenerateUploadURL { generateUploadURL(keys: ["foooo"]) }`
+          query: `mutation GenerateUploadURL { generateUploadURL(keys: ["package.json"]) }`
         },
         {
           headers: {
@@ -105,9 +108,18 @@ describe("Post", () => {
             "x-api-key": apiEnv.appsync.apiKey
           }
         }
-      );
+      )).data.data.generateUploadURL;
+      expect(url).toBeTruthy();
 
-      console.log(JSON.stringify(r.data));
+      const form = new FormData();
+      form.append("package.json", fs.readFileSync("package.json"));
+
+      await axios.put(url, form, {
+        headers: {
+          "Content-Length": form.getLengthSync(),
+          ...form.getHeaders()
+        }
+      });
     });
   });
 });
