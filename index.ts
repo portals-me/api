@@ -164,10 +164,14 @@ const graphqlApi = new aws.appsync.GraphQLApi("graphql-api", {
   }
 });
 
+// API Key expires in one year
 const graphqlApiKey = new aws.appsync.ApiKey(
   "graphql-api-key",
   {
-    apiId: graphqlApi.id
+    apiId: graphqlApi.id,
+    expires: new Date(
+      new Date().getTime() + 1000 * 60 * 60 * 24 * 365
+    ).toISOString()
   },
   {
     dependsOn: [graphqlApi]
@@ -385,3 +389,10 @@ const generateUploadURL = (() => {
     }
   );
 })();
+
+export const output = {
+  appsync: {
+    url: graphqlApi.uris["GRAPHQL"],
+    apiKey: graphqlApiKey.key
+  }
+};

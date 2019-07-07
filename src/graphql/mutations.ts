@@ -1,110 +1,47 @@
 // tslint:disable
 // this is an auto generated file. This will be overwritten
 
-export const addCollection = `mutation AddCollection(
-  $name: String!
+export const addSharePost = `mutation AddSharePost(
   $title: String
   $description: String
-  $cover: CoverInput
-  $media: [String!]
+  $entity: ShareInput!
 ) {
-  addCollection(
-    name: $name
-    title: $title
-    description: $description
-    cover: $cover
-    media: $media
-  ) {
+  addSharePost(title: $title, description: $description, entity: $entity) {
     id
-    owner
-    name
     title
     description
-    cover {
-      color
-      sort
-    }
-    media
-    created_at
     updated_at
+    created_at
+    owner
+    entity_type
+    entity {
+      ... on Share {
+        format
+        url
+      }
+    }
   }
 }
 `;
-export const updateCollection = `mutation UpdateCollection($id: ID!, $title: String, $description: String) {
-  updateCollection(id: $id, title: $title, description: $description) {
-    id
-    owner
-    name
-    title
-    description
-    cover {
-      color
-      sort
-    }
-    media
-    created_at
-    updated_at
-  }
-}
-`;
-export const deleteCollection = `mutation DeleteCollection($id: ID!) {
-  deleteCollection(id: $id) {
-    id
-    owner
-    name
-    title
-    description
-    cover {
-      color
-      sort
-    }
-    media
-    created_at
-    updated_at
-  }
-}
-`;
-export const addArticle = `mutation AddArticle(
-  $collectionId: String!
-  $entity: EntityInput!
+export const addImagePost = `mutation AddImagePost(
   $title: String
   $description: String
+  $entity: ImagesInput!
 ) {
-  addArticle(
-    collectionId: $collectionId
-    entity: $entity
-    title: $title
-    description: $description
-  ) {
-    collectionId
+  addImagePost(title: $title, description: $description, entity: $entity) {
     id
-    entity {
-      format
-      type
-      url
-    }
     title
     description
-    owner
-    created_at
     updated_at
-  }
-}
-`;
-export const deleteArticle = `mutation DeleteArticle($collectionId: String!, $id: String!) {
-  deleteArticle(collectionId: $collectionId, id: $id) {
-    collectionId
-    id
+    created_at
+    owner
+    entity_type
     entity {
-      format
-      type
-      url
+      ... on Share {
+        format
+        url
+      }
     }
-    title
-    description
-    owner
-    created_at
-    updated_at
   }
 }
 `;
