@@ -323,3 +323,65 @@ const addSharePost = (() => {
     }
   );
 })();
+
+const userStorage = new aws.s3.Bucket("user-storage", {
+  bucketPrefix: `${config.service}-${config.stage}-user-storage`
+});
+
+const generateUploadURL = (() => {
+  const generateUploadURLDataSource = createLambdaDataSource(
+    "generate-upload-url-ds",
+    {
+      api: graphqlApi,
+      function: createLambdaFunction("generate-upload-url", {
+        filepath: "generate-upload-url",
+        handlerName: `${config.service}-${config.stage}-generate-upload-url`,
+        role: lambdaRole,
+        lambdaOptions: {
+          environment: {
+            variables: {
+              storageBucket: userStorage.bucket
+            }
+          }
+        }
+      }),
+      dataSourceName: "generateUploadURL"
+    }
+  );
+
+  const generateUploadURLFunction = new aws.appsync.Function(
+    "generateUploadURL",
+    {
+      apiId: graphqlApi.id,
+      dataSource: generateUploadURLDataSource.name,
+      requestMappingTemplate: fs
+        .readFileSync("./vtl/AuthorizerRequest.vtl")
+        .toString(),
+      responseMappingTemplate: fs
+        .readFileSync("./vtl/AuthorizerResponse.vtl")
+        .toString(),
+      name: "generateUploadURL"
+    }
+  );
+
+  return new aws.appsync.Resolver(
+    "generateUploadURL",
+    {
+      apiId: graphqlApi.id,
+      field: "generateUploadURL",
+      type: "Mutation",
+      requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
+      responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
+      kind: "PIPELINE",
+      pipelineConfig: {
+        functions: [
+          authorizerFunctionResolver.functionId,
+          generateUploadURLFunction.functionId
+        ]
+      }
+    },
+    {
+      dependsOn: [authorizerFunctionResolver, generateUploadURLFunction]
+    }
+  );
+})();
