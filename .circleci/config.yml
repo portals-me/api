@@ -32,7 +32,7 @@ jobs:
 
           {
             pulumi up -y &&
-            ENV=$(pulumi stack output output) yarn test &&
+            API_ENV=$(pulumi stack output output) ACCOUNT_ENV=$(pulumi stack output output -s myuon/portals-me-account/stg) yarn test &&
             export BUILD_STATUS="$?" &&
             echo "*** Test Succeeded ***"
           } || {

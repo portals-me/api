@@ -365,7 +365,14 @@ const addImagePost = (() => {
 })();
 
 const userStorage = new aws.s3.Bucket("user-storage", {
-  bucketPrefix: `${config.service}-${config.stage}-user-storage`.substr(0, 35)
+  bucketPrefix: `${config.service}-${config.stage}-user-storage`.substr(0, 35),
+  corsRules: [
+    {
+      allowedHeaders: ["*"],
+      allowedMethods: ["GET", "PUT", "POST", "DELETE"],
+      allowedOrigins: ["*"]
+    }
+  ]
 });
 
 const generateUploadURL = (() => {
