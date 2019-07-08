@@ -142,7 +142,9 @@ const putAccountEventSubscription = new aws.sns.TopicSubscription(
   {
     protocol: "lambda",
     endpoint: putAccountEvent.arn,
-    topic: "arn:aws:sns:ap-northeast-1:941528793676:portals-me-account-dev-account-table-event-topic" as any
+    topic: `arn:aws:sns:ap-northeast-1:941528793676:portals-me-account-${
+      config.stage
+    }-account-table-event-topic` as any
   }
 );
 
