@@ -21,7 +21,10 @@ const parameter = {
         : `${config.service}-${config.stage}-jwt-private`,
       withDecryption: true
     })
-    .then(result => result.value)
+    .then(result => result.value),
+  accountEventTopic: `arn:aws:sns:ap-northeast-1:941528793676:portals-me-account-${
+    config.stage.startsWith("test") ? "stg" : config.stage
+  }-account-table-event-topic`
 };
 
 const lambdaRole = (() => {
@@ -142,9 +145,7 @@ const putAccountEventSubscription = new aws.sns.TopicSubscription(
   {
     protocol: "lambda",
     endpoint: putAccountEvent.arn,
-    topic: `arn:aws:sns:ap-northeast-1:941528793676:portals-me-account-${
-      config.stage
-    }-account-table-event-topic` as any
+    topic: parameter.accountEventTopic as any
   }
 );
 
