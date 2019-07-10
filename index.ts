@@ -199,17 +199,6 @@ const accountDS = createDynamoDBDataSource("account", {
   dataSourceName: "account"
 });
 
-const getUserByName = new aws.appsync.Resolver("getUserByName", {
-  apiId: graphqlApi.id,
-  dataSource: accountDS.name,
-  field: "getUserByName",
-  type: "Query",
-  requestTemplate: fs.readFileSync("./vtl/user/GetUserByName.vtl").toString(),
-  responseTemplate: fs
-    .readFileSync("./vtl/user/GetUserByNameResponse.vtl")
-    .toString()
-});
-
 const authorizerFunctionResolver = new aws.appsync.Function(
   "authorizer-function",
   {
@@ -258,6 +247,44 @@ const replaceOwnerFunction = new aws.appsync.Function(
     name: "replaceOwner"
   }
 );
+
+const getUserByName = new aws.appsync.Resolver("getUserByName", {
+  apiId: graphqlApi.id,
+  dataSource: accountDS.name,
+  field: "getUserByName",
+  type: "Query",
+  requestTemplate: fs.readFileSync("./vtl/user/GetUserByName.vtl").toString(),
+  responseTemplate: fs
+    .readFileSync("./vtl/user/GetUserByNameResponse.vtl")
+    .toString()
+});
+
+const followUser = (() => {
+  const followUserFunction = new aws.appsync.Function("followUser", {
+    apiId: graphqlApi.id,
+    dataSource: accountDS.name,
+    requestMappingTemplate: fs
+      .readFileSync("./vtl/user/FollowUser.vtl")
+      .toString(),
+    responseMappingTemplate: `$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id" ]))`,
+    name: "followUser"
+  });
+
+  return new aws.appsync.Resolver("followUser", {
+    apiId: graphqlApi.id,
+    field: "followUser",
+    type: "Mutation",
+    requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
+    responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
+    kind: "PIPELINE",
+    pipelineConfig: {
+      functions: [
+        authorizerFunctionResolver.functionId,
+        followUserFunction.functionId
+      ]
+    }
+  });
+})();
 
 const listPostSummary = (() => {
   const listPostSummaryFunction = new aws.appsync.Function("listPostSummary", {

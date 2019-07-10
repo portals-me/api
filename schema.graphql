@@ -52,6 +52,10 @@ type Query {
     ): [PostSummary!]!
 }
 
+type IDWrapper {
+    id: String!
+}
+
 type Mutation {
     addSharePost(
         title: String
@@ -66,6 +70,9 @@ type Mutation {
     ): PostSummary!
 
     generateUploadURL(keys: [String!]!): [String!]!
+
+    followUser(targetId: String!): IDWrapper!
+    unfollowUser(targetId: String!): IDWrapper!
 }
 
 input ShareInput {
