@@ -35,6 +35,11 @@ const adminUser = {
 
 let adminUserJWT;
 
+const guestUser = {
+  id: uuid(),
+  name: `guest_${uuid().replace(/\-/g, "_")}`
+};
+
 beforeAll(async () => {
   const userRecord = await createUser(accountEnv.tableName, adminUser);
   await Dynamo.put({
@@ -49,6 +54,13 @@ beforeAll(async () => {
       password: adminUser.password
     }
   })).data;
+
+  await Dynamo.put({
+    Item: Object.assign(guestUser, {
+      sort: "detail"
+    }),
+    TableName: apiEnv.accountReplicaTableName
+  }).promise();
 });
 
 afterAll(async () => {
@@ -63,6 +75,21 @@ afterAll(async () => {
   await Dynamo.delete({
     Key: {
       id: adminUser.id,
+      sort: "social"
+    },
+    TableName: apiEnv.accountReplicaTableName
+  }).promise();
+
+  await Dynamo.delete({
+    Key: {
+      id: guestUser.id,
+      sort: "detail"
+    },
+    TableName: apiEnv.accountReplicaTableName
+  }).promise();
+  await Dynamo.delete({
+    Key: {
+      id: guestUser.id,
       sort: "social"
     },
     TableName: apiEnv.accountReplicaTableName
@@ -105,5 +132,54 @@ describe("User", () => {
     expect(userMore.is_following).toBe(false);
     expect(userMore.followings).toBe(0);
     expect(userMore.followers).toBe(0);
+  });
+
+  it("should follow and show correct user information", async () => {
+    {
+      const result = await axios.post(
+        apiEnv.appsync.url,
+        {
+          query: `mutation M {
+            followUser(targetId: "${guestUser.id}") { id }
+          }`
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminUserJWT}`,
+            "x-api-key": apiEnv.appsync.apiKey
+          }
+        }
+      );
+
+      expect(result.data.data.followUser.id).toBeTruthy();
+      expect(result.data.errors).not.toBeTruthy();
+    }
+
+    const result = await axios.post(
+      apiEnv.appsync.url,
+      {
+        query: `query Q {
+          getUserMoreByName(name: "${guestUser.name}") {
+            id
+            is_following
+            followings
+            followers
+          }
+        }`
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminUserJWT}`,
+          "x-api-key": apiEnv.appsync.apiKey
+        }
+      }
+    );
+    expect(result.data.errors).not.toBeTruthy();
+    const user = result.data.data.getUserMoreByName;
+
+    expect(user.id).toBe(guestUser.id);
+    expect(user.is_following).toBe(true);
+    expect(user.followings).toBe(0);
+    expect(user.followers).toBe(1);
   });
 });
