@@ -259,6 +259,57 @@ const getUserByName = new aws.appsync.Resolver("getUserByName", {
     .toString()
 });
 
+const getUserSocial = (() => {
+  const getUserSocialLambda = createLambdaFunction("get-user-social", {
+    filepath: "get-user-social",
+    handlerName: `${config.service}-${config.stage}-get-user-social`,
+    role: lambdaRole,
+    lambdaOptions: {
+      environment: {
+        variables: {
+          accountTableName: accountReplicaTable.name
+        }
+      }
+    }
+  });
+  const getUserSocialDS = createLambdaDataSource("get-user-social", {
+    api: graphqlApi,
+    function: getUserSocialLambda,
+    dataSourceName: "getUserSocial"
+  });
+  const getUserSocialFunction = new aws.appsync.Function("get-user-social", {
+    apiId: graphqlApi.id,
+    dataSource: getUserSocialDS.name,
+    requestMappingTemplate: `{
+      "version": "2017-02-28",
+      "operation": "Invoke",
+      "payload": $utils.toJson($context)
+    }`,
+    responseMappingTemplate: `#if($context.error)
+      $util.error($context.error.type, $context.error.message)
+    #end
+    
+    $util.toJson($context.result)
+    `,
+    name: "getUserSocial"
+  });
+
+  return new aws.appsync.Resolver("get-user-social", {
+    apiId: graphqlApi.id,
+    field: "getUserMoreByName",
+    type: "Query",
+    requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
+    responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
+    kind: "PIPELINE",
+    pipelineConfig: {
+      functions: [
+        authorizerFunctionResolver.functionId,
+        getUserSocialFunction.functionId
+      ]
+    }
+  });
+})();
+
 const followUser = (() => {
   const followUserFunction = new aws.appsync.Function("followUser", {
     apiId: graphqlApi.id,
@@ -281,6 +332,33 @@ const followUser = (() => {
       functions: [
         authorizerFunctionResolver.functionId,
         followUserFunction.functionId
+      ]
+    }
+  });
+})();
+
+const unfollowUser = (() => {
+  const unfollowUserFunction = new aws.appsync.Function("unfollowUser", {
+    apiId: graphqlApi.id,
+    dataSource: accountDS.name,
+    requestMappingTemplate: fs
+      .readFileSync("./vtl/user/UnfollowUser.vtl")
+      .toString(),
+    responseMappingTemplate: `$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id" ]))`,
+    name: "unfollowUser"
+  });
+
+  return new aws.appsync.Resolver("unfollowUser", {
+    apiId: graphqlApi.id,
+    field: "unfollowUser",
+    type: "Mutation",
+    requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
+    responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
+    kind: "PIPELINE",
+    pipelineConfig: {
+      functions: [
+        authorizerFunctionResolver.functionId,
+        unfollowUserFunction.functionId
       ]
     }
   });
@@ -484,5 +562,6 @@ export const output = {
     apiKey: graphqlApiKey.key
   },
   userStorageBucket: userStorage.bucket,
-  postTableName: postTable.name
+  postTableName: postTable.name,
+  accountReplicaTableName: accountReplicaTable.name
 };

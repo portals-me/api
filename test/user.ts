@@ -17,10 +17,12 @@ export const createUser = async (
     display_name: string;
   }
 ) => {
+  const userRecord = Object.assign(user, {
+    sort: "detail"
+  });
+
   await Dynamo.put({
-    Item: Object.assign(user, {
-      sort: "detail"
-    }),
+    Item: userRecord,
     TableName: tableName
   }).promise();
 
@@ -32,6 +34,8 @@ export const createUser = async (
     },
     TableName: tableName
   }).promise();
+
+  return userRecord;
 };
 
 export const deleteUser = async (

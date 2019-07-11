@@ -6,5 +6,8 @@
   "key": {
     "id": { "S": "${context.arguments.targetId}" },
     "sort": { "S": "follow@@${account.id}" }
+  },
+  "attributeValues": {
+    "follow": { "S": "${account.id}" }
   }
 }

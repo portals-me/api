@@ -8,6 +8,9 @@ type User {
     name: String!
     picture: String
     display_name: String
+    is_following: Boolean
+    followings: Int
+    followers: Int
 }
 
 type PostSummary {
@@ -40,6 +43,10 @@ type Image {
 
 type Query {
     getUserByName(
+        name: String!
+    ): User
+
+    getUserMoreByName(
         name: String!
     ): User
 
