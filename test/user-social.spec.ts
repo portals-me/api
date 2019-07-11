@@ -59,7 +59,14 @@ afterAll(async () => {
       sort: "detail"
     },
     TableName: apiEnv.accountReplicaTableName
-  });
+  }).promise();
+  await Dynamo.delete({
+    Key: {
+      id: adminUser.id,
+      sort: "social"
+    },
+    TableName: apiEnv.accountReplicaTableName
+  }).promise();
 });
 
 describe("User", () => {
@@ -71,6 +78,8 @@ describe("User", () => {
           getUserMoreByName(name: "${adminUser.name}") {
             id
             name
+            display_name
+            picture
             is_following
             followings
             followers
@@ -89,7 +98,10 @@ describe("User", () => {
 
     const userMore = result.data.data.getUserMoreByName;
 
-    expect(userMore.id).toBeTruthy();
+    expect(userMore.id).toBe(adminUser.id);
+    expect(userMore.name).toBe(adminUser.name);
+    expect(userMore.display_name).toBe(adminUser.display_name);
+    expect(userMore.picture).toBe(adminUser.picture);
     expect(userMore.is_following).toBe(false);
     expect(userMore.followings).toBe(0);
     expect(userMore.followers).toBe(0);

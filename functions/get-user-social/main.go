@@ -31,7 +31,7 @@ type UserSocialRecordDDB struct {
 func (record UserSocialRecord) toDDB(id string) UserSocialRecordDDB {
 	return UserSocialRecordDDB{
 		UserSocialRecord: record,
-		Sort:             "detail",
+		Sort:             "social",
 		ID:               id,
 	}
 }
