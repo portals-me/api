@@ -36,6 +36,12 @@ func (record UserSocialRecord) toDDB(id string) UserSocialRecordDDB {
 	}
 }
 
+type FollowRecord struct {
+	ID     string `dynamo:"id"`
+	Sort   string `dynamo:"sort"`
+	Follow string `dynamo:"follow"`
+}
+
 type UserMore struct {
 	user.UserInfo
 	UserSocialRecord
@@ -74,7 +80,7 @@ func getUserMore(table dynamo.Table, targetUserName string, requestUserID string
 		}
 	}
 
-	var followRecord interface{}
+	var followRecord FollowRecord
 	if err := table.
 		Get("id", targetUser.ID).
 		Range("sort", dynamo.Equal, "follow@@"+requestUserID).
