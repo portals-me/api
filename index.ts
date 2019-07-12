@@ -317,9 +317,46 @@ const followUser = (() => {
     requestMappingTemplate: fs
       .readFileSync("./vtl/user/FollowUser.vtl")
       .toString(),
-    responseMappingTemplate: `$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id" ]))`,
+    responseMappingTemplate: `$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
     name: "followUser"
   });
+
+  const countupFollowers = createLambdaFunction("count-up-followers", {
+    filepath: "count-up-followers",
+    handlerName: `${config.service}-${config.stage}-count-up-followers`,
+    role: lambdaRole,
+    lambdaOptions: {
+      environment: {
+        variables: {
+          accountTableName: accountReplicaTable.name
+        }
+      }
+    }
+  });
+  const countupFollowersDS = createLambdaDataSource("count-up-followers", {
+    api: graphqlApi,
+    function: countupFollowers,
+    dataSourceName: "countUpFollowes"
+  });
+  const countupFollowersFunction = new aws.appsync.Function(
+    "count-up-followers",
+    {
+      apiId: graphqlApi.id,
+      dataSource: countupFollowersDS.name,
+      requestMappingTemplate: `{
+      "version": "2017-02-28",
+      "operation": "Invoke",
+      "payload": $utils.toJson($context)
+    }`,
+      responseMappingTemplate: `#if($context.error)
+      $util.error($context.error.type, $context.error.message)
+    #end
+    
+    $util.toJson($context.result)
+    `,
+      name: "countUpFollowers"
+    }
+  );
 
   return new aws.appsync.Resolver("followUser", {
     apiId: graphqlApi.id,
@@ -331,7 +368,8 @@ const followUser = (() => {
     pipelineConfig: {
       functions: [
         authorizerFunctionResolver.functionId,
-        followUserFunction.functionId
+        followUserFunction.functionId,
+        countupFollowersFunction.functionId
       ]
     }
   });
