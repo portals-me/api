@@ -5,24 +5,17 @@ import * as util from "util";
 
 const chpExec = util.promisify(chp.exec);
 
-export const createLambdaFunction = (
-  name,
-  options: {
-    filepath: string;
-    role: aws.iam.Role;
-    handlerName: string;
-    lambdaOptions?: Omit<
-      aws.lambda.FunctionArgs,
-      | "runtime"
-      | "code"
-      | "timeout"
-      | "memorySize"
-      | "handler"
-      | "role"
-      | "name"
-    >;
-  }
-) =>
+export type LambdaOptions = {
+  filepath: string;
+  role: aws.iam.Role;
+  handlerName: string;
+  lambdaOptions?: Omit<
+    aws.lambda.FunctionArgs,
+    "runtime" | "code" | "timeout" | "memorySize" | "handler" | "role" | "name"
+  >;
+};
+
+export const createLambdaFunction = (name, options: LambdaOptions) =>
   new aws.lambda.Function(name, {
     runtime: aws.lambda.Go1dxRuntime,
     code: new pulumi.asset.FileArchive(

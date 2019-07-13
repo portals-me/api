@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
-export const createLambdaSubscription = async (
+export const createLambdaSubscription = (
   name: string,
   options: {
     function: aws.lambda.Function;
