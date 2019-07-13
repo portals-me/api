@@ -7,6 +7,7 @@ import {
   createLambdaDataSource,
   createDynamoDBDataSource
 } from "./infrastructure/appsync";
+import { createLambdaSubscription } from "./infrastructure/subscription";
 
 const config = {
   service: new pulumi.Config().name,
@@ -127,36 +128,21 @@ const accountReplicaTable = new aws.dynamodb.Table("account-replica", {
   ]
 });
 
-const putAccountEvent = createLambdaFunction("put-account-table", {
-  filepath: "put-account-table",
-  handlerName: `${config.service}-${config.stage}-put-account-table`,
-  role: lambdaRole,
-  lambdaOptions: {
-    environment: {
-      variables: {
-        accountTableName: accountReplicaTable.name
+const accountEventSubscription = createLambdaSubscription("put-account-table", {
+  function: createLambdaFunction("put-account-table", {
+    filepath: "put-account-table",
+    handlerName: `${config.service}-${config.stage}-put-account-table`,
+    role: lambdaRole,
+    lambdaOptions: {
+      environment: {
+        variables: {
+          accountTableName: accountReplicaTable.name
+        }
       }
     }
-  }
+  }),
+  snsTopicArn: parameter.accountEventTopic as any
 });
-
-const putAccountEventSubscription = new aws.sns.TopicSubscription(
-  "put-account-table-event-subscription",
-  {
-    protocol: "lambda",
-    endpoint: putAccountEvent.arn,
-    topic: parameter.accountEventTopic as any
-  }
-);
-
-const putAccountEventPermission = new aws.lambda.Permission(
-  "put-account-table-event-permission",
-  {
-    function: putAccountEvent.name,
-    action: "lambda:InvokeFunction",
-    principal: "sns.amazonaws.com"
-  }
-);
 
 const graphqlApi = new aws.appsync.GraphQLApi("graphql-api", {
   name: `${config.service}-${config.stage}-api`,
