@@ -6,5 +6,8 @@
   "key": {
     "id": { "S": "${context.arguments.targetId}" },
     "sort": { "S": "follow@@${account.id}" }
+  },
+  "condition": {
+    "expression": "attribute_exists(id)"
   }
 }

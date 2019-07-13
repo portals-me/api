@@ -8,6 +8,10 @@
     "sort": { "S": "follow@@${account.id}" }
   },
   "attributeValues": {
-    "follow": { "S": "${account.id}" }
+    "follow": { "S": "${account.id}" },
+    "followedAt": { "N": ${util.time.nowEpochSeconds()} }
+  },
+  "condition": {
+    "expression": "attribute_not_exists(id)"
   }
 }

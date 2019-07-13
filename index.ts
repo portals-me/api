@@ -317,7 +317,11 @@ const followUser = (() => {
     requestMappingTemplate: fs
       .readFileSync("./vtl/user/FollowUser.vtl")
       .toString(),
-    responseMappingTemplate: `$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
+    responseMappingTemplate: `#if($context.error)
+  $util.error($context.error.type, $context.error.message)
+#end
+
+$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
     name: "followUser"
   });
 
@@ -382,7 +386,11 @@ const unfollowUser = (() => {
     requestMappingTemplate: fs
       .readFileSync("./vtl/user/UnfollowUser.vtl")
       .toString(),
-    responseMappingTemplate: `$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id" ]))`,
+    responseMappingTemplate: `#if($context.error)
+  $util.error($context.error.type, $context.error.message)
+#end
+
+$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
     name: "unfollowUser"
   });
 

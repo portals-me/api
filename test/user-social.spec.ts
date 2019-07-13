@@ -184,7 +184,47 @@ describe("User", () => {
     // expect(user.followers).toBe(1);
   });
 
+  it("shoud not follow twice", async () => {
+    const result = await axios.post(
+      apiEnv.appsync.url,
+      {
+        query: `mutation M {
+          followUser(targetId: "${guestUser.id}") { id }
+        }`
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminUserJWT}`,
+          "x-api-key": apiEnv.appsync.apiKey
+        }
+      }
+    );
+
+    expect(result.data.data).not.toBeTruthy();
+    expect(result.data.errors).toBeTruthy();
+  });
+
   it("should unfollow", async () => {
+    const result = await axios.post(
+      apiEnv.appsync.url,
+      {
+        query: `mutation M {
+          unfollowUser(targetId: "${guestUser.id}") { id }
+        }`
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminUserJWT}`,
+          "x-api-key": apiEnv.appsync.apiKey
+        }
+      }
+    );
+
+    expect(result.data.errors).not.toBeTruthy();
+    expect(result.data.data.unfollowUser.id).toBeTruthy();
+  });
+
+  it("should not unfollow twice", async () => {
     const result = await axios.post(
       apiEnv.appsync.url,
       {
