@@ -128,17 +128,31 @@ export const createDynamoDBDataSource = (
   });
 };
 
-export const createLambdaProxyResolver = (
+export const createPipelineResolver = (
   name: string,
   options: {
-    lambda: LambdaOptions;
     api: aws.appsync.GraphQLApi;
     field: string;
     type: "Query" | "Mutation";
-    functions: (
-      lambdaFunction: aws.appsync.Function
-    ) => Array<aws.appsync.Function>;
+    pipeline: Array<aws.appsync.Function>;
   }
+) => {
+  return new aws.appsync.Resolver(name, {
+    apiId: options.api.id,
+    field: options.field,
+    type: options.type,
+    requestTemplate: "$util.toJson($context)",
+    responseTemplate: "$utils.toJson($context.prev.result)",
+    kind: "PIPELINE",
+    pipelineConfig: {
+      functions: options.pipeline.map(f => f.functionId)
+    }
+  });
+};
+
+export const createLambdaResolverFunction = (
+  name: string,
+  options: { lambda: LambdaOptions; api: aws.appsync.GraphQLApi }
 ) => {
   const lambda = createLambdaFunction(name, options.lambda);
   const datasource = createLambdaDataSource(name, {
@@ -146,7 +160,8 @@ export const createLambdaProxyResolver = (
     function: lambda,
     dataSourceName: name.split("-").join("")
   });
-  const process = new aws.appsync.Function(name, {
+
+  return new aws.appsync.Function(name, {
     apiId: options.api.id,
     dataSource: datasource.name,
     requestMappingTemplate: `{
@@ -160,17 +175,5 @@ export const createLambdaProxyResolver = (
 
 $util.toJson($context.result)`,
     name: name.split("-").join("")
-  });
-
-  return new aws.appsync.Resolver(name, {
-    apiId: options.api.id,
-    field: options.field,
-    type: options.type,
-    requestTemplate: "$util.toJson($context)",
-    responseTemplate: "$utils.toJson($context.prev.result)",
-    kind: "PIPELINE",
-    pipelineConfig: {
-      functions: options.functions(process).map(f => f.functionId)
-    }
   });
 };

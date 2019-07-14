@@ -5,7 +5,9 @@ import * as awsx from "@pulumi/awsx";
 import { createLambdaFunction } from "./infrastructure/lambda";
 import {
   createLambdaDataSource,
-  createDynamoDBDataSource
+  createDynamoDBDataSource,
+  createLambdaResolverFunction,
+  createPipelineResolver
 } from "./infrastructure/appsync";
 import { createLambdaSubscription } from "./infrastructure/subscription";
 
@@ -245,156 +247,89 @@ const getUserByName = new aws.appsync.Resolver("getUserByName", {
     .toString()
 });
 
-const getUserSocial = (() => {
-  const getUserSocialLambda = createLambdaFunction("get-user-social", {
-    filepath: "get-user-social",
-    handlerName: `${config.service}-${config.stage}-get-user-social`,
-    role: lambdaRole,
-    lambdaOptions: {
-      environment: {
-        variables: {
-          accountTableName: accountReplicaTable.name
+const getUserSocial = createPipelineResolver("get-user-social", {
+  api: graphqlApi,
+  field: "getUserMoreByName",
+  type: "Query",
+  pipeline: [
+    authorizerFunctionResolver,
+    createLambdaResolverFunction("get-user-social", {
+      lambda: {
+        filepath: "get-user-social",
+        handlerName: `${config.service}-${config.stage}-get-user-social`,
+        role: lambdaRole,
+        lambdaOptions: {
+          environment: {
+            variables: {
+              accountTableName: accountReplicaTable.name
+            }
+          }
         }
-      }
-    }
-  });
-  const getUserSocialDS = createLambdaDataSource("get-user-social", {
-    api: graphqlApi,
-    function: getUserSocialLambda,
-    dataSourceName: "getUserSocial"
-  });
-  const getUserSocialFunction = new aws.appsync.Function("get-user-social", {
-    apiId: graphqlApi.id,
-    dataSource: getUserSocialDS.name,
-    requestMappingTemplate: `{
-      "version": "2017-02-28",
-      "operation": "Invoke",
-      "payload": $utils.toJson($context)
-    }`,
-    responseMappingTemplate: `#if($context.error)
-      $util.error($context.error.type, $context.error.message)
-    #end
-    
-    $util.toJson($context.result)
-    `,
-    name: "getUserSocial"
-  });
+      },
+      api: graphqlApi
+    })
+  ]
+});
 
-  return new aws.appsync.Resolver("get-user-social", {
-    apiId: graphqlApi.id,
-    field: "getUserMoreByName",
-    type: "Query",
-    requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
-    responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
-    kind: "PIPELINE",
-    pipelineConfig: {
-      functions: [
-        authorizerFunctionResolver.functionId,
-        getUserSocialFunction.functionId
-      ]
-    }
-  });
-})();
-
-const followUser = (() => {
-  const followUserFunction = new aws.appsync.Function("followUser", {
-    apiId: graphqlApi.id,
-    dataSource: accountDS.name,
-    requestMappingTemplate: fs
-      .readFileSync("./vtl/user/FollowUser.vtl")
-      .toString(),
-    responseMappingTemplate: `#if($context.error)
-  $util.error($context.error.type, $context.error.message)
-#end
-
-$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
-    name: "followUser"
-  });
-
-  const countupFollowers = createLambdaFunction("count-up-followers", {
-    filepath: "count-up-followers",
-    handlerName: `${config.service}-${config.stage}-count-up-followers`,
-    role: lambdaRole,
-    lambdaOptions: {
-      environment: {
-        variables: {
-          accountTableName: accountReplicaTable.name
-        }
-      }
-    }
-  });
-  const countupFollowersDS = createLambdaDataSource("count-up-followers", {
-    api: graphqlApi,
-    function: countupFollowers,
-    dataSourceName: "countUpFollowes"
-  });
-  const countupFollowersFunction = new aws.appsync.Function(
-    "count-up-followers",
-    {
+const followUser = createPipelineResolver("follow-user", {
+  api: graphqlApi,
+  field: "followUser",
+  type: "Mutation",
+  pipeline: [
+    authorizerFunctionResolver,
+    new aws.appsync.Function("followUser", {
       apiId: graphqlApi.id,
-      dataSource: countupFollowersDS.name,
-      requestMappingTemplate: `{
-      "version": "2017-02-28",
-      "operation": "Invoke",
-      "payload": $utils.toJson($context)
-    }`,
-      responseMappingTemplate: `#if($context.error)
-      $util.error($context.error.type, $context.error.message)
-    #end
-    
-    $util.toJson($context.result)
-    `,
-      name: "countUpFollowers"
-    }
-  );
+      dataSource: accountDS.name,
+      requestMappingTemplate: fs
+        .readFileSync("./vtl/user/FollowUser.vtl")
+        .toString(),
+      responseMappingTemplate: `
+        #if($context.error)
+          $util.error($context.error.type, $context.error.message)
+        #end
+        $utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
+      name: "followUser"
+    }),
+    createLambdaResolverFunction("count-up-followers", {
+      lambda: {
+        filepath: "count-up-followers",
+        handlerName: `${config.service}-${config.stage}-count-up-followers`,
+        role: lambdaRole,
+        lambdaOptions: {
+          environment: {
+            variables: {
+              accountTableName: accountReplicaTable.name
+            }
+          }
+        }
+      },
+      api: graphqlApi
+    })
+  ]
+});
 
-  return new aws.appsync.Resolver("followUser", {
-    apiId: graphqlApi.id,
-    field: "followUser",
-    type: "Mutation",
-    requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
-    responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
-    kind: "PIPELINE",
-    pipelineConfig: {
-      functions: [
-        authorizerFunctionResolver.functionId,
-        followUserFunction.functionId,
-        countupFollowersFunction.functionId
-      ]
-    }
-  });
-})();
-
-const unfollowUser = (() => {
-  const unfollowUserFunction = new aws.appsync.Function("unfollowUser", {
-    apiId: graphqlApi.id,
-    dataSource: accountDS.name,
-    requestMappingTemplate: fs
-      .readFileSync("./vtl/user/UnfollowUser.vtl")
-      .toString(),
-    responseMappingTemplate: `#if($context.error)
-  $util.error($context.error.type, $context.error.message)
-#end
-
-$utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
-    name: "unfollowUser"
-  });
-
-  return new aws.appsync.Resolver("unfollowUser", {
-    apiId: graphqlApi.id,
-    field: "unfollowUser",
-    type: "Mutation",
-    requestTemplate: fs.readFileSync("./vtl/ContextRequest.vtl").toString(),
-    responseTemplate: fs.readFileSync("./vtl/PrevResult.vtl").toString(),
-    kind: "PIPELINE",
-    pipelineConfig: {
-      functions: [
-        authorizerFunctionResolver.functionId,
-        unfollowUserFunction.functionId
-      ]
-    }
-  });
-})();
+const unfollowUser = createPipelineResolver("unfollow-user", {
+  api: graphqlApi,
+  field: "unfollowUser",
+  type: "Mutation",
+  pipeline: [
+    authorizerFunctionResolver,
+    new aws.appsync.Function("unfollowUser", {
+      apiId: graphqlApi.id,
+      dataSource: accountDS.name,
+      requestMappingTemplate: fs
+        .readFileSync("./vtl/user/UnfollowUser.vtl")
+        .toString(),
+      responseMappingTemplate: `
+        #if($context.error)
+          $util.error($context.error.type, $context.error.message)
+        #end
+        
+        $utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
+      name: "unfollowUser"
+    })
+  ]
+});
 
 const listPostSummary = (() => {
   const listPostSummaryFunction = new aws.appsync.Function("listPostSummary", {
