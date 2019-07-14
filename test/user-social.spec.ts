@@ -141,7 +141,7 @@ describe("User", () => {
   });
 
   it("should follow", async () => {
-    const result = await axios.post(
+    await axios.post(
       apiEnv.appsync.url,
       {
         query: `mutation M {
@@ -156,8 +156,47 @@ describe("User", () => {
       }
     );
 
-    expect(result.data.errors).not.toBeTruthy();
-    expect(result.data.data.followUser.id).toBeTruthy();
+    const user = await promiseRetry(
+      async (retry, number) => {
+        const result = await axios.post(
+          apiEnv.appsync.url,
+          {
+            query: `query Q {
+            getUserMoreByName(name: "${guestUser.name}") {
+              id
+              is_following
+              followings
+              followers
+            }
+          }`
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${adminUserJWT}`,
+              "x-api-key": apiEnv.appsync.apiKey
+            }
+          }
+        );
+
+        expect(result.data.errors).not.toBeTruthy();
+        const user = result.data.data.getUserMoreByName;
+
+        if (user.followers == 0) {
+          retry(user);
+        } else {
+          return user;
+        }
+      },
+      {
+        retries: 3,
+        minTimeout: 100
+      }
+    );
+
+    expect(user.id).toBe(guestUser.id);
+    expect(user.is_following).toBe(true);
+    expect(user.followings).toBe(0);
+    expect(user.followers).toBeLessThanOrEqual(1);
   });
 
   it("shoud not follow twice", async () => {
