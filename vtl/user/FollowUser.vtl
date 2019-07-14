@@ -1,0 +1,17 @@
+#set ( $account = $context.prev.result )
+
+{
+  "version": "2017-02-28",
+  "operation": "PutItem",
+  "key": {
+    "id": { "S": "${context.arguments.targetId}" },
+    "sort": { "S": "follow@@${account.id}" }
+  },
+  "attributeValues": {
+    "follow": { "S": "${account.id}" },
+    "followedAt": { "N": ${util.time.nowEpochSeconds()} }
+  },
+  "condition": {
+    "expression": "attribute_not_exists(id)"
+  }
+}

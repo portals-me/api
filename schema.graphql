@@ -8,6 +8,9 @@ type User {
     name: String!
     picture: String
     display_name: String
+    is_following: Boolean
+    followings: Int
+    followers: Int
 }
 
 type PostSummary {
@@ -43,6 +46,10 @@ type Query {
         name: String!
     ): User
 
+    getUserMoreByName(
+        name: String!
+    ): User
+
     getPostSummary(
         id: ID!
     ): PostSummary!
@@ -50,6 +57,10 @@ type Query {
     listPostSummary(
         owner: String
     ): [PostSummary!]!
+}
+
+type IDWrapper {
+    id: String!
 }
 
 type Mutation {
@@ -66,6 +77,9 @@ type Mutation {
     ): PostSummary!
 
     generateUploadURL(keys: [String!]!): [String!]!
+
+    followUser(targetId: String!): IDWrapper!
+    unfollowUser(targetId: String!): IDWrapper!
 }
 
 input ShareInput {

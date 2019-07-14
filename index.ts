@@ -5,8 +5,11 @@ import * as awsx from "@pulumi/awsx";
 import { createLambdaFunction } from "./infrastructure/lambda";
 import {
   createLambdaDataSource,
-  createDynamoDBDataSource
+  createDynamoDBDataSource,
+  createLambdaResolverFunction,
+  createPipelineResolver
 } from "./infrastructure/appsync";
+import { createLambdaSubscription } from "./infrastructure/subscription";
 
 const config = {
   service: new pulumi.Config().name,
@@ -127,36 +130,21 @@ const accountReplicaTable = new aws.dynamodb.Table("account-replica", {
   ]
 });
 
-const putAccountEvent = createLambdaFunction("put-account-table", {
-  filepath: "put-account-table",
-  handlerName: `${config.service}-${config.stage}-put-account-table`,
-  role: lambdaRole,
-  lambdaOptions: {
-    environment: {
-      variables: {
-        accountTableName: accountReplicaTable.name
+const accountEventSubscription = createLambdaSubscription("put-account-table", {
+  function: createLambdaFunction("put-account-table", {
+    filepath: "put-account-table",
+    handlerName: `${config.service}-${config.stage}-put-account-table`,
+    role: lambdaRole,
+    lambdaOptions: {
+      environment: {
+        variables: {
+          accountTableName: accountReplicaTable.name
+        }
       }
     }
-  }
+  }),
+  snsTopicArn: parameter.accountEventTopic as any
 });
-
-const putAccountEventSubscription = new aws.sns.TopicSubscription(
-  "put-account-table-event-subscription",
-  {
-    protocol: "lambda",
-    endpoint: putAccountEvent.arn,
-    topic: parameter.accountEventTopic as any
-  }
-);
-
-const putAccountEventPermission = new aws.lambda.Permission(
-  "put-account-table-event-permission",
-  {
-    function: putAccountEvent.name,
-    action: "lambda:InvokeFunction",
-    principal: "sns.amazonaws.com"
-  }
-);
 
 const graphqlApi = new aws.appsync.GraphQLApi("graphql-api", {
   name: `${config.service}-${config.stage}-api`,
@@ -197,17 +185,6 @@ const accountDS = createDynamoDBDataSource("account", {
   api: graphqlApi,
   table: accountReplicaTable,
   dataSourceName: "account"
-});
-
-const getUserByName = new aws.appsync.Resolver("getUserByName", {
-  apiId: graphqlApi.id,
-  dataSource: accountDS.name,
-  field: "getUserByName",
-  type: "Query",
-  requestTemplate: fs.readFileSync("./vtl/user/GetUserByName.vtl").toString(),
-  responseTemplate: fs
-    .readFileSync("./vtl/user/GetUserByNameResponse.vtl")
-    .toString()
 });
 
 const authorizerFunctionResolver = new aws.appsync.Function(
@@ -258,6 +235,101 @@ const replaceOwnerFunction = new aws.appsync.Function(
     name: "replaceOwner"
   }
 );
+
+const getUserByName = new aws.appsync.Resolver("getUserByName", {
+  apiId: graphqlApi.id,
+  dataSource: accountDS.name,
+  field: "getUserByName",
+  type: "Query",
+  requestTemplate: fs.readFileSync("./vtl/user/GetUserByName.vtl").toString(),
+  responseTemplate: fs
+    .readFileSync("./vtl/user/GetUserByNameResponse.vtl")
+    .toString()
+});
+
+const getUserSocial = createPipelineResolver("get-user-social", {
+  api: graphqlApi,
+  field: "getUserMoreByName",
+  type: "Query",
+  pipeline: [
+    authorizerFunctionResolver,
+    createLambdaResolverFunction("get-user-social", {
+      lambda: {
+        filepath: "get-user-social",
+        handlerName: `${config.service}-${config.stage}-get-user-social`,
+        role: lambdaRole,
+        lambdaOptions: {
+          environment: {
+            variables: {
+              accountTableName: accountReplicaTable.name
+            }
+          }
+        }
+      },
+      api: graphqlApi
+    })
+  ]
+});
+
+const followUser = createPipelineResolver("follow-user", {
+  api: graphqlApi,
+  field: "followUser",
+  type: "Mutation",
+  pipeline: [
+    authorizerFunctionResolver,
+    new aws.appsync.Function("followUser", {
+      apiId: graphqlApi.id,
+      dataSource: accountDS.name,
+      requestMappingTemplate: fs
+        .readFileSync("./vtl/user/FollowUser.vtl")
+        .toString(),
+      responseMappingTemplate: `
+        #if($context.error)
+          $util.error($context.error.type, $context.error.message)
+        #end
+        $utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
+      name: "followUser"
+    }),
+    createLambdaResolverFunction("count-up-followers", {
+      lambda: {
+        filepath: "count-up-followers",
+        handlerName: `${config.service}-${config.stage}-count-up-followers`,
+        role: lambdaRole,
+        lambdaOptions: {
+          environment: {
+            variables: {
+              accountTableName: accountReplicaTable.name
+            }
+          }
+        }
+      },
+      api: graphqlApi
+    })
+  ]
+});
+
+const unfollowUser = createPipelineResolver("unfollow-user", {
+  api: graphqlApi,
+  field: "unfollowUser",
+  type: "Mutation",
+  pipeline: [
+    authorizerFunctionResolver,
+    new aws.appsync.Function("unfollowUser", {
+      apiId: graphqlApi.id,
+      dataSource: accountDS.name,
+      requestMappingTemplate: fs
+        .readFileSync("./vtl/user/UnfollowUser.vtl")
+        .toString(),
+      responseMappingTemplate: `
+        #if($context.error)
+          $util.error($context.error.type, $context.error.message)
+        #end
+        
+        $utils.toJson($util.map.copyAndRetainAllKeys($context.result, [ "id", "follow" ]))`,
+      name: "unfollowUser"
+    })
+  ]
+});
 
 const listPostSummary = (() => {
   const listPostSummaryFunction = new aws.appsync.Function("listPostSummary", {
@@ -457,5 +529,6 @@ export const output = {
     apiKey: graphqlApiKey.key
   },
   userStorageBucket: userStorage.bucket,
-  postTableName: postTable.name
+  postTableName: postTable.name,
+  accountReplicaTableName: accountReplicaTable.name
 };

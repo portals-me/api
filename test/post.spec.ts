@@ -1,11 +1,11 @@
 import AWS from "aws-sdk";
-import bcrypt from "bcrypt";
 import uuid from "uuid/v4";
 import axios from "axios";
 import * as API from "../src/API";
 import * as mutations from "../src/graphql/mutations";
 import FormData from "form-data";
 import fs from "fs";
+import { createUser, deleteUser } from "./user";
 
 AWS.config.update({
   region: "ap-northeast-1"
@@ -28,48 +28,6 @@ const accountEnv: {
   tableName: string;
 } = JSON.parse(process.env.ACCOUNT_ENV);
 
-const createUser = async (user: {
-  id: string;
-  name: string;
-  password: string;
-  picture: string;
-  display_name: string;
-}) => {
-  await Dynamo.put({
-    Item: Object.assign(user, {
-      sort: "detail"
-    }),
-    TableName: accountEnv.tableName
-  }).promise();
-
-  await Dynamo.put({
-    Item: {
-      id: user.id,
-      sort: `name-pass##${user.name}`,
-      check_data: bcrypt.hashSync(user.password, 10)
-    },
-    TableName: accountEnv.tableName
-  }).promise();
-};
-
-const deleteUser = async (user: { id: string; name: string }) => {
-  await Dynamo.delete({
-    Key: {
-      id: user.id,
-      sort: "detail"
-    },
-    TableName: accountEnv.tableName
-  }).promise();
-
-  await Dynamo.delete({
-    Key: {
-      id: user.id,
-      sort: `name-pass##${user.name}`
-    },
-    TableName: accountEnv.tableName
-  }).promise();
-};
-
 const adminUser = {
   id: uuid(),
   name: `admin_${uuid().replace(/\-/g, "_")}`,
@@ -81,7 +39,7 @@ const adminUser = {
 let adminUserJWT;
 
 beforeAll(async () => {
-  await createUser(adminUser);
+  await createUser(accountEnv.tableName, adminUser);
 
   adminUserJWT = (await axios.post(`${accountEnv.restApi}/signin`, {
     auth_type: "password",
@@ -93,7 +51,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await deleteUser(adminUser);
+  await deleteUser(accountEnv.tableName, adminUser);
 });
 
 describe("Post", () => {

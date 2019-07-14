@@ -87,6 +87,18 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 			}); err != nil {
 				return err
 			}
+
+			// Skip error check
+			svc.PutItem(&dynamodb.PutItemInput{
+				TableName: aws.String(accountTable),
+				Item: map[string]*dynamodb.AttributeValue{
+					"id":         item["id"],
+					"sort":       &dynamodb.AttributeValue{S: aws.String("social")},
+					"followers":  &dynamodb.AttributeValue{N: aws.String("0")},
+					"followings": &dynamodb.AttributeValue{N: aws.String("0")},
+				},
+				ConditionExpression: aws.String("attribute_not_exists(id)"),
+			})
 		} else if dbEvent.EventName == "REMOVE" {
 			item, err := AsDynamoDBAttributeValues(dbEvent.Change.Keys)
 			if err != nil {
@@ -99,6 +111,16 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 			}); err != nil {
 				return err
 			}
+
+			// Skip error check
+			svc.DeleteItem(&dynamodb.DeleteItemInput{
+				TableName: aws.String(accountTable),
+				Key: map[string]*dynamodb.AttributeValue{
+					"id":   item["id"],
+					"sort": &dynamodb.AttributeValue{S: aws.String("social")},
+				},
+				ConditionExpression: aws.String("attribute_exists(id)"),
+			})
 		} else {
 			fmt.Printf("%+v\n", dbEvent)
 			panic("Not supported EventName: " + dbEvent.EventName)
