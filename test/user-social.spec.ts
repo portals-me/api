@@ -1,6 +1,7 @@
 import AWS from "aws-sdk";
 import uuid from "uuid/v4";
 import axios from "axios";
+import promiseRetry from "promise-retry";
 import { createUser, deleteUser } from "./user";
 
 AWS.config.update({
@@ -37,15 +38,15 @@ let adminUserJWT;
 
 const guestUser = {
   id: uuid(),
-  name: `guest_${uuid().replace(/\-/g, "_")}`
+  name: `guest_${uuid().replace(/\-/g, "_")}`,
+  password: uuid(),
+  display_name: "Guest",
+  picture: "pic"
 };
 
 beforeAll(async () => {
-  const userRecord = await createUser(accountEnv.tableName, adminUser);
-  await Dynamo.put({
-    Item: userRecord,
-    TableName: apiEnv.accountReplicaTableName
-  }).promise();
+  await createUser(accountEnv.tableName, adminUser);
+  await createUser(accountEnv.tableName, guestUser);
 
   adminUserJWT = (await axios.post(`${accountEnv.restApi}/signin`, {
     auth_type: "password",
@@ -54,49 +55,54 @@ beforeAll(async () => {
       password: adminUser.password
     }
   })).data;
-
-  await Dynamo.put({
-    Item: Object.assign(guestUser, {
-      sort: "detail"
-    }),
-    TableName: apiEnv.accountReplicaTableName
-  }).promise();
 });
 
 afterAll(async () => {
   await deleteUser(accountEnv.tableName, adminUser);
-  await Dynamo.delete({
-    Key: {
-      id: adminUser.id,
-      sort: "detail"
-    },
-    TableName: apiEnv.accountReplicaTableName
-  }).promise();
-  await Dynamo.delete({
-    Key: {
-      id: adminUser.id,
-      sort: "social"
-    },
-    TableName: apiEnv.accountReplicaTableName
-  }).promise();
-
-  await Dynamo.delete({
-    Key: {
-      id: guestUser.id,
-      sort: "detail"
-    },
-    TableName: apiEnv.accountReplicaTableName
-  }).promise();
-  await Dynamo.delete({
-    Key: {
-      id: guestUser.id,
-      sort: "social"
-    },
-    TableName: apiEnv.accountReplicaTableName
-  }).promise();
+  await deleteUser(accountEnv.tableName, guestUser);
 });
 
 describe("User", () => {
+  it("should push to replica table", async () => {
+    const result = await promiseRetry(
+      async (retry, number) => {
+        const result = await Dynamo.get({
+          TableName: apiEnv.accountReplicaTableName,
+          Key: {
+            id: adminUser.id,
+            sort: "detail"
+          }
+        }).promise();
+
+        if (!result.Item) {
+          retry(result);
+        } else {
+          return result;
+        }
+      },
+      {
+        retries: 3,
+        minTimeout: 100
+      }
+    );
+
+    expect(result.Item).toBeTruthy();
+    expect(result.Item.id).toBe(adminUser.id);
+  });
+
+  it("should put social record", async () => {
+    const result = await Dynamo.get({
+      TableName: apiEnv.accountReplicaTableName,
+      Key: {
+        id: adminUser.id,
+        sort: "social"
+      }
+    }).promise();
+
+    expect(result.Item.followers).toBe(0);
+    expect(result.Item.followings).toBe(0);
+  });
+
   it("should show UserMore information", async () => {
     const result = await axios.post(
       apiEnv.appsync.url,
@@ -134,26 +140,41 @@ describe("User", () => {
     expect(userMore.followers).toBe(0);
   });
 
-  it("should follow and show correct user information", async () => {
-    {
-      const result = await axios.post(
-        apiEnv.appsync.url,
-        {
-          query: `mutation M {
+  it("should follow", async () => {
+    const result = await axios.post(
+      apiEnv.appsync.url,
+      {
+        query: `mutation M {
             followUser(targetId: "${guestUser.id}") { id }
           }`
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminUserJWT}`,
-            "x-api-key": apiEnv.appsync.apiKey
-          }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminUserJWT}`,
+          "x-api-key": apiEnv.appsync.apiKey
         }
-      );
+      }
+    );
 
-      expect(result.data.errors).not.toBeTruthy();
-      expect(result.data.data.followUser.id).toBeTruthy();
-    }
+    expect(result.data.errors).not.toBeTruthy();
+    expect(result.data.data.followUser.id).toBeTruthy();
+  });
+
+  it("shoud not follow twice", async () => {
+    await axios.post(
+      apiEnv.appsync.url,
+      {
+        query: `mutation M {
+          followUser(targetId: "${guestUser.id}") { id }
+        }`
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminUserJWT}`,
+          "x-api-key": apiEnv.appsync.apiKey
+        }
+      }
+    );
 
     const result = await axios.post(
       apiEnv.appsync.url,
@@ -180,28 +201,7 @@ describe("User", () => {
     expect(user.id).toBe(guestUser.id);
     expect(user.is_following).toBe(true);
     expect(user.followings).toBe(0);
-    // Because of the eventually consistency, it's hard to check this.
-    // expect(user.followers).toBe(1);
-  });
-
-  it("shoud not follow twice", async () => {
-    const result = await axios.post(
-      apiEnv.appsync.url,
-      {
-        query: `mutation M {
-          followUser(targetId: "${guestUser.id}") { id }
-        }`
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${adminUserJWT}`,
-          "x-api-key": apiEnv.appsync.apiKey
-        }
-      }
-    );
-
-    expect(result.data.data).not.toBeTruthy();
-    expect(result.data.errors).toBeTruthy();
+    expect(user.followers).toBeLessThanOrEqual(1);
   });
 
   it("should unfollow", async () => {
@@ -240,7 +240,7 @@ describe("User", () => {
       }
     );
 
-    expect(result.data.errors).not.toBeTruthy();
-    expect(result.data.data.unfollowUser.id).toBeTruthy();
+    expect(result.data.errors).toBeTruthy();
+    expect(result.data.data).not.toBeTruthy();
   });
 });

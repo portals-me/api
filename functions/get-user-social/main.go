@@ -62,22 +62,10 @@ func getUserMore(table dynamo.Table, targetUserName string, requestUserID string
 	if err := table.
 		Get("id", targetUser.ID).
 		Range("sort", dynamo.Equal, "social").
+		Consistent(true).
 		One(&socialRecord); err != nil {
-		if err == dynamo.ErrNotFound {
-			socialRecord = UserSocialRecord{
-				Followers:  0,
-				Followings: 0,
-			}
-
-			if err := table.Put(socialRecord.toDDB(targetUser.ID)).Run(); err != nil {
-				fmt.Printf("PutSocialRecord: %+v\n", err.Error())
-				fmt.Printf("%+v\n", socialRecord)
-				return UserMore{}, err
-			}
-		} else {
-			fmt.Printf("GetTagetSocialRecord error: %+v\n", err.Error())
-			return UserMore{}, err
-		}
+		fmt.Printf("GetTagetSocialRecord error: %+v\n", err.Error())
+		return UserMore{}, err
 	}
 
 	var followRecord FollowRecord
