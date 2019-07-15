@@ -25,7 +25,7 @@ type PostSummary {
     owner_user: User
 }
 
-union Entity = Share | Images
+union Entity = Share | Images | Article
 
 type Share {
     format: String!
@@ -38,6 +38,11 @@ type Images {
 
 type Image {
     filetype: String!
+    s3path: String!
+}
+
+type Article {
+    filetype: String
     s3path: String!
 }
 
@@ -76,6 +81,11 @@ type Mutation {
         entity: ImagesInput!
     ): PostSummary!
 
+    addArticlePost(
+        title: String
+        entity: ArticleInput!
+    ): PostSummary!
+
     generateUploadURL(keys: [String!]!): [String!]!
 
     followUser(targetId: String!): IDWrapper!
@@ -93,5 +103,10 @@ input ImagesInput {
 
 input ImageInput {
     filetype: String!
+    s3path: String!
+}
+
+input ArticleInput {
+    filetype: String
     s3path: String!
 }
