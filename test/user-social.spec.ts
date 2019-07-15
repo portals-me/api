@@ -9,7 +9,6 @@ AWS.config.update({
 });
 
 const Dynamo = new AWS.DynamoDB.DocumentClient();
-const S3 = new AWS.S3();
 
 const apiEnv: {
   appsync: {
