@@ -58,14 +58,13 @@ jobs:
 
 workflows:
   version: 2
-  deploy:
+  stg:
     jobs:
       - build
       - test:
           requires:
             - build
           context: aws
-      # deploy to stg
       - deploy:
           requires:
             - build
@@ -75,3 +74,21 @@ workflows:
               only: master
           context: aws
           env: stg
+  prod:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /^release-.*/
+            branches:
+              ignore: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^release-.*/
+            branches:
+              ignore: /.*/
+          context: aws
+          env: prod
