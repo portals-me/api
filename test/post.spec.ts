@@ -11,6 +11,8 @@ AWS.config.update({
   region: "ap-northeast-1"
 });
 
+jest.setTimeout(30000);
+
 const Dynamo = new AWS.DynamoDB.DocumentClient();
 const S3 = new AWS.S3();
 
