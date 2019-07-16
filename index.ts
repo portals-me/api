@@ -440,6 +440,47 @@ const addImagePost = (() => {
   );
 })();
 
+const addArticlePost = createPipelineResolver("add-article-post", {
+  api: graphqlApi,
+  field: "addArticlePost",
+  type: "Mutation",
+  pipeline: [
+    authorizerFunctionResolver,
+    new aws.appsync.Function(
+      "addArticlePost",
+      {
+        apiId: graphqlApi.id,
+        dataSource: postDS.name,
+        requestMappingTemplate: `{
+  "version": "2017-02-28",
+  "operation": "PutItem",
+  "key": {
+    "id": { "S": "$\{util.autoId()\}" },
+    "sort": { "S": "summary" }
+  },
+
+  #set ( $account = $context.prev.result )
+
+  #set ( $args = $util.dynamodb.toMapValues($context.arguments) )
+  #set ( $args.created_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
+  #set ( $args.updated_at = $util.dynamodb.toNumber($util.time.nowEpochSeconds()) )
+  #set ( $args.owner = $util.dynamodb.toString($account.id) )
+  #set ( $args.entity_type = $util.dynamodb.toString("Article") )
+
+  "attributeValues": $util.toJson($args)
+}`,
+        responseMappingTemplate: fs
+          .readFileSync("./vtl/post/PostSummary.vtl")
+          .toString(),
+        name: "addArticlePost"
+      },
+      {
+        dependsOn: [graphqlApi]
+      }
+    )
+  ]
+});
+
 const userStorage = new aws.s3.Bucket("user-storage", {
   bucketPrefix: `${config.service}-${config.stage}-user-storage`.substr(0, 35),
   corsRules: [

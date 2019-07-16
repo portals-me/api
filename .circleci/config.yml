@@ -42,19 +42,23 @@ jobs:
 
           ( pulumi destroy -y ; pulumi stack rm -y ) && exit ${BUILD_STATUS}
   deploy:
+    parameters:
+      env:
+        type: enum
+        enum: ["stg", "prod"]
     working_directory: ~/workspace
     docker:
       - image: myuon/portals-me-account-ci:latest
     steps:
       - attach_workspace:
           at: .
-      - run: pulumi stack select myuon/portals-me-api/stg
+      - run: pulumi stack select myuon/portals-me-api/<< parameters.env >>
       - run: pulumi config set aws:region ap-northeast-1
       - run: pulumi up -y
 
 workflows:
   version: 2
-  deploy:
+  stg:
     jobs:
       - build
       - test:
@@ -69,3 +73,22 @@ workflows:
             branches:
               only: master
           context: aws
+          env: stg
+  prod:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /^release-.*/
+            branches:
+              ignore: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^release-.*/
+            branches:
+              ignore: /.*/
+          context: aws
+          env: prod

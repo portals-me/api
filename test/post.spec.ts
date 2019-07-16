@@ -11,6 +11,8 @@ AWS.config.update({
   region: "ap-northeast-1"
 });
 
+jest.setTimeout(30000);
+
 const Dynamo = new AWS.DynamoDB.DocumentClient();
 const S3 = new AWS.S3();
 
@@ -124,6 +126,76 @@ describe("Post", () => {
         TableName: apiEnv.postTableName,
         Key: {
           id: result.data.data.addImagePost.id,
+          sort: "summary"
+        }
+      }).promise();
+    });
+  });
+
+  describe("Article", () => {
+    const filename = "package.json";
+
+    afterAll(async () => {
+      await S3.deleteObject({
+        Bucket: apiEnv.userStorageBucket,
+        Key: `${adminUser.id}/${filename}`
+      }).promise();
+    });
+
+    it("should upload a file", async () => {
+      const [url] = (await axios.post(
+        apiEnv.appsync.url,
+        {
+          query: `mutation GenerateUploadURL { generateUploadURL(keys: [${JSON.stringify(
+            filename
+          )}]) }`
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminUserJWT}`,
+            "x-api-key": apiEnv.appsync.apiKey
+          }
+        }
+      )).data.data.generateUploadURL;
+      expect(url).toBeTruthy();
+
+      const form = new FormData();
+      form.append(filename, fs.readFileSync(filename));
+
+      const result = await axios.put(url, form, {
+        headers: {
+          "Content-Length": form.getLengthSync(),
+          ...form.getHeaders()
+        }
+      });
+      expect(result.status).toBe(200);
+    });
+
+    it("should create an article post", async () => {
+      const result = await axios.post(
+        apiEnv.appsync.url,
+        {
+          query: `mutation AddArticlePost { addArticlePost(
+          title: "test article post"
+          entity: {
+            filetype: "text/json",
+            s3path: "${filename}"
+          }
+        ) { id } }`
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminUserJWT}`,
+            "x-api-key": apiEnv.appsync.apiKey
+          }
+        }
+      );
+      expect(result.data.data.addArticlePost.id).toBeTruthy();
+
+      await Dynamo.delete({
+        TableName: apiEnv.postTableName,
+        Key: {
+          id: result.data.data.addArticlePost.id,
           sort: "summary"
         }
       }).promise();
