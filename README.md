@@ -1,6 +1,6 @@
 # portals-me/api
 
-[![CircleCI](https://circleci.com/gh/myuon/portals-me.svg?style=svg)](https://circleci.com/gh/myuon/portals-me)
+[![CircleCI](https://circleci.com/gh/portals-me/api.svg?style=svg)](https://circleci.com/gh/portals-me/api)
 
 ## JWT
 
