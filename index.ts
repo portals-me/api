@@ -10,6 +10,7 @@ import {
   createPipelineResolver
 } from "./infrastructure/appsync";
 import { createLambdaSubscription } from "./infrastructure/subscription";
+import { hookDynamoDB } from "./infrastructure/dynamodb_sns";
 
 const config = {
   service: new pulumi.Config().name,
@@ -99,7 +100,9 @@ const postTable = new aws.dynamodb.Table("post", {
       rangeKey: "updated_at",
       projectionType: "ALL"
     }
-  ]
+  ],
+  streamEnabled: true,
+  streamViewType: "NEW_IMAGE"
 });
 
 const accountReplicaTable = new aws.dynamodb.Table("account-replica", {
@@ -563,6 +566,26 @@ const generateUploadURL = (() => {
     }
   );
 })();
+
+hookDynamoDB("post-table-sync", {
+  topic: {
+    name: `${config.service}-${config.stage}-post-table-subscription`
+  },
+  lambda: topicArn => ({
+    filepath: "hook-post-table",
+    handlerName: `${config.service}-${config.stage}-hook-post-table`,
+    role: lambdaRole,
+    lambdaOptions: {
+      environment: {
+        variables: {
+          timestamp: new Date().toLocaleString(),
+          topicArn
+        }
+      }
+    }
+  }),
+  table: postTable
+});
 
 export const output = {
   appsync: {
