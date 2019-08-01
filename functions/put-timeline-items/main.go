@@ -16,7 +16,7 @@ import (
 )
 
 var svc *dynamodb.DynamoDB
-var accountTable = os.Getenv("accountTableName")
+var tableName = os.Getenv("tableName")
 
 func handler(ctx context.Context, event events.SNSEvent) error {
 	for _, record := range event.Records {
@@ -34,23 +34,11 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 			}
 
 			if _, err := svc.PutItem(&dynamodb.PutItemInput{
-				TableName: aws.String(accountTable),
+				TableName: aws.String(tableName),
 				Item:      item,
 			}); err != nil {
 				return err
 			}
-
-			// Skip error check
-			svc.PutItem(&dynamodb.PutItemInput{
-				TableName: aws.String(accountTable),
-				Item: map[string]*dynamodb.AttributeValue{
-					"id":         item["id"],
-					"sort":       &dynamodb.AttributeValue{S: aws.String("social")},
-					"followers":  &dynamodb.AttributeValue{N: aws.String("0")},
-					"followings": &dynamodb.AttributeValue{N: aws.String("0")},
-				},
-				ConditionExpression: aws.String("attribute_not_exists(id)"),
-			})
 		} else if dbEvent.EventName == "REMOVE" {
 			item, err := dynamo_helper.AsDynamoDBAttributeValues(dbEvent.Change.Keys)
 			if err != nil {
@@ -58,7 +46,7 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 			}
 
 			if _, err := svc.DeleteItem(&dynamodb.DeleteItemInput{
-				TableName: aws.String(accountTable),
+				TableName: aws.String(tableName),
 				Key:       item,
 			}); err != nil {
 				return err
@@ -66,7 +54,7 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 
 			// Skip error check
 			svc.DeleteItem(&dynamodb.DeleteItemInput{
-				TableName: aws.String(accountTable),
+				TableName: aws.String(tableName),
 				Key: map[string]*dynamodb.AttributeValue{
 					"id":   item["id"],
 					"sort": &dynamodb.AttributeValue{S: aws.String("social")},

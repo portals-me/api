@@ -1,4 +1,4 @@
-module github.com/myuon/portals-me
+module github.com/portals-me/api
 
 go 1.12
 

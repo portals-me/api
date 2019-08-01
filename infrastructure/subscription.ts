@@ -5,7 +5,7 @@ export const createLambdaSubscription = (
   name: string,
   options: {
     function: aws.lambda.Function;
-    snsTopicArn: string;
+    snsTopicArn: pulumi.Output<string>;
   }
 ) => {
   const subscription = new aws.sns.TopicSubscription(name, {

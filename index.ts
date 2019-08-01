@@ -567,7 +567,7 @@ const generateUploadURL = (() => {
   );
 })();
 
-hookDynamoDB("post-table-sync", {
+const postTableHook = hookDynamoDB("post-table-sync", {
   topic: {
     name: `${config.service}-${config.stage}-post-table-subscription`
   },
@@ -587,6 +587,57 @@ hookDynamoDB("post-table-sync", {
   table: postTable
 });
 
+// Timeline
+const timelineTable = new aws.dynamodb.Table("timeline", {
+  billingMode: "PAY_PER_REQUEST",
+  name: `${config.service}-${config.stage}-timeline`,
+  attributes: [
+    {
+      name: "id",
+      type: "S"
+    },
+    {
+      name: "updated_at",
+      type: "N"
+    },
+    {
+      name: "owner",
+      type: "S"
+    }
+  ],
+  hashKey: "id",
+  globalSecondaryIndexes: [
+    {
+      name: "owner",
+      hashKey: "owner",
+      rangeKey: "updated_at",
+      projectionType: "ALL"
+    }
+  ]
+});
+
+const putTimelineItems = createLambdaSubscription("put-timeline-items", {
+  function: createLambdaFunction(
+    "put-timeline-items",
+    {
+      filepath: "put-timeline-items",
+      handlerName: `${config.service}-${config.stage}-put-timeline-items`,
+      role: lambdaRole,
+      lambdaOptions: {
+        environment: {
+          variables: {
+            tableName: timelineTable.name
+          }
+        }
+      }
+    },
+    {
+      dependsOn: [postTableHook.topic]
+    }
+  ),
+  snsTopicArn: postTableHook.topic.arn
+});
+
 export const output = {
   appsync: {
     url: graphqlApi.uris["GRAPHQL"],
@@ -594,5 +645,6 @@ export const output = {
   },
   userStorageBucket: userStorage.bucket,
   postTableName: postTable.name,
-  accountReplicaTableName: accountReplicaTable.name
+  accountReplicaTableName: accountReplicaTable.name,
+  timelineTableName: timelineTable.name
 };
