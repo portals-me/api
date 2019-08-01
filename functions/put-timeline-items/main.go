@@ -37,7 +37,7 @@ type TimelineItem struct {
 
 // item should be {id: string, owner: string, updated_at: number}
 func createItemsToFollowers(item map[string]*dynamodb.AttributeValue) ([]interface{}, error) {
-	ownerID := item["owner"].String()
+	ownerID := *item["owner"].S
 	updatedAt, _ := strconv.ParseInt(*item["updated_at"].N, 10, 64)
 
 	followers, err := userRepository.ListFollowers(ownerID)
@@ -50,7 +50,7 @@ func createItemsToFollowers(item map[string]*dynamodb.AttributeValue) ([]interfa
 		items = append(items, TimelineItem{
 			ID:         uuid.Must(uuid.NewV4()).String(),
 			Target:     follower,
-			OriginalID: item["id"].String(),
+			OriginalID: *item["id"].S,
 			UpdatedAt:  updatedAt,
 		})
 	}
