@@ -601,17 +601,26 @@ const timelineTable = new aws.dynamodb.Table("timeline", {
       type: "N"
     },
     {
-      name: "owner",
+      name: "target",
+      type: "S"
+    },
+    {
+      name: "original_id",
       type: "S"
     }
   ],
   hashKey: "id",
   globalSecondaryIndexes: [
     {
-      name: "owner",
-      hashKey: "owner",
+      name: "target",
+      hashKey: "target",
       rangeKey: "updated_at",
       projectionType: "ALL"
+    },
+    {
+      name: "original_id",
+      hashKey: "original_id",
+      projectionType: "KEYS_ONLY"
     }
   ]
 });
