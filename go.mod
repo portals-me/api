@@ -6,7 +6,6 @@ require (
 	github.com/aws/aws-lambda-go v1.12.0
 	github.com/aws/aws-sdk-go v1.21.8
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/gbrlsnchs/jwt/v3 v3.0.0-beta.1 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/guregu/dynamo v1.3.1
 	github.com/kr/pretty v0.1.0 // indirect
