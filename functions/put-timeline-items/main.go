@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -30,16 +32,17 @@ type TimelineItem struct {
 	ID         string `dynamo:"id"`
 	Target     string `dynamo:"target"`
 	OriginalID string `dynamo:"original_id"`
-	UpdatedAt  string `dynamo:"updated_at"`
+	UpdatedAt  int64  `dynamo:"updated_at"`
 }
 
 // item should be {id: string, owner: string, updated_at: number}
 func createItemsToFollowers(item map[string]*dynamodb.AttributeValue) ([]interface{}, error) {
 	ownerID := item["owner"].String()
+	updatedAt, _ := strconv.ParseInt(*item["updated_at"].N, 10, 64)
 
 	followers, err := userRepository.ListFollowers(ownerID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to listFollowers")
 	}
 
 	var items []interface{}
@@ -48,7 +51,7 @@ func createItemsToFollowers(item map[string]*dynamodb.AttributeValue) ([]interfa
 			ID:         uuid.Must(uuid.NewV4()).String(),
 			Target:     follower,
 			OriginalID: item["id"].String(),
-			UpdatedAt:  item["updated_at"].String(),
+			UpdatedAt:  updatedAt,
 		})
 	}
 
@@ -63,7 +66,7 @@ func createItemsToDelete(item map[string]*dynamodb.AttributeValue) ([]dynamo.Key
 		Get("original_id", itemID).
 		Index("original_id").
 		All(&timelineItems); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to query original_id items")
 	}
 
 	var items []dynamo.Keyed
@@ -76,40 +79,41 @@ func createItemsToDelete(item map[string]*dynamodb.AttributeValue) ([]dynamo.Key
 
 func handler(ctx context.Context, event events.SNSEvent) error {
 	for _, record := range event.Records {
+		fmt.Printf("%+v\n", record)
 		message := record.SNS.Message
 
 		var dbEvent events.DynamoDBEventRecord
 		if err := json.Unmarshal([]byte(message), &dbEvent); err != nil {
-			return err
+			return errors.Wrap(err, "Failed to unmarshal")
 		}
 
 		if dbEvent.EventName == "MODIFY" || dbEvent.EventName == "INSERT" {
 			item, err := dynamo_helper.AsDynamoDBAttributeValues(dbEvent.Change.NewImage)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to parse NewImage")
 			}
 
 			items, err := createItemsToFollowers(item)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to create itemsToFollowers")
 			}
 
 			if _, err := timelineTable.Batch().Write().Put(items...).Run(); err != nil {
-				return err
+				return errors.Wrap(err, "Failed to BatchWrite")
 			}
 		} else if dbEvent.EventName == "REMOVE" {
 			item, err := dynamo_helper.AsDynamoDBAttributeValues(dbEvent.Change.Keys)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to parse Keys")
 			}
 
 			items, err := createItemsToDelete(item)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to create items to delete")
 			}
 
 			if _, err := timelineTable.Batch().Write().Delete(items...).Run(); err != nil {
-				return err
+				return errors.Wrap(err, "Failed to BatchWrite")
 			}
 		} else {
 			fmt.Printf("%+v\n", dbEvent)

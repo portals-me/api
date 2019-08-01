@@ -12,13 +12,17 @@ func AsDynamoDBAttributeValue(old events.DynamoDBAttributeValue) *dynamodb.Attri
 		return &dynamodb.AttributeValue{
 			BOOL: aws.Bool(old.Boolean()),
 		}
-	}
-	if old.DataType() == events.DataTypeString {
+	} else if old.DataType() == events.DataTypeNumber {
+		number := old.Number()
+
+		return &dynamodb.AttributeValue{
+			N: &number,
+		}
+	} else if old.DataType() == events.DataTypeString {
 		return &dynamodb.AttributeValue{
 			S: aws.String(old.String()),
 		}
-	}
-	if old.DataType() == events.DataTypeList {
+	} else if old.DataType() == events.DataTypeList {
 		list := old.List()
 		newList := make([]*dynamodb.AttributeValue, len(list))
 
@@ -29,8 +33,7 @@ func AsDynamoDBAttributeValue(old events.DynamoDBAttributeValue) *dynamodb.Attri
 		return &dynamodb.AttributeValue{
 			L: newList,
 		}
-	}
-	if old.DataType() == events.DataTypeMap {
+	} else if old.DataType() == events.DataTypeMap {
 		kv := old.Map()
 		newKv := make(map[string]*dynamodb.AttributeValue)
 

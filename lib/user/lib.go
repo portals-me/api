@@ -29,8 +29,7 @@ func (repo Repository) ListFollowers(userID string) ([]string, error) {
 
 	var records []FollowRelation
 	if err := table.
-		Get("sort", userID).
-		Index("name").
+		Get("id", userID).
 		Range("sort", dynamo.BeginsWith, "follow@@").
 		All(&records); err != nil {
 		return nil, err
