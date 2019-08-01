@@ -635,7 +635,8 @@ const putTimelineItems = createLambdaSubscription("put-timeline-items", {
       lambdaOptions: {
         environment: {
           variables: {
-            tableName: timelineTable.name
+            timelineTableName: timelineTable.name,
+            userTableName: accountReplicaTable.name
           }
         }
       }

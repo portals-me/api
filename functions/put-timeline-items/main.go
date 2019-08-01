@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gofrs/uuid"
+	"github.com/guregu/dynamo"
 	dynamo_helper "github.com/portals-me/api/lib/dynamo"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -19,50 +19,59 @@ import (
 
 var timelineTableName = os.Getenv("timelineTableName")
 var userTableName = os.Getenv("userTableName")
-var svc *dynamodb.DynamoDB
+var timelineTable dynamo.Table
 var userRepository user.Repository
 
 func createNotifiedItemID(itemID string, followerID string) string {
 	return followerID + "-" + itemID
 }
 
-func createBatchRequestsToFollowers(item map[string]*dynamodb.AttributeValue) (*dynamodb.BatchWriteItemInput, error) {
-	followers, err := userRepository.ListFollowers(item["owner"].String())
+type TimelineItem struct {
+	ID         string `dynamo:"id"`
+	Target     string `dynamo:"target"`
+	OriginalID string `dynamo:"original_id"`
+	UpdatedAt  string `dynamo:"updated_at"`
+}
+
+// item should be {id: string, owner: string, updated_at: number}
+func createItemsToFollowers(item map[string]*dynamodb.AttributeValue) ([]interface{}, error) {
+	ownerID := item["owner"].String()
+
+	followers, err := userRepository.ListFollowers(ownerID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Move id to original_id and fill new uuid in id
-	item["original_id"] = item["id"]
-	item["id"] = &dynamodb.AttributeValue{S: aws.String(uuid.Must(uuid.NewV4()).String())}
-
-	var items map[string][]*dynamodb.WriteRequest
-	var requests []*dynamodb.WriteRequest = make([]*dynamodb.WriteRequest, len(followers))
-
-	for index, followerID := range followers {
-		// target modification
-		item["target"] = &dynamodb.AttributeValue{S: aws.String(followerID)}
-
-		requests[index] = &dynamodb.WriteRequest{
-			PutRequest: &dynamodb.PutRequest{
-				Item: item,
-			},
-		}
+	var items []interface{}
+	for _, follower := range append(followers, ownerID) {
+		items = append(items, TimelineItem{
+			ID:         uuid.Must(uuid.NewV4()).String(),
+			Target:     follower,
+			OriginalID: item["id"].String(),
+			UpdatedAt:  item["updated_at"].String(),
+		})
 	}
 
-	// post to owner themselves
-	item["target"] = &dynamodb.AttributeValue{S: aws.String(item["owner"].String())}
-	requests = append(requests, &dynamodb.WriteRequest{
-		PutRequest: &dynamodb.PutRequest{
-			Item: item,
-		},
-	})
+	return items, nil
+}
 
-	items[timelineTableName] = requests
+func createItemsToDelete(item map[string]*dynamodb.AttributeValue) ([]dynamo.Keyed, error) {
+	itemID := item["id"].String()
 
-	return &dynamodb.BatchWriteItemInput{
-		RequestItems: items,
-	}, nil
+	var timelineItems []TimelineItem
+	if err := timelineTable.
+		Get("original_id", itemID).
+		Index("original_id").
+		All(&timelineItems); err != nil {
+		return nil, err
+	}
+
+	var items []dynamo.Keyed
+	for _, timelineItem := range timelineItems {
+		items = append(items, dynamo.Keys{timelineItem.ID})
+	}
+
+	return items, nil
 }
 
 func handler(ctx context.Context, event events.SNSEvent) error {
@@ -80,12 +89,12 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 				return err
 			}
 
-			req, err := createBatchRequestsToFollowers(item)
+			items, err := createItemsToFollowers(item)
 			if err != nil {
 				return err
 			}
 
-			if _, err := svc.BatchWriteItem(req); err != nil {
+			if _, err := timelineTable.Batch().Write().Put(items...).Run(); err != nil {
 				return err
 			}
 		} else if dbEvent.EventName == "REMOVE" {
@@ -94,22 +103,14 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 				return err
 			}
 
-			if _, err := svc.DeleteItem(&dynamodb.DeleteItemInput{
-				TableName: aws.String(timelineTableName),
-				Key:       item,
-			}); err != nil {
+			items, err := createItemsToDelete(item)
+			if err != nil {
 				return err
 			}
 
-			// Skip error check
-			svc.DeleteItem(&dynamodb.DeleteItemInput{
-				TableName: aws.String(timelineTableName),
-				Key: map[string]*dynamodb.AttributeValue{
-					"id":   item["id"],
-					"sort": &dynamodb.AttributeValue{S: aws.String("social")},
-				},
-				ConditionExpression: aws.String("attribute_exists(id)"),
-			})
+			if _, err := timelineTable.Batch().Write().Delete(items...).Run(); err != nil {
+				return err
+			}
 		} else {
 			fmt.Printf("%+v\n", dbEvent)
 			panic("Not supported EventName: " + dbEvent.EventName)
@@ -120,8 +121,9 @@ func handler(ctx context.Context, event events.SNSEvent) error {
 }
 
 func main() {
-	svc = dynamodb.New(session.New())
+	svc := dynamodb.New(session.New())
 	userRepository = user.NewRepositoryFromAWS(svc, userTableName)
+	timelineTable = dynamo.NewFromIface(svc).Table(timelineTableName)
 
 	lambda.Start(handler)
 }
