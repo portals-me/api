@@ -75,6 +75,7 @@ func fetchTimeline(userID string) ([]map[string]interface{}, error) {
 	if err := timelineTable.
 		Get("target", userID).
 		Index("target").
+		Order(dynamo.Descending).
 		All(&items); err != nil {
 		return nil, err
 	}
