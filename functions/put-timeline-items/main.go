@@ -16,6 +16,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/portals-me/api/lib/timeline"
 	"github.com/portals-me/api/lib/user"
 )
 
@@ -26,13 +27,6 @@ var userRepository user.Repository
 
 func createNotifiedItemID(itemID string, followerID string) string {
 	return followerID + "-" + itemID
-}
-
-type TimelineItem struct {
-	ID         string `dynamo:"id"`
-	Target     string `dynamo:"target"`
-	OriginalID string `dynamo:"original_id"`
-	UpdatedAt  int64  `dynamo:"updated_at"`
 }
 
 // item should be {id: string, owner: string, updated_at: number}
@@ -47,7 +41,7 @@ func createItemsToFollowers(item map[string]*dynamodb.AttributeValue) ([]interfa
 
 	var items []interface{}
 	for _, follower := range append(followers, ownerID) {
-		items = append(items, TimelineItem{
+		items = append(items, timeline.TimelineItem{
 			ID:         uuid.Must(uuid.NewV4()).String(),
 			Target:     follower,
 			OriginalID: *item["id"].S,
@@ -61,7 +55,7 @@ func createItemsToFollowers(item map[string]*dynamodb.AttributeValue) ([]interfa
 func createItemsToDelete(item map[string]*dynamodb.AttributeValue) ([]dynamo.Keyed, error) {
 	itemID := item["id"].String()
 
-	var timelineItems []TimelineItem
+	var timelineItems []timeline.TimelineItem
 	if err := timelineTable.
 		Get("original_id", itemID).
 		Index("original_id").

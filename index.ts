@@ -648,6 +648,62 @@ const putTimelineItems = createLambdaSubscription("put-timeline-items", {
   snsTopicArn: postTableHook.topic.arn
 });
 
+const fetchItems = createLambdaFunction("fetch-items", {
+  filepath: "fetch-items",
+  handlerName: `${config.service}-${config.stage}-fetch-items`,
+  role: lambdaRole,
+  lambdaOptions: {
+    environment: {
+      variables: {
+        postTableName: postTable.name,
+        timelineTableName: timelineTable.name,
+        accountTableName: accountReplicaTable.name
+      }
+    }
+  }
+});
+
+const fetchItemsDS = createLambdaDataSource("fetch-items", {
+  api: graphqlApi,
+  function: fetchItems,
+  dataSourceName: "fetchItems"
+});
+
+const fetchTimeline = createPipelineResolver("fetch-timeline", {
+  api: graphqlApi,
+  field: "fetchTimeline",
+  type: "Query",
+  pipeline: [
+    authorizerFunctionResolver,
+    new aws.appsync.Function("fetch-items-function", {
+      apiId: graphqlApi.id,
+      dataSource: fetchItemsDS.name,
+      requestMappingTemplate: `{
+  "version": "2017-02-28",
+  "operation": "Invoke",
+  "payload": $utils.toJson($context.prev.result)
+}`,
+      responseMappingTemplate: `#if($context.error)
+  $util.error($context.error.type, $context.error.message)
+#end
+
+#set ( $resultItems = [] )
+
+#foreach ( $item in $context.result )
+  #set ( $result = $util.map.copyAndRemoveAllKeys($item, [ "sort" ]) )
+
+  ## For union type resolution
+  $util.qr( $result.entity.put("__typename", $result.entity_type) )
+
+  $util.qr( $resultItems.add( $result ) )
+#end
+
+$utils.toJson($resultItems)`,
+      name: "fetchItems"
+    })
+  ]
+});
+
 export const output = {
   appsync: {
     url: graphqlApi.uris["GRAPHQL"],
