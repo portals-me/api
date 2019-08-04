@@ -45,6 +45,8 @@ const Bob = {
   picture: "pic"
 };
 
+let BobJWT;
+
 beforeAll(async () => {
   await createUser(accountEnv.tableName, Alice);
   await createUser(accountEnv.tableName, Bob);
@@ -54,6 +56,14 @@ beforeAll(async () => {
     data: {
       user_name: Alice.name,
       password: Alice.password
+    }
+  })).data;
+
+  BobJWT = (await axios.post(`${accountEnv.restApi}/signin`, {
+    auth_type: "password",
+    data: {
+      user_name: Bob.name,
+      password: Bob.password
     }
   })).data;
 });
@@ -141,7 +151,7 @@ describe("Scenario: user follow and unfollow", () => {
     expect(userMore.followers).toBe(0);
   });
 
-  it("should follow", async () => {
+  it("should follow from Alice to Bob", async () => {
     await axios.post(
       apiEnv.appsync.url,
       {
@@ -242,6 +252,105 @@ describe("Scenario: user follow and unfollow", () => {
     expect(user.is_following).toBe(true);
     expect(user.followings).toBe(0);
     expect(user.followers).toBeLessThanOrEqual(1);
+  });
+
+  it("should show the Bob's post on Alice's timeline", async () => {
+    const result = await axios.post(
+      apiEnv.appsync.url,
+      {
+        query: `mutation AddSharePost(
+        $title: String
+        $description: String
+        $entity: ShareInput!
+      ) {
+        addSharePost(title: $title, description: $description, entity: $entity) {
+          id
+          title
+          description
+          updated_at
+          created_at
+          entity_type
+          entity {
+            ... on Share {
+              format
+              url
+            }
+          }
+          owner
+          owner_user {
+            id
+            name
+            picture
+            display_name
+            is_following
+            followings
+            followers
+          }
+        }
+      }`,
+        variables: {
+          title: "Test",
+          entity: {
+            format: "oembed",
+            url: "https://example.com"
+          }
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${BobJWT}`,
+          "x-api-key": apiEnv.appsync.apiKey
+        }
+      }
+    );
+
+    expect(result.data.errors).not.toBeTruthy();
+
+    const itemID = result.data.data.addSharePost.id;
+    expect(itemID).toBeTruthy();
+
+    const posts = await promiseRetry(
+      async (retry, number) => {
+        const result = await axios.post(
+          apiEnv.appsync.url,
+          {
+            query: `query FetchTimeline($since: Float) {
+              fetchTimeline(since: $since) {
+                id
+              }
+            }`
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${AliceJWT}`,
+              "x-api-key": apiEnv.appsync.apiKey
+            }
+          }
+        );
+
+        expect(result.data.errors).not.toBeTruthy();
+        const posts = result.data.data.fetchTimeline;
+
+        if (posts.length == 0) {
+          retry(posts);
+        } else {
+          return posts;
+        }
+      },
+      {
+        retries: 3,
+        minTimeout: 100
+      }
+    );
+    expect(posts.map(kv => kv.id)).toContainEqual(itemID);
+
+    await Dynamo.delete({
+      TableName: apiEnv.postTableName,
+      Key: {
+        id: itemID,
+        sort: "summary"
+      }
+    }).promise();
   });
 
   it("should unfollow", async () => {
