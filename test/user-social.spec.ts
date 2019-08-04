@@ -27,50 +27,50 @@ const accountEnv: {
   tableName: string;
 } = JSON.parse(process.env.ACCOUNT_ENV);
 
-const adminUser = {
+const Alice = {
   id: uuid(),
-  name: `admin_${uuid().replace(/\-/g, "_")}`,
+  name: `alice_${uuid().replace(/\-/g, "_")}`,
   password: uuid(),
-  display_name: "Admin",
+  display_name: "Alice",
   picture: "pic"
 };
 
-let adminUserJWT;
+let AliceJWT;
 
-const guestUser = {
+const Bob = {
   id: uuid(),
-  name: `guest_${uuid().replace(/\-/g, "_")}`,
+  name: `bob_${uuid().replace(/\-/g, "_")}`,
   password: uuid(),
-  display_name: "Guest",
+  display_name: "Bob",
   picture: "pic"
 };
 
 beforeAll(async () => {
-  await createUser(accountEnv.tableName, adminUser);
-  await createUser(accountEnv.tableName, guestUser);
+  await createUser(accountEnv.tableName, Alice);
+  await createUser(accountEnv.tableName, Bob);
 
-  adminUserJWT = (await axios.post(`${accountEnv.restApi}/signin`, {
+  AliceJWT = (await axios.post(`${accountEnv.restApi}/signin`, {
     auth_type: "password",
     data: {
-      user_name: adminUser.name,
-      password: adminUser.password
+      user_name: Alice.name,
+      password: Alice.password
     }
   })).data;
 });
 
 afterAll(async () => {
-  await deleteUser(accountEnv.tableName, adminUser);
-  await deleteUser(accountEnv.tableName, guestUser);
+  await deleteUser(accountEnv.tableName, Alice);
+  await deleteUser(accountEnv.tableName, Bob);
 });
 
-describe("User", () => {
+describe("Scenario: user follow and unfollow", () => {
   it("should push to replica table", async () => {
     const result = await promiseRetry(
       async (retry, number) => {
         const result = await Dynamo.get({
           TableName: apiEnv.accountReplicaTableName,
           Key: {
-            id: adminUser.id,
+            id: Alice.id,
             sort: "detail"
           }
         }).promise();
@@ -88,14 +88,14 @@ describe("User", () => {
     );
 
     expect(result.Item).toBeTruthy();
-    expect(result.Item.id).toBe(adminUser.id);
+    expect(result.Item.id).toBe(Alice.id);
   });
 
   it("should put social record", async () => {
     const result = await Dynamo.get({
       TableName: apiEnv.accountReplicaTableName,
       Key: {
-        id: adminUser.id,
+        id: Alice.id,
         sort: "social"
       }
     }).promise();
@@ -109,7 +109,7 @@ describe("User", () => {
       apiEnv.appsync.url,
       {
         query: `query Q {
-          getUserMoreByName(name: "${adminUser.name}") {
+          getUserMoreByName(name: "${Alice.name}") {
             id
             name
             display_name
@@ -122,7 +122,7 @@ describe("User", () => {
       },
       {
         headers: {
-          Authorization: `Bearer ${adminUserJWT}`,
+          Authorization: `Bearer ${AliceJWT}`,
           "x-api-key": apiEnv.appsync.apiKey
         }
       }
@@ -132,10 +132,10 @@ describe("User", () => {
 
     const userMore = result.data.data.getUserMoreByName;
 
-    expect(userMore.id).toBe(adminUser.id);
-    expect(userMore.name).toBe(adminUser.name);
-    expect(userMore.display_name).toBe(adminUser.display_name);
-    expect(userMore.picture).toBe(adminUser.picture);
+    expect(userMore.id).toBe(Alice.id);
+    expect(userMore.name).toBe(Alice.name);
+    expect(userMore.display_name).toBe(Alice.display_name);
+    expect(userMore.picture).toBe(Alice.picture);
     expect(userMore.is_following).toBe(false);
     expect(userMore.followings).toBe(0);
     expect(userMore.followers).toBe(0);
@@ -146,12 +146,12 @@ describe("User", () => {
       apiEnv.appsync.url,
       {
         query: `mutation M {
-            followUser(targetId: "${guestUser.id}") { id }
+            followUser(targetId: "${Bob.id}") { id }
           }`
       },
       {
         headers: {
-          Authorization: `Bearer ${adminUserJWT}`,
+          Authorization: `Bearer ${AliceJWT}`,
           "x-api-key": apiEnv.appsync.apiKey
         }
       }
@@ -163,7 +163,7 @@ describe("User", () => {
           apiEnv.appsync.url,
           {
             query: `query Q {
-            getUserMoreByName(name: "${guestUser.name}") {
+            getUserMoreByName(name: "${Bob.name}") {
               id
               is_following
               followings
@@ -173,7 +173,7 @@ describe("User", () => {
           },
           {
             headers: {
-              Authorization: `Bearer ${adminUserJWT}`,
+              Authorization: `Bearer ${AliceJWT}`,
               "x-api-key": apiEnv.appsync.apiKey
             }
           }
@@ -194,7 +194,7 @@ describe("User", () => {
       }
     );
 
-    expect(user.id).toBe(guestUser.id);
+    expect(user.id).toBe(Bob.id);
     expect(user.is_following).toBe(true);
     expect(user.followings).toBe(0);
     expect(user.followers).toBeLessThanOrEqual(1);
@@ -205,12 +205,12 @@ describe("User", () => {
       apiEnv.appsync.url,
       {
         query: `mutation M {
-          followUser(targetId: "${guestUser.id}") { id }
+          followUser(targetId: "${Bob.id}") { id }
         }`
       },
       {
         headers: {
-          Authorization: `Bearer ${adminUserJWT}`,
+          Authorization: `Bearer ${AliceJWT}`,
           "x-api-key": apiEnv.appsync.apiKey
         }
       }
@@ -220,7 +220,7 @@ describe("User", () => {
       apiEnv.appsync.url,
       {
         query: `query Q {
-          getUserMoreByName(name: "${guestUser.name}") {
+          getUserMoreByName(name: "${Bob.name}") {
             id
             is_following
             followings
@@ -230,7 +230,7 @@ describe("User", () => {
       },
       {
         headers: {
-          Authorization: `Bearer ${adminUserJWT}`,
+          Authorization: `Bearer ${AliceJWT}`,
           "x-api-key": apiEnv.appsync.apiKey
         }
       }
@@ -238,7 +238,7 @@ describe("User", () => {
     expect(result.data.errors).not.toBeTruthy();
     const user = result.data.data.getUserMoreByName;
 
-    expect(user.id).toBe(guestUser.id);
+    expect(user.id).toBe(Bob.id);
     expect(user.is_following).toBe(true);
     expect(user.followings).toBe(0);
     expect(user.followers).toBeLessThanOrEqual(1);
@@ -249,12 +249,12 @@ describe("User", () => {
       apiEnv.appsync.url,
       {
         query: `mutation M {
-          unfollowUser(targetId: "${guestUser.id}") { id }
+          unfollowUser(targetId: "${Bob.id}") { id }
         }`
       },
       {
         headers: {
-          Authorization: `Bearer ${adminUserJWT}`,
+          Authorization: `Bearer ${AliceJWT}`,
           "x-api-key": apiEnv.appsync.apiKey
         }
       }
@@ -269,12 +269,12 @@ describe("User", () => {
       apiEnv.appsync.url,
       {
         query: `mutation M {
-          unfollowUser(targetId: "${guestUser.id}") { id }
+          unfollowUser(targetId: "${Bob.id}") { id }
         }`
       },
       {
         headers: {
-          Authorization: `Bearer ${adminUserJWT}`,
+          Authorization: `Bearer ${AliceJWT}`,
           "x-api-key": apiEnv.appsync.apiKey
         }
       }
